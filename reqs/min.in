@@ -1,0 +1,9 @@
+aiohttp==3.8.5
+aiofiles==23.2.
+git+https://github.com/Ptosiek/crdp.git@use-pyproject
+numpy==1.25.2
+oyaml==1.0
+pillow===10.0.0
+PyQt5==5.15.9
+pyqtgraph==0.13.3
+qasync==0.24.0
