@@ -199,7 +199,7 @@ class MipDisplay:
         # print("diff ", int(len(diff_lines)/self.config.G_HEIGHT*100), "%")
         # print(" ")
 
-        if len(diff_lines) == 0:
+        if not len(diff_lines):
             return
         self.pre_img[diff_lines] = self.img_buff_rgb8[diff_lines]
         # self.config.check_time("diff_lines")

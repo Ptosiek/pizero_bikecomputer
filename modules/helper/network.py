@@ -62,8 +62,8 @@ class Network:
             # retry
             elif (
                 not all(res)
-                and len(q["urls"]) > 0
-                and len(res) > 0
+                and len(q["urls"])
+                and len(res)
                 and len(q["urls"]) == len(res)
             ):
                 retry_urls = []
@@ -72,7 +72,7 @@ class Network:
                     if not status:
                         retry_urls.append(url)
                         retry_save_paths.append(save_path)
-                if len(retry_urls) > 0:
+                if len(retry_urls):
                     q["urls"] = retry_urls
                     q["save_paths"] = retry_save_paths
                     await self.download_queue.put(q)
@@ -203,7 +203,7 @@ class Network:
                             )
                         )
 
-            if len(additional_urls) > 0:
+            if len(additional_urls):
                 await self.download_queue.put(
                     {
                         "urls": additional_urls,

@@ -181,7 +181,7 @@ class SensorGPS(Sensor):
             await self.sleep()
 
             if self.config.logger is None or (
-                len(self.config.logger.course.latitude) == 0
+                not len(self.config.logger.course.latitude)
                 and self.config.logger.position_log.shape[0] == 0
             ):
                 continue
@@ -542,7 +542,7 @@ class SensorGPS(Sensor):
             not self.is_altitude_modified
             and self.values["on_course_status"]
             and self.config.logger is not None
-            and len(self.config.logger.course.altitude) > 0
+            and len(self.config.logger.course.altitude)
         ):
             await self.config.logger.sensor.sensor_i2c.update_sealevel_pa(
                 self.config.logger.course.altitude[self.values["course_index"]]
@@ -570,7 +570,7 @@ class SensorGPS(Sensor):
     def get_satellites_adafruit(self, gs):
         gnum = guse = 0
 
-        if gs == self.config.G_GPS_NULLVALUE or len(gs) == 0:
+        if gs == self.config.G_GPS_NULLVALUE or not len(gs):
             return "0/0"
         for v in gs.values():
             gnum += 1
@@ -861,7 +861,7 @@ class SensorGPS(Sensor):
                 self.config.logger.course.distance[m] * 1000 + dist_diff_course
             )
 
-            if len(self.config.logger.course.altitude) > 0:
+            if len(self.config.logger.course.altitude):
                 alt_diff_course = 0
                 if m + 1 < len(self.config.logger.course.altitude):
                     alt_diff_course = (
@@ -886,7 +886,7 @@ class SensorGPS(Sensor):
 
             self.values["course_index"] = m
 
-            if len(self.config.logger.course.point_distance) > 0:
+            if len(self.config.logger.course.point_distance):
                 cp_m = np.abs(
                     self.config.logger.course.point_distance
                     - self.values["course_distance"] / 1000
@@ -918,7 +918,7 @@ class SensorGPS(Sensor):
         self.values["on_course_status"] = False
 
     def get_index_with_distance_cutoff(self, start, search_range):
-        if self.config.logger is None or len(self.config.logger.course.distance) == 0:
+        if self.config.logger is None or not len(self.config.logger.course.distance):
             return 0
 
         dist_to = self.config.logger.course.distance[start] + search_range

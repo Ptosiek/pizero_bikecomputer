@@ -368,7 +368,7 @@ class GUI_PyQt(QtCore.QObject):
                     self.main_page.addWidget(self.map_widget)
                 elif (
                     k == "CUESHEET"
-                    and len(self.config.logger.course.point_name) > 0
+                    and len(self.config.logger.course.point_name)
                     and self.config.G_COURSE_INDEXING
                     and self.config.G_CUESHEET_DISPLAY_NUM > 0
                 ):
@@ -430,7 +430,7 @@ class GUI_PyQt(QtCore.QObject):
 
             if not USE_PYQT6:
                 tasks = asyncio.all_tasks()
-                if len(tasks) > 0:
+                if len(tasks):
                     print("Remaining tasks:", asyncio.all_tasks())
 
         # loop is closed

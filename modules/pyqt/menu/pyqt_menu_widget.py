@@ -524,7 +524,7 @@ class ListWidget(MenuWidget):
     def changed_item(self):
         # item is QListWidgetItem
         item = self.list.selectedItems()
-        if len(item) > 0:
+        if len(item):
             self.selected_item = self.list.itemWidget(item[0])
 
     def resizeEvent(self, event):

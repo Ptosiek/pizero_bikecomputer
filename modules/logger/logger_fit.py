@@ -550,7 +550,7 @@ class LoggerFit(Logger):
                 else:
                     cur.execute("SELECT %s FROM BIKECOMPUTER_LOG" % (lap_sql[k]))
             v = list((cur.fetchone()))
-            if len(v) == 0 or v[0] is None:
+            if not len(v) or v[0] is None:
                 continue
             lap_fields.append(k)
             lap_data.append(self.convertValue(v, message_num, k))

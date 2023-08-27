@@ -157,7 +157,7 @@ class MapWidget(BaseMapWidget):
         # self.load_course()
         t = datetime.datetime.utcnow()
         self.get_track()  # heavy when resume
-        if len(self.tracks_lon) != 0:
+        if len(self.tracks_lon):
             print(
                 "resume_track(init): {:.3f} sec".format(
                     (datetime.datetime.utcnow() - t).total_seconds()
@@ -246,7 +246,7 @@ class MapWidget(BaseMapWidget):
 
     def init_cuesheet_and_instruction(self):
         if (
-            len(self.config.logger.course.point_name) > 0
+            len(self.config.logger.course.point_name)
             and self.config.G_CUESHEET_DISPLAY_NUM > 0
             and self.config.G_COURSE_INDEXING
         ):
@@ -267,7 +267,7 @@ class MapWidget(BaseMapWidget):
 
     def resizeEvent(self, event):
         if (
-            len(self.config.logger.course.point_name) == 0
+            not len(self.config.logger.course.point_name)
             or self.config.G_CUESHEET_DISPLAY_NUM == 0
             or not self.config.G_COURSE_INDEXING
         ):
@@ -301,7 +301,7 @@ class MapWidget(BaseMapWidget):
             super().switch_lock()
 
     def load_course(self):
-        if len(self.config.logger.course.latitude) == 0:
+        if not len(self.config.logger.course.latitude):
             return
 
         time_profile = []
@@ -344,7 +344,7 @@ class MapWidget(BaseMapWidget):
         t1 = t2
 
         # course point
-        if len(self.config.logger.course.point_longitude) == 0:
+        if not len(self.config.logger.course.point_longitude):
             return
 
         t = datetime.datetime.utcnow()
@@ -388,11 +388,11 @@ class MapWidget(BaseMapWidget):
         # t = datetime.datetime.utcnow()
 
         # display current position
-        if len(self.location) > 0:
+        if len(self.location):
             self.plot.removeItem(self.current_point)
             self.location.pop()
         # display center point
-        if len(self.center_point_location) > 0:
+        if len(self.center_point_location):
             self.plot.removeItem(self.center_point)
             self.center_point_location.pop()
 
@@ -401,11 +401,10 @@ class MapWidget(BaseMapWidget):
         # dummy position
         if np.isnan(self.gps_values["lon"]) or np.isnan(self.gps_values["lat"]):
             # recent point(from log or pre_point) / course start / dummy
-            if len(self.tracks_lon) > 0 and len(self.tracks_lat) > 0:
+            if len(self.tracks_lon) and len(self.tracks_lat):
                 self.point["pos"] = [self.tracks_lon_pos, self.tracks_lat_pos]
-            elif (
-                len(self.config.logger.course.longitude) > 0
-                and len(self.config.logger.course.latitude) > 0
+            elif len(self.config.logger.course.longitude) and len(
+                self.config.logger.course.latitude
             ):
                 self.point["pos"] = [
                     self.config.logger.course.longitude[0],
@@ -438,7 +437,7 @@ class MapWidget(BaseMapWidget):
         x_move = y_move = 0
         if (
             self.lock_status
-            and len(self.config.logger.course.distance) > 0
+            and len(self.config.logger.course.distance)
             and self.gps_values["on_course_status"]
         ):
             index = self.gps_sensor.get_index_with_distance_cutoff(
@@ -562,7 +561,7 @@ class MapWidget(BaseMapWidget):
         (self.tracks_timestamp, lon, lat) = self.config.logger.update_track(
             self.tracks_timestamp
         )
-        if len(lon) > 0 and len(lat) > 0:
+        if len(lon) and len(lat):
             self.tracks_lon_pos = lon[-1]
             self.tracks_lat_pos = lat[-1]
             self.tracks_lon = np.append(self.tracks_lon, np.array(lon))
@@ -916,7 +915,7 @@ class MapWidget(BaseMapWidget):
             download_tile.append(tile)
 
         # start downloading
-        if len(download_tile) > 0:
+        if len(download_tile):
             if not await self.config.network.download_maptile(
                 map_config, map_name, z_draw, download_tile, additional_download=True
             ):
@@ -1025,7 +1024,7 @@ class MapWidget(BaseMapWidget):
         self, x_start, x_end, y_start, y_end, auto_zoom=False
     ):
         if (
-            len(self.config.logger.course.point_name) == 0
+            not len(self.config.logger.course.point_name)
             or self.config.G_CUESHEET_DISPLAY_NUM == 0
             or not self.config.G_COURSE_INDEXING
         ):

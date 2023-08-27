@@ -76,7 +76,7 @@ class CoursesMenuWidget(MenuWidget):
         self.change_page("Google Directions API mode", preprocess=True)
 
     def onoff_course_cancel_button(self):
-        if len(self.config.logger.course.distance) == 0:
+        if not len(self.config.logger.course.distance):
             self.button["Cancel Course"].disable()
         else:
             self.button["Cancel Course"].enable()
@@ -160,7 +160,7 @@ class CourseListWidget(ListWidget):
             self.course_file = course_file
 
         # exist course: cancel and set new course
-        if len(self.config.logger.course.distance) > 0:
+        if len(self.config.logger.course.distance):
             self.config.gui.show_dialog(
                 self.cancel_and_set_new_course, "Replace this course?"
             )

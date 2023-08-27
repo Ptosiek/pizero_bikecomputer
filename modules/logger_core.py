@@ -826,10 +826,10 @@ class LoggerCore:
             return
         if lat == self.config.G_GPS_NULLVALUE or lon == self.config.G_GPS_NULLVALUE:
             return
-        if len(self.short_log_dist) > 0 and self.short_log_dist[-1] == dist:
+        if len(self.short_log_dist) and self.short_log_dist[-1] == dist:
             return
-        if (len(self.short_log_lat) > 0 and self.short_log_lat[-1] == lat) and (
-            len(self.short_log_lon) > 0 and self.short_log_lon[-1] == lon
+        if (len(self.short_log_lat) and self.short_log_lat[-1] == lat) and (
+            len(self.short_log_lon) and self.short_log_lon[-1] == lon
         ):
             return
         if len(self.short_log_lat) > self.short_log_limit:
@@ -878,7 +878,7 @@ class LoggerCore:
             lat_raw = np.array(self.short_log_lat)
             lon_raw = np.array(self.short_log_lon)
             dist_raw = np.array(self.short_log_dist)
-            if len(self.short_log_lon) > 0:
+            if len(self.short_log_lon):
                 timestamp_new = self.short_log_timestamp[-1]
             self.clear_short_log()
             self.short_log_available = True
@@ -898,7 +898,7 @@ class LoggerCore:
             cur = con.cursor()
             cur.execute(query)
             res_array = np.array(cur.fetchall())
-            if len(res_array.shape) > 0 and res_array.shape[0] > 0:
+            if len(res_array.shape) and res_array.shape[0] > 0:
                 dist_raw = res_array[:, 0].astype("float32")  # [m]
                 lat_raw = res_array[:, 1].astype("float32")
                 lon_raw = res_array[:, 2].astype("float32")
@@ -915,7 +915,7 @@ class LoggerCore:
             self.short_log_available = True
 
         # print("lat_raw", len(lat_raw))
-        if len(lat_raw) > 0 and (len(lat_raw) == len(lon_raw) == len(dist_raw)):
+        if len(lat_raw) and (len(lat_raw) == len(lon_raw) == len(dist_raw)):
             # downsampling
             try:
                 cond = np.array(

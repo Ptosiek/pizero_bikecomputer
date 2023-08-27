@@ -72,7 +72,7 @@ class AccelerationGraphWidget(ScreenWidget):
                 all_nan[key] = False
         m = [x for x in v[0] if not np.isnan(x)]
         median = None
-        if len(m) > 0:
+        if len(m):
             median = m[-1]
 
         if not all_nan[X]:
@@ -161,7 +161,7 @@ class AltitudeGraphWidget(ScreenWidget):
                 all_nan[key] = False
         m = [x for x in v["altitude_graph"] if not np.isnan(x)]
         median = None
-        if len(m) > 0:
+        if len(m):
             median = m[-1]
 
         if not all_nan["altitude_graph"]:

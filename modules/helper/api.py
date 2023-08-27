@@ -639,8 +639,8 @@ class api:
 
     def send_livetrack_course(self, reset=False):
         if not reset and (
-            len(self.config.logger.course.latitude) == 0
-            or len(self.config.logger.course.longitude) == 0
+            not len(self.config.logger.course.latitude)
+            or not len(self.config.logger.course.longitude)
         ):
             return
 

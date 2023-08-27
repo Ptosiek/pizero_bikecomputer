@@ -106,7 +106,7 @@ class MipSharpDisplay:
                 break
             self.pi.write(GPIO_SCS, 1)
             await asyncio.sleep(0.000006)
-            if len(img_bytes) > 0:
+            if len(img_bytes):
                 self.pi.spi_write(self.spi, img_bytes)
             # dummy output for ghost line
             self.pi.spi_write(self.spi, [0x00000000, 0])
@@ -128,7 +128,7 @@ class MipSharpDisplay:
         # print("diff ", int(len(diff_lines)/self.config.G_HEIGHT*100), "%")
         # print(" ")
 
-        if len(diff_lines) == 0:
+        if not len(diff_lines):
             return
         self.pre_img[diff_lines] = self.img_buff_rgb8[diff_lines]
         # self.config.check_time("diff_lines")

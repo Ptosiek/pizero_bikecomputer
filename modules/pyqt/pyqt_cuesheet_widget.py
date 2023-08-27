@@ -140,7 +140,7 @@ class CueSheetWidget(ScreenWidget):
 
     async def update_extra(self):
         if (
-            len(self.config.logger.course.point_distance) == 0
+            not len(self.config.logger.course.point_distance)
             or self.config.G_CUESHEET_DISPLAY_NUM == 0
         ):
             return
