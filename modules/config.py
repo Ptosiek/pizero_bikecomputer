@@ -477,8 +477,6 @@ class Config:
 
     # GUI mode
     G_GUI_MODE = "PyQt"
-    # G_GUI_MODE = "QML"
-    # G_GUI_MODE = "Kivy"
 
     # PerformanceGraph:
     # 1st: POWER
