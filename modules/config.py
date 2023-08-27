@@ -983,16 +983,13 @@ class Config:
 
     @staticmethod
     def exec_cmd_return_value(cmd, cmd_print=True):
-        string = ""
         if cmd_print:
             print(cmd)
-        ver = sys.version_info
         try:
             p = subprocess.run(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                # universal_newlines = True
             )
             string = p.stdout.decode("utf8").strip()
             return string
@@ -1077,7 +1074,7 @@ class Config:
             connect_interface.connect(("8.8.8.8", 53))
             self.G_IP_ADDRESS = connect_interface.getsockname()[0]
             return True
-        except socket.error as ex:
+        except socket.error:
             self.G_IP_ADDRESS = "No address"
             return False
 
@@ -1087,7 +1084,7 @@ class Config:
 
         status = {"wlan": False, "bluetooth": False}
         try:
-            # json opetion requires raspbian buster
+            # json option requires raspbian buster
             raw_status = self.exec_cmd_return_value(
                 ["rfkill", "--json"], cmd_print=False
             )
@@ -1102,7 +1099,7 @@ class Config:
         return (status["wlan"], status["bluetooth"])
 
     def onoff_wifi_bt(self, key=None):
-        # in future, manage with pycomman
+        # in the future, manage with pycomman
         if not self.G_IS_RASPI:
             return
 
@@ -1120,7 +1117,7 @@ class Config:
         status["Wifi"], status["Bluetooth"] = self.get_wifi_bt_status()
         self.exec_cmd(onoff_cmd[key][status[key]])
 
-    async def bluetooth_tethering(self, disconnect=False, cmd_print=True):
+    async def bluetooth_tethering(self, disconnect=False):
         if not self.G_IS_RASPI:
             return
         if self.G_BT_USE_ADDRESS == "":
@@ -1128,7 +1125,6 @@ class Config:
         if self.bt_pan is None:
             return
 
-        res = None
         if not disconnect:
             res = await self.bt_pan.connect_tethering(
                 self.G_BT_ADDRESS[self.G_BT_USE_ADDRESS]
@@ -1137,10 +1133,7 @@ class Config:
             res = await self.bt_pan.disconnect_tethering(
                 self.G_BT_ADDRESS[self.G_BT_USE_ADDRESS]
             )
-        if res is not None and res:
-            return True
-        else:
-            return False
+        return bool(res)
 
     def check_time(self, log_str):
         t = datetime.datetime.now()
@@ -1148,7 +1141,6 @@ class Config:
         self.log_time = t
 
     def read_map_list(self):
-        text = None
         with open(self.G_MAP_LIST) as file:
             text = file.read()
             map_list = yaml.safe_load(text)

@@ -237,7 +237,6 @@ class LoggerFit(Logger):
 
     def write_log_python(self):
         ## SQLite
-        # con = sqlite3.connect(self.config.G_LOG_DB)
         con = sqlite3.connect(
             self.config.G_LOG_DB,
             detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
@@ -246,7 +245,6 @@ class LoggerFit(Logger):
         cur = con.cursor()
 
         # get start_date
-        start_date = None
         # get datetime object (timestamp)
         cur.execute("SELECT timestamp, MIN(timestamp) FROM BIKECOMPUTER_LOG")
         first_row = cur.fetchone()
@@ -255,7 +253,6 @@ class LoggerFit(Logger):
         else:
             return False
         # get end_date
-        end_date = None
         cur.execute("SELECT timestamp, MAX(timestamp) FROM BIKECOMPUTER_LOG")
         first_row = cur.fetchone()
         if first_row is not None:
@@ -465,7 +462,6 @@ class LoggerFit(Logger):
             self.write(struct.pack("<BBB", f_id, base_type_size, base_type_id))
 
     def get_struct_def(self, local_message_num, l_num_used=False):
-        struct_def = ""
         if l_num_used and local_message_num in self.struct_def_cache:
             struct_def = self.struct_def_cache[local_message_num]
         else:

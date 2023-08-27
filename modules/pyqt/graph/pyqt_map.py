@@ -347,8 +347,6 @@ class MapWidget(BaseMapWidget):
         if not len(self.config.logger.course.point_longitude):
             return
 
-        t = datetime.datetime.utcnow()
-
         if self.course_points_plot is not None:
             self.plot.removeItem(self.course_points_plot)
         self.course_points_plot = pg.ScatterPlotItem(pxMode=True, symbol="t", size=12)
@@ -512,7 +510,6 @@ class MapWidget(BaseMapWidget):
         # t = datetime.datetime.utcnow()
 
         # set x and y ranges
-        x_start = x_end = y_start = y_end = np.nan
         x_start = self.map_pos["x"] - self.map_area["w"] / 2
         x_end = x_start + self.map_area["w"]
         y_start = self.map_pos["y"] - self.map_area["h"] / 2
@@ -555,8 +552,6 @@ class MapWidget(BaseMapWidget):
 
     def get_track(self):
         # get track from SQL
-        lon = []
-        lat = []
         # not good (input & output)    #conversion coordinate
         (self.tracks_timestamp, lon, lat) = self.config.logger.update_track(
             self.tracks_timestamp
@@ -582,7 +577,6 @@ class MapWidget(BaseMapWidget):
         ]:
             if p is not None:
                 self.plot.removeItem(p)
-                p = None
 
         if self.cuesheet_widget is not None:
             self.cuesheet_widget.reset()
@@ -805,7 +799,6 @@ class MapWidget(BaseMapWidget):
         # draw only the necessary tiles
         w_h = int(tile_size / z_conv_factor) if expand else 0
         for keys in add_keys:
-            imgarray = np.full((tile_size, tile_size, 3), 255, dtype="uint8")
             x, y = keys[0:2] if not expand else expand_keys[keys][0:2]
             img_file = self.get_image_file(use_mbtiles, map_name, z_draw, x, y)
             if not expand:
@@ -971,7 +964,6 @@ class MapWidget(BaseMapWidget):
         return cond
 
     def get_image_file(self, use_mbtiles, map_name, z_draw, x, y):
-        img_file = None
         if not use_mbtiles:
             img_file = self.config.get_maptile_filename(map_name, z_draw, x, y)
         else:

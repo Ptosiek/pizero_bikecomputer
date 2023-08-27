@@ -810,7 +810,7 @@ class SensorI2C(Sensor):
         sin_r = math.sin(roll)
         tiltcomp_x = mag[X] * cos_p + mag[Z] * sin_p
         tiltcomp_y = mag[X] * sin_r * sin_p + mag[Y] * cos_r - mag[Z] * sin_r * cos_p
-        tiltcomp_z = mag[X] * cos_r * sin_p + mag[Y] * sin_r + mag[Z] * cos_r * cos_p
+        # tiltcomp_z = mag[X] * cos_r * sin_p + mag[Y] * sin_r + mag[Z] * cos_r * cos_p
         yaw = math.atan2(tiltcomp_y, tiltcomp_x)
 
         return yaw
@@ -1101,7 +1101,6 @@ class SensorI2C(Sensor):
 
         # from OpenWeatherMap API with current point
         else:
-            api_data = None
             v = self.config.logger.sensor.values["GPS"]
             try:
                 api_data = await self.config.network.api.get_openweathermap_data(

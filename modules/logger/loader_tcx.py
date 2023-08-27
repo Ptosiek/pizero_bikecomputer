@@ -345,10 +345,10 @@ class LoaderTcx:
 
         dist = 0
         pre_dist = 0
-        pattern = {
-            "html_remove_1": re.compile(r"\/?\</?\w+\/?\>"),
-            "html_remove_2": re.compile(r"\<\S+\>"),
-        }
+        # pattern = {
+        #    "html_remove_1": re.compile(r"\/?\</?\w+\/?\>"),
+        #    "html_remove_2": re.compile(r"\<\S+\>"),
+        # }
         for step in json_routes["routes"][0]["legs"][0]["steps"]:
             points_detail.extend(polyline.decode(step["polyline"]["points"]))
             dist += pre_dist
@@ -377,12 +377,12 @@ class LoaderTcx:
             self.point_latitude.append(step["start_location"]["lat"])
             self.point_longitude.append(step["start_location"]["lng"])
             self.point_distance.append(dist)
-            text = (
-                (re.subn(pattern["html_remove_1"], "", step["html_instructions"])[0])
-                .replace(" ", "")
-                .replace("&nbsp;", "")
-            )
-            text = re.subn(pattern["html_remove_2"], "", text)[0]
+            # text = (
+            #     (re.subn(pattern["html_remove_1"], "", step["html_instructions"])[0])
+            #     .replace(" ", "")
+            #     .replace("&nbsp;", "")
+            # )
+            # text = re.subn(pattern["html_remove_2"], "", text)[0]
             # self.point_name.append(text)
             self.point_name.append(turn_str)
         points_detail = np.array(points_detail)
@@ -784,7 +784,7 @@ class LoaderTcx:
         try:
             window_size = np.abs(np.intc(window_size))
             order = np.abs(np.intc(order))
-        except ValueError as msg:
+        except ValueError:
             raise ValueError("window_size and order have to be of type int")
         if window_size % 2 != 1 or window_size < 1:
             raise TypeError("window_size size must be a positive odd number")

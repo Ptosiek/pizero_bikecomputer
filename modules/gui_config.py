@@ -478,7 +478,6 @@ class GUI_Config:
             self.format = self.format_mono
 
     def get_screen_shape(self, p):
-        screen_shape = None
         remove_bytes = 0
         if self.config.display.has_color():
             screen_shape = (p.height(), p.width(), 3)
@@ -488,7 +487,6 @@ class GUI_Config:
         return screen_shape, remove_bytes
 
     def read_layout(self):
-        text = None
         with open(self.config.G_LAYOUT_FILE) as file:
             text = file.read()
             self.G_LAYOUT = yaml.safe_load(text)

@@ -116,14 +116,12 @@ class MenuWidget(QtWidgets.QWidget):
 
     def add_buttons(self, buttons, back_connect=True):
         n = len(buttons)
-        layout_type = None
 
         if n <= 4:
             layout_type = QtWidgets.QVBoxLayout
         else:
             layout_type = QtWidgets.QGridLayout
-        if layout_type is not None:
-            self.make_menu_layout(layout_type)
+        self.make_menu_layout(layout_type)
 
         i = 0
         for b in buttons:

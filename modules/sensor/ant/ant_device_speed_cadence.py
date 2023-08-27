@@ -15,7 +15,6 @@ class ANT_Device_Speed_Cadence(ant_device.ANT_Device):
     sc_values = []  # cad_time, cad, speed_time, speed
     pre_values = []  # cad_time, cad, speed_time, speed
     delta = []  # cad_time, cad, speed_time, speed
-    pre_values = []  # cad_time, cad, speed_time, speed
     elements = ("speed", "cadence", "distance")
 
     pickle_key = "ant+_sc_values"

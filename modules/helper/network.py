@@ -231,7 +231,6 @@ class Network:
 
     async def download_files(self, urls, save_paths, headers=None, params=None):
         tasks = []
-        res = None
         async with asyncio.Semaphore(self.config.G_COROUTINE_SEM):
             async with aiohttp.ClientSession() as session:
                 for url, save_path in zip(urls, save_paths):

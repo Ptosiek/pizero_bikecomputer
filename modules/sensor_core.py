@@ -158,11 +158,7 @@ class SensorCore:
         # loop control
         self.wait_time = self.config.G_SENSOR_INTERVAL
         self.actual_loop_interval = self.config.G_SENSOR_INTERVAL
-        time_profile = [
-            None,
-        ]
 
-        # if True:
         while not self.config.G_QUIT:
             await asyncio.sleep(self.wait_time)
             start_time = datetime.datetime.now()
@@ -379,7 +375,7 @@ class SensorCore:
                         self.values["integrated"][key][-self.grade_window_size :]
                     )
                 # set grade
-                gr = gl = self.config.G_ANT_NULLVALUE
+                gl = self.config.G_ANT_NULLVALUE
                 gr = self.config.G_ANT_NULLVALUE
                 x = self.config.G_ANT_NULLVALUE
                 y = diff_sum["alt_diff"]
@@ -648,7 +644,6 @@ class SensorCore:
         return int(g)
 
     def get_lp_filtered_value(self, value, pre):
-        o = p = self.config.G_ANT_NULLVALUE
         # value must be initialized with None
         if np.isnan(pre):
             o = value

@@ -328,7 +328,7 @@ class api:
             "Authorization": "Bearer " + self.config.G_STRAVA_API["ACCESS_TOKEN"]
         }
         data = {"data_type": "fit"}
-        async with aiofiles.open(self.config.G_UPLOAD_FILE, "rb") as file:
+        async with aiofiles.open(self.config.G_UPLOAD_FILE, "rb"):
             data["file"] = open(self.config.G_UPLOAD_FILE, "rb")
             upload_result = await self.config.network.post(
                 self.config.G_STRAVA_API_URL["UPLOAD"], headers=headers, data=data
@@ -512,7 +512,7 @@ class api:
 
     async def send_livetrack_data_internal(self, quick_send=False):
         t = int(time.time())
-        bt_pan_status = False
+
         if (
             not quick_send
             and t - self.send_time < self.config.G_THINGSBOARD_API["INTERVAL_SEC"]

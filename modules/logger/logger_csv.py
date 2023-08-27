@@ -18,10 +18,7 @@ class config_local:
 class LoggerCsv(Logger):
     def write_log(self):
         # get start date
-        start_date = None
-        start_date_str = "errordate"
         ## SQLite
-        # con = sqlite3.connect(self.config.G_LOG_DB)
         con = sqlite3.connect(
             self.config.G_LOG_DB,
             detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,

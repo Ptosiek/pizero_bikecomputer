@@ -185,7 +185,7 @@ class ANT_Device_Power(ant_device.ANT_Device):
         self.config.setting.set_config_pickle("ant+_power_values_16", power_values[1])
 
     def on_data_power_0x11(self, data, power_values, pre_values, values):
-        # (page), evt_count, wheel_ticks, x, wheel period(2byte), accumulatd power(2byte)
+        # (page), evt_count, wheel_ticks, x, wheel period(2byte), accumulated power(2byte)
         (
             power_values[2],
             power_values[3],

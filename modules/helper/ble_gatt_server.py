@@ -46,18 +46,11 @@ class GadgetbridgeService(Service):
 
     # notice to central
     def send_message(self, value):
-        # debug print
         self.tx_characteristic.changed(bytes(value + "\\n\n", "utf-8"))
 
     # receive from central
     @characteristic(rx_characteristic_uuid, CharFlags.WRITE).setter
     def rx_characteristic(self, value, options):
-        # debug
-        # try:
-        #  print(value.decode())
-        # except:
-        #  print(value)
-
         if value[0] == 0x10:
             self.value = bytearray()
             self.value_extend = True
@@ -85,7 +78,6 @@ class GadgetbridgeService(Service):
 
         if self.value_extend:
             self.value.extend(bytearray(value))
-        # self.value.extend(bytearray(value))
 
         # for gadgetbridge JSON message
         if (

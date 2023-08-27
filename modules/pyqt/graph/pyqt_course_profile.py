@@ -127,7 +127,6 @@ class CourseProfileGraphWidget(BaseMapWidget):
         for p in [self.course_profile_plot, self.climb_top_plot, self.climb_detail]:
             if p is not None:
                 self.plot.removeItem(p)
-                p = None
         self.plot.removeItem(self.current_point)
 
     def reinit_course(self):
@@ -154,7 +153,6 @@ class CourseProfileGraphWidget(BaseMapWidget):
             self.location.pop()
 
         # initialize
-        x_start = x_end = np.nan
         x_width = self.zoom / 1000
         dist_end = self.config.logger.course.distance[-1]
         self.graph_index = self.gps_values["course_index"]
@@ -186,7 +184,6 @@ class CourseProfileGraphWidget(BaseMapWidget):
                 )
 
         x_end = self.map_pos["x"] + x_width
-        x_end_index = 0
         if x_end >= dist_end:
             x_end_index = len(self.config.logger.course.distance) - 1
             self.map_pos["x_index"] = self.gps_sensor.get_index_with_distance_cutoff(
