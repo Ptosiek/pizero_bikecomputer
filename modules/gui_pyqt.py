@@ -1,7 +1,6 @@
 import sys
 import os
 
-# import platform
 import datetime
 import signal
 import asyncio
@@ -14,7 +13,7 @@ try:
     import PyQt6.QtGui as QtGui
 
     USE_PYQT6 = True
-except:
+except ImportError:
     import PyQt5.QtCore as QtCore
     import PyQt5.QtWidgets as QtWidgets
     import PyQt5.QtGui as QtGui

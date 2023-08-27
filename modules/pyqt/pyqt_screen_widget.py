@@ -3,7 +3,7 @@ import traceback
 try:
     import PyQt6.QtCore as QtCore
     import PyQt6.QtWidgets as QtWidgets
-except:
+except ImportError:
     import PyQt5.QtCore as QtCore
     import PyQt5.QtWidgets as QtWidgets
 

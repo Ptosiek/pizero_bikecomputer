@@ -7,7 +7,8 @@ import traceback
 from .logger import Logger
 
 # cython
-MODE = ""
+MODE = "Python"
+
 try:
     import pyximport
 
@@ -20,10 +21,8 @@ try:
     )
 
     MODE = "Cython"
-except:
+except ImportError:
     from .cython.crc16_p import crc16
-
-    MODE = "Python"
 
 
 class config_local:

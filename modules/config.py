@@ -23,7 +23,7 @@ try:
 
     GPIO.setmode(GPIO.BCM)
     _IS_RASPI = True
-except:
+except ImportError:
     pass
 
 from modules.helper.setting import Setting

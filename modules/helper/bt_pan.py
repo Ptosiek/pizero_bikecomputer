@@ -11,7 +11,7 @@ try:
     from dbus_next import Variant
 
     HAS_DBUS_NEXT = True
-except:
+except ImportError:
     pass
 
 try:
@@ -19,7 +19,7 @@ try:
         import dbus
 
         HAS_DBUS = True
-except:
+except ImportError:
     pass
 
 

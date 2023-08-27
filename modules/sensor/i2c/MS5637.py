@@ -1,10 +1,9 @@
 import time
-import struct
 
 try:
     # run from top directory (pizero_bikecomputer)
     from . import i2c
-except:
+except ImportError:
     # directly run this program
     import i2c
 

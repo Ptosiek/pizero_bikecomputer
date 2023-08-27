@@ -10,8 +10,9 @@ try:
     import pigpio
 
     _SENSOR_DISPLAY = True
-except:
+except ImportError:
     pass
+
 print("  MIP SHARP DISPLAY : ", _SENSOR_DISPLAY)
 
 # https://qiita.com/hishi/items/669ce474fcd76bdce1f1

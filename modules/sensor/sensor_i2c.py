@@ -12,7 +12,7 @@ try:
     import smbus
 
     _SENSOR_I2C = True
-except:
+except ImportError:
     pass
 if _SENSOR_I2C:
     print("I2C ", end="")
@@ -22,7 +22,7 @@ try:
     from magnetic_field_calculator import MagneticFieldCalculator
 
     _SENSOR_MAG_DECLINATION = True
-except:
+except ImportError:
     pass
 
 # acc

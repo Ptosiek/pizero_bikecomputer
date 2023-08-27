@@ -1,6 +1,5 @@
 import time
 
-# import datetime
 import asyncio
 import numpy as np
 
@@ -16,10 +15,10 @@ try:
     pyximport.install()
     from .cython.mip_helper import conv_3bit_color, MipDisplay_CPP
 
-    # MODE = "Cython"
     MODE = "Cython_full"
-except:
+except ImportError:
     pass
+
 print("  MIP DISPLAY : ", _SENSOR_DISPLAY)
 
 

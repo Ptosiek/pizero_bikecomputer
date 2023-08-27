@@ -14,7 +14,7 @@ try:
     from dateutil import parser
 
     _SENSOR_GPS_BASIC = True
-except:
+except ImportError:
     pass
 
 _SENSOR_GPS_I2C = False
@@ -25,7 +25,7 @@ try:
         _sensor_i2c_gps = pa1010d.PA1010D()
         _sensor_i2c_gps.read_sentence(timeout=1)
         _SENSOR_GPS_I2C = True
-except:
+except ImportError:
     pass
 
 _SENSOR_GPS_GPSD = False

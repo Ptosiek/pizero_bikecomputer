@@ -19,7 +19,7 @@ try:
     )
 
     _IMPORT_GARMINCONNECT = True
-except:
+except ImportError:
     pass
 
 _IMPORT_STRAVA_COOKIE = False
@@ -27,7 +27,7 @@ try:
     from stravacookies import StravaCookieFetcher
 
     _IMPORT_STRAVA_COOKIE = True
-except:
+except ImportError:
     pass
 
 _IMPORT_THINGSBOARD = False
@@ -35,7 +35,7 @@ try:
     from tb_device_mqtt import TBDeviceMqttClient, TBPublishInfo
 
     _IMPORT_THINGSBOARD = True
-except:
+except ImportError:
     pass
 
 

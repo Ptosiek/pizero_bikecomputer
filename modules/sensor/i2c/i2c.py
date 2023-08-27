@@ -1,7 +1,7 @@
-import smbus
 import time
 
 import numpy as np
+import smbus
 
 
 class i2c:

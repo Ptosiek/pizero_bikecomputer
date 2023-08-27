@@ -1,13 +1,10 @@
 # simplify filterpy
 
-import datetime
 import sys
 from math import log
 from copy import deepcopy
 
-from numpy import dot, zeros, eye, isscalar, linalg, array, atleast_2d, loadtxt, matrix
-
-# from scipy.linalg import block_diag
+from numpy import dot, zeros, eye, isscalar, linalg, array, atleast_2d
 
 
 def reshape_z(z, dim_z, ndim):

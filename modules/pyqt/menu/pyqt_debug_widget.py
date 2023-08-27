@@ -6,7 +6,7 @@ try:
     import PyQt6.QtWidgets as QtWidgets
 
     USE_PYQT6 = True
-except:
+except ImportError:
     import PyQt5.QtCore as QtCore
     import PyQt5.QtWidgets as QtWidgets
     import PyQt5.QtGui as QtGui

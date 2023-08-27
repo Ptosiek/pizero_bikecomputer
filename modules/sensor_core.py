@@ -9,7 +9,7 @@ try:
     import psutil
 
     _IMPORT_PSUTIL = True
-except:
+except ImportError:
     pass
 
 print("detected sensor modules:")

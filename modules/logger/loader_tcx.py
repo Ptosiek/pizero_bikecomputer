@@ -5,20 +5,18 @@ import datetime
 import shutil
 import re
 
-# import xml.etree.ElementTree as ET
 from math import factorial
 from crdp import rdp
 
 import numpy as np
 
-import importlib
 
 POLYLINE_DECODER = False
 try:
     import polyline
 
     POLYLINE_DECODER = True
-except:
+except ImportError:
     pass
 
 
