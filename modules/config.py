@@ -52,7 +52,7 @@ class Config:
     G_AVERAGE_INCLUDING_ZERO = {"cadence": False, "power": True}
 
     # log several altitudes (from DEM and course file)
-    G_LOG_ALTITUDE_FROM_DATA_SOUCE = False
+    G_LOG_ALTITUDE_FROM_DATA_SOURCE = False
 
     # calculate index on course
     G_COURSE_INDEXING = True
@@ -90,8 +90,8 @@ class Config:
     G_FONT_FULLPATH = ""
     G_FONT_NAME = ""
 
-    # course file
-    G_COURSE_DIR = "course"
+    # courses
+    G_COURSE_DIR = "courses"
     G_COURSE_FILE_PATH = os.path.join(G_COURSE_DIR, "course.tcx")
     G_CUESHEET_DISPLAY_NUM = 3  # max: 5
     G_CUESHEET_SCROLL = False
@@ -309,7 +309,7 @@ class Config:
     G_DEM_MAP = "jpn_kokudo_chiri_in_DEM5A"
 
     # screenshot dir
-    G_SCREENSHOT_DIR = "screenshot"
+    G_SCREENSHOT_DIR = "screenshots"
 
     # debug switch (change with --debug option)
     G_IS_DEBUG = False
@@ -578,7 +578,7 @@ class Config:
         "USER_ROUTES_START": 0,
         "USER_ROUTES_OFFSET": 10,
         "URL_ROUTE_BASE_URL": "https://ridewithgps.com/routes/{route_id}",
-        "URL_ROUTE_DOWNLOAD_DIR": "./course/ridewithgps/",
+        "URL_ROUTE_DOWNLOAD_DIR": "./courses/ridewithgps/",
         "URL_UPLOAD": "https://ridewithgps.com/trips.json",
         "PARAMS": {
             "apikey": None,
@@ -920,7 +920,7 @@ class Config:
         os.makedirs(os.path.join("maptile", self.G_RAIN_OVERLAY_MAP), exist_ok=True)
         os.makedirs(os.path.join("maptile", self.G_WIND_OVERLAY_MAP), exist_ok=True)
 
-        if self.G_LOG_ALTITUDE_FROM_DATA_SOUCE:
+        if self.G_LOG_ALTITUDE_FROM_DATA_SOURCE:
             os.makedirs(os.path.join("maptile", self.G_DEM_MAP), exist_ok=True)
 
     @staticmethod

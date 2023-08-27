@@ -18,11 +18,11 @@ class CoursesMenuWidget(MenuWidget):
         self.button = {}
         button_conf = (
             # Name(page_name), button_attribute, connected functions, layout
-            ("Local Storage", "submenu", self.load_local_course),
+            ("Local Storage", "submenu", self.load_local_courses),
             (
                 "Ride with GPS",
                 "submenu",
-                self.load_rwgps_course,
+                self.load_rwgps_courses,
                 "./img/rwgps_logo.svg",
                 QtCore.QSize(self.logo_size * 4, self.logo_size),
             ),
@@ -56,18 +56,18 @@ class CoursesMenuWidget(MenuWidget):
         self.onoff_course_cancel_button()
 
     @asyncSlot()
-    async def load_local_course(self):
-        await self.load_course("Local Storage")
-        await self.parentWidget().widget(self.child_index).list_local_course()
+    async def load_local_courses(self):
+        await self.change_course_page("Local Storage")
+        await self.parentWidget().widget(self.child_index).list_local_courses()
 
     @asyncSlot()
-    async def load_rwgps_course(self):
+    async def load_rwgps_courses(self):
         asyncio.gather(
+            self.change_course_page("Ride with GPS"),
             self.parentWidget().widget(self.child_index).list_ride_with_gps(reset=True),
-            self.load_course("Ride with GPS"),
         )
 
-    async def load_course(self, course_type):
+    async def change_course_page(self, course_type):
         self.change_page(
             self.child_page_name, preprocess=True, reset=True, list_type=course_type
         )
@@ -129,19 +129,19 @@ class CourseListWidget(ListWidget):
     def preprocess_extra(self):
         self.page_name_label.setText(self.list_type)
 
-    async def list_local_course(self):
-        course = self.config.logger.course.get_courses()
-        for c in course:
+    async def list_local_courses(self):
+        courses = self.config.logger.course.get_courses()
+        for c in courses:
             course_item = CourseListItemWidget(self, self.config, self.list_type)
             course_item.set_info(**c)
             self.add_list_item(course_item)
 
     async def list_ride_with_gps(self, add=False, reset=False):
-        course = await self.config.network.api.get_ridewithgps_route(add, reset)
-        if course is None:
+        courses = await self.config.network.api.get_ridewithgps_route(add, reset)
+        if courses is None:
             return
 
-        for c in reversed(course):
+        for c in reversed(courses):
             course_item = CourseListItemWidget(self, self.config, self.list_type)
             course_item.set_info(**c)
             self.add_list_item(course_item)
