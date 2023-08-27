@@ -23,7 +23,8 @@ class Network:
     async def quit(self):
         await self.download_queue.put(None)
 
-    async def get_json(self, url, params=None, headers=None):
+    @staticmethod
+    async def get_json(url, params=None, headers=None):
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 url, params=params, headers=headers, timeout=10
@@ -31,7 +32,8 @@ class Network:
                 json = await res.json()
                 return json
 
-    async def post(self, url, headers=None, params=None, data=None):
+    @staticmethod
+    async def post(url, headers=None, params=None, data=None):
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 url, headers=headers, params=params, data=data
@@ -212,7 +214,8 @@ class Network:
 
         return True
 
-    async def get_http_request(self, session, url, save_path, headers, params):
+    @staticmethod
+    async def get_http_request(session, url, save_path, headers, params):
         try:
             async with session.get(url, headers=headers, params=params) as dl_file:
                 if dl_file.status == 200:

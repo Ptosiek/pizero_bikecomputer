@@ -946,5 +946,6 @@ class SensorGPS(Sensor):
 
         return min_index
 
-    def hasGPS(self):
+    @staticmethod
+    def hasGPS():
         return _SENSOR_GPS_GPSD or _SENSOR_GPS_I2C or _SENSOR_GPS_ADAFRUIT_UART

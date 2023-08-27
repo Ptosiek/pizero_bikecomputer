@@ -870,7 +870,8 @@ class MapWidget(BaseMapWidget):
         tile_y = sorted([t0[1], t1[1]])
         return z_draw, z_conv_factor, tile_x, tile_y
 
-    def get_tiles_for_drawing(self, tile_x, tile_y, z_conv_factor, expand):
+    @staticmethod
+    def get_tiles_for_drawing(tile_x, tile_y, z_conv_factor, expand):
         tiles = []
         for i in range(tile_x[0], tile_x[1] + 1):
             for j in range(tile_y[0], tile_y[1] + 1):

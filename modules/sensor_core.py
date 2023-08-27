@@ -640,7 +640,8 @@ class SensorCore:
             self.wait_time = self.config.G_SENSOR_INTERVAL - d2
             self.actual_loop_interval = (d1 + 1) * self.config.G_SENSOR_INTERVAL
 
-    def conv_grade(self, gr):
+    @staticmethod
+    def conv_grade(gr):
         g = gr
         if -1.5 < g < 1.5:
             g = 0

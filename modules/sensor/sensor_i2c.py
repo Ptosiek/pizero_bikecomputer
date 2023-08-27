@@ -795,13 +795,15 @@ class SensorI2C(Sensor):
         )
         self.values["heading_str"] = self.config.get_track_str(self.values["heading"])
 
-    def get_pitch_roll(self, acc):
+    @staticmethod
+    def get_pitch_roll(acc):
         roll = math.atan2(acc[Y], acc[Z])
         pitch = math.atan2(-acc[X], (math.sqrt(acc[Y] ** 2 + acc[Z] ** 2)))
 
         return pitch, roll
 
-    def get_yaw(self, mag, pitch, roll):
+    @staticmethod
+    def get_yaw(mag, pitch, roll):
         cos_p = math.cos(pitch)
         sin_p = math.sin(pitch)
         cos_r = math.cos(roll)

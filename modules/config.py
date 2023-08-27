@@ -930,7 +930,8 @@ class Config:
         ):
             os.mkdir("maptile/" + self.G_DEM_MAP)
 
-    def remove_maptiles(self, map_name):
+    @staticmethod
+    def remove_maptiles(map_name):
         path = "maptile/" + map_name
         if os.path.exists(path):
             files = os.listdir(path)
@@ -971,7 +972,8 @@ class Config:
     def change_mode(self):
         self.button_config.change_mode()
 
-    def exec_cmd(self, cmd, cmd_print=True):
+    @staticmethod
+    def exec_cmd(cmd, cmd_print=True):
         if cmd_print:
             print(cmd)
         try:
@@ -979,7 +981,8 @@ class Config:
         except:
             traceback.print_exc()
 
-    def exec_cmd_return_value(self, cmd, cmd_print=True):
+    @staticmethod
+    def exec_cmd_return_value(cmd, cmd_print=True):
         string = ""
         if cmd_print:
             print(cmd)
@@ -1217,7 +1220,8 @@ class Config:
             + (self.GEO_R1_2 / w) * c2 * (r0_lon - r1_lon) ** 2
         )
 
-    def calc_azimuth(self, lat, lon):
+    @staticmethod
+    def calc_azimuth(lat, lon):
         rad_latitude = np.radians(lat)
         rad_longitude = np.radians(lon)
         rad_longitude_delta = rad_longitude[1:] - rad_longitude[0:-1]
@@ -1233,7 +1237,8 @@ class Config:
         ).astype(dtype="int16")
         return azimuth
 
-    def get_maptile_filename(self, map_name, z, x, y):
+    @staticmethod
+    def get_maptile_filename(map_name, z, x, y):
         return "maptile/" + map_name + "/{0}/{1}/{2}.png".format(z, x, y)
 
     async def get_altitude_from_tile(self, pos):
@@ -1264,7 +1269,8 @@ class Config:
         # print(altitude, filename, p_x, p_y, pos[1], pos[0])
         return altitude
 
-    def get_tilexy_and_xy_in_tile(self, z, x, y, tile_size):
+    @staticmethod
+    def get_tilexy_and_xy_in_tile(z, x, y, tile_size):
         n = 2.0**z
         _y = math.radians(y)
         x_in_tile, tile_x = math.modf((x + 180.0) / 360.0 * n)
@@ -1279,15 +1285,17 @@ class Config:
             int(y_in_tile * tile_size),
         )
 
-    def get_lon_lat_from_tile_xy(self, z, x, y):
+    @staticmethod
+    def get_lon_lat_from_tile_xy(z, x, y):
         n = 2.0**z
         lon = x / n * 360.0 - 180.0
         lat = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * y / n))))
 
         return lon, lat
 
+    @staticmethod
     # replacement of dateutil.parser.parse
-    def datetime_myparser(self, ts):
+    def datetime_myparser(ts):
         if len(ts) == 14:
             # 20190322232414 / 14 chars
             dt = datetime.datetime(

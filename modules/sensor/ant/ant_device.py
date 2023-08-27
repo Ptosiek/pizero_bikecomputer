@@ -214,7 +214,8 @@ class ANT_Device:
         values["battery_status"] = self.battery_status[(data[1] >> 4) & 0b111]
         values["battery_voltage"] = round(float(data[1] & 0b1111) + data[0] / 256, 2)
 
-    def print_spike(self, device_str, val, pre_val, delta, delta_t):
+    @staticmethod
+    def print_spike(device_str, val, pre_val, delta, delta_t):
         print(
             "ANT+ {0} spike: {1},".format(
                 device_str, datetime.datetime.now().strftime("%Y%m%d %H:%M:%S")

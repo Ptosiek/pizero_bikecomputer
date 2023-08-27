@@ -192,7 +192,8 @@ class LoggerFit(Logger):
         }
         self.struct_def_cache = {}
 
-    def base_type_id_from_string(self, base_type_name):
+    @staticmethod
+    def base_type_id_from_string(base_type_name):
         return {
             "enum": 0x00,  # 0
             "sint8": 0x01,  # 1
@@ -211,11 +212,13 @@ class LoggerFit(Logger):
             "byte": 0x0D,
         }[base_type_name]
 
-    def base_type_size_from_id(self, base_type_id):
+    @staticmethod
+    def base_type_size_from_id(base_type_id):
         #       0 1 2 3 4 5 6 7 8 910111213
         return [1, 1, 1, 2, 2, 4, 4, 1, 4, 8, 1, 2, 4, 1][base_type_id & 0xF]
 
-    def base_type_format_from_id(self, base_type_id):
+    @staticmethod
+    def base_type_format_from_id(base_type_id):
         #       01234567890123
         return "BbBhHiIsfdBHIs"[base_type_id & 0xF]
 

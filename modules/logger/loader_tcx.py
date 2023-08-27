@@ -784,7 +784,8 @@ class LoaderTcx:
         self.point_type = np.array(self.point_type)
         self.point_name = np.array(self.point_name)
 
-    def savitzky_golay(self, y, window_size, order, deriv=0, rate=1):
+    @staticmethod
+    def savitzky_golay(y, window_size, order, deriv=0, rate=1):
         try:
             window_size = np.abs(np.intc(window_size))
             order = np.abs(np.intc(order))
