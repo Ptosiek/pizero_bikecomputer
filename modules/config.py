@@ -28,6 +28,7 @@ except ImportError:
 from logger import app_logger
 from modules.helper.setting import Setting
 from modules.button_config import Button_Config
+from modules.utils.timer import Timer
 
 
 class Config:
@@ -804,7 +805,7 @@ class Config:
 
     async def delay_init(self):
         await asyncio.sleep(0.01)
-        t1 = datetime.datetime.now()
+        t = Timer(auto_start=True, auto_log=True, text="delay init: {0:.3f} sec")
 
         # network
         await self.gui.set_boot_status("initialize network modules...")
@@ -871,9 +872,7 @@ class Config:
             ):
                 await self.bluetooth_tethering()
 
-        t2 = datetime.datetime.now()
-        delta = (t2 - t1).total_seconds()
-        app_logger.info(f"delay init: {delta:.3f} sec")
+        delta = t.stop()
         self.boot_time += delta
 
         await self.logger.resume_start_stop()
