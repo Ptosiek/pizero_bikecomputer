@@ -623,7 +623,7 @@ class GUI_PyQt(QtCore.QObject):
         filename = date.strftime("%Y-%m-%d_%H-%M-%S.png")
         print("screenshot:", filename)
         p = self.stack_widget.grab()
-        p.save(self.config.G_SCREENSHOT_DIR + filename, "png")
+        p.save(os.path.join(self.config.G_SCREENSHOT_DIR, filename), "png")
 
     def draw_display(self, direct_update=False):
         if not self.config.display.send_display or self.stack_widget is None:

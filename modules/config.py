@@ -79,7 +79,7 @@ class Config:
     G_UNIT_HARDWARE = ""
 
     # install_dir
-    G_INSTALL_PATH = os.path.expanduser("~") + "/pizero_bikecomputer/"
+    G_INSTALL_PATH = os.path.join(os.path.expanduser("~"), "pizero_bikecomputer")
 
     # layout def
     G_LAYOUT_FILE = "layout.yaml"
@@ -91,16 +91,14 @@ class Config:
     G_FONT_NAME = ""
 
     # course file
-    G_COURSE_DIR = "course/"
-    G_COURSE_FILE = "course.tcx"
-    G_COURSE_FILE_PATH = G_COURSE_DIR + G_COURSE_FILE
-    # G_CUESHEET_FILE = "course/cue_sheet.csv"
+    G_COURSE_DIR = "course"
+    G_COURSE_FILE_PATH = os.path.join(G_COURSE_DIR, "course.tcx")
     G_CUESHEET_DISPLAY_NUM = 3  # max: 5
     G_CUESHEET_SCROLL = False
 
     # log setting
-    G_LOG_DIR = "log/"
-    G_LOG_DB = G_LOG_DIR + "log.db"
+    G_LOG_DIR = "log"
+    G_LOG_DB = os.path.join(G_LOG_DIR, "log.db")
     G_LOG_START_DATE = None
 
     # asyncio semaphore
@@ -311,7 +309,7 @@ class Config:
     G_DEM_MAP = "jpn_kokudo_chiri_in_DEM5A"
 
     # screenshot dir
-    G_SCREENSHOT_DIR = "screenshot/"
+    G_SCREENSHOT_DIR = "screenshot"
 
     # debug switch (change with --debug option)
     G_IS_DEBUG = False
@@ -695,25 +693,29 @@ class Config:
 
         # set dir
         if self.G_IS_RASPI:
-            self.G_SCREENSHOT_DIR = self.G_INSTALL_PATH + self.G_SCREENSHOT_DIR
-            self.G_LOG_DIR = self.G_INSTALL_PATH + self.G_LOG_DIR
-            self.G_LOG_DB = self.G_INSTALL_PATH + self.G_LOG_DB
-            self.G_LAYOUT_FILE = self.G_INSTALL_PATH + self.G_LAYOUT_FILE
-            self.G_COURSE_DIR = self.G_INSTALL_PATH + self.G_COURSE_DIR
-            self.G_COURSE_FILE_PATH = self.G_INSTALL_PATH + self.G_COURSE_FILE_PATH
+            self.G_SCREENSHOT_DIR = os.path.join(
+                self.G_INSTALL_PATH, self.G_SCREENSHOT_DIR
+            )
+            self.G_LOG_DIR = os.path.join(self.G_INSTALL_PATH, self.G_LOG_DIR)
+            self.G_LOG_DB = os.path.join(self.G_INSTALL_PATH, self.G_LOG_DB)
+            self.G_LAYOUT_FILE = os.path.join(self.G_INSTALL_PATH, self.G_LAYOUT_FILE)
+            self.G_COURSE_DIR = os.path.join(self.G_INSTALL_PATH, self.G_COURSE_DIR)
+            self.G_COURSE_FILE_PATH = os.path.join(
+                self.G_INSTALL_PATH, self.G_COURSE_FILE_PATH
+            )
 
         # layout file
         if not os.path.exists(self.G_LAYOUT_FILE):
+            default_layout_file = os.path.join("layouts", "layout-cycling.yaml")
             if self.G_IS_RASPI:
-                shutil.copy(
-                    self.G_INSTALL_PATH + "layouts/" + "layout-cycling.yaml",
-                    self.G_LAYOUT_FILE,
+                default_layout_file = os.path.join(
+                    self.G_INSTALL_PATH, default_layout_file
                 )
-            else:
-                shutil.copy("./layouts/layout-cycling.yaml", self.G_LAYOUT_FILE)
+
+            shutil.copy(default_layout_file, self.G_LAYOUT_FILE)
 
         # font file
-        if self.G_FONT_FILE != "" or self.G_FONT_FILE is not None:
+        if self.G_FONT_FILE:
             if os.path.exists(self.G_FONT_FILE):
                 self.G_FONT_FULLPATH = self.G_FONT_FILE
 
@@ -748,16 +750,13 @@ class Config:
             )
             self.G_MAP = "toner"
         if self.G_MAP_CONFIG[self.G_MAP]["use_mbtiles"] and not os.path.exists(
-            "maptile/{}.mbtiles".format(self.G_MAP)
+            os.path.join("maptile", f"{self.G_MAP}.mbtiles")
         ):
             self.G_MAP_CONFIG[self.G_MAP]["use_mbtiles"] = False
         self.loaded_dem = None
 
-        # mkdir
-        if not os.path.exists(self.G_SCREENSHOT_DIR):
-            os.mkdir(self.G_SCREENSHOT_DIR)
-        if not os.path.exists(self.G_LOG_DIR):
-            os.mkdir(self.G_LOG_DIR)
+        os.makedirs(self.G_SCREENSHOT_DIR, exist_ok=True)
+        os.makedirs(self.G_LOG_DIR, exist_ok=True)
 
         self.check_map_dir()
 
@@ -794,7 +793,7 @@ class Config:
         self.logger.start_coroutine()
         self.display.start_coroutine()
 
-        # deley init start
+        # delay init start
         asyncio.create_task(self.delay_init())
 
     async def delay_init(self):
@@ -911,28 +910,22 @@ class Config:
         self.display = display
 
     def check_map_dir(self):
-        # mkdir (map)
-        if not self.G_MAP_CONFIG[self.G_MAP]["use_mbtiles"] and not os.path.exists(
-            "maptile/" + self.G_MAP
-        ):
-            os.mkdir("maptile/" + self.G_MAP)
-        # optional
-        if not self.G_MAP_CONFIG[self.G_MAP]["use_mbtiles"] and not os.path.exists(
-            "maptile/" + self.G_HEATMAP_OVERLAY_MAP
-        ):
-            os.mkdir("maptile/" + self.G_HEATMAP_OVERLAY_MAP)
-        if not os.path.exists("maptile/" + self.G_RAIN_OVERLAY_MAP):
-            os.mkdir("maptile/" + self.G_RAIN_OVERLAY_MAP)
-        if not os.path.exists("maptile/" + self.G_WIND_OVERLAY_MAP):
-            os.mkdir("maptile/" + self.G_WIND_OVERLAY_MAP)
-        if self.G_LOG_ALTITUDE_FROM_DATA_SOUCE and not os.path.exists(
-            "maptile/" + self.G_DEM_MAP
-        ):
-            os.mkdir("maptile/" + self.G_DEM_MAP)
+        if not self.G_MAP_CONFIG[self.G_MAP]["use_mbtiles"]:
+            os.makedirs(os.path.join("maptile", self.G_MAP), exist_ok=True)
+            # optional
+            os.makedirs(
+                os.path.join("maptile", self.G_HEATMAP_OVERLAY_MAP), exist_ok=True
+            )
+
+        os.makedirs(os.path.join("maptile", self.G_RAIN_OVERLAY_MAP), exist_ok=True)
+        os.makedirs(os.path.join("maptile", self.G_WIND_OVERLAY_MAP), exist_ok=True)
+
+        if self.G_LOG_ALTITUDE_FROM_DATA_SOUCE:
+            os.makedirs(os.path.join("maptile", self.G_DEM_MAP), exist_ok=True)
 
     @staticmethod
     def remove_maptiles(map_name):
-        path = "maptile/" + map_name
+        path = os.path.join("maptile", map_name)
         if os.path.exists(path):
             files = os.listdir(path)
             dirs = [f for f in files if os.path.isdir(os.path.join(path, f))]
@@ -1048,12 +1041,12 @@ class Config:
 
     def hardware_wifi_bt_on(self):
         if self.G_IS_RASPI:
-            cmd = [self.G_INSTALL_PATH + "scripts/comment_out.sh"]
+            cmd = [os.path.join(self.G_INSTALL_PATH, "scripts/comment_out.sh")]
             self.exec_cmd(cmd)
 
     def hardware_wifi_bt_off(self):
         if self.G_IS_RASPI:
-            cmd = [self.G_INSTALL_PATH + "scripts/uncomment.sh"]
+            cmd = [os.path.join(self.G_INSTALL_PATH, "scripts/uncomment.sh")]
             self.exec_cmd(cmd)
 
     def update_application(self):

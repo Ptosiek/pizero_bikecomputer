@@ -152,9 +152,7 @@ class CourseListWidget(ListWidget):
 
         # from Local Storage (self.list)
         if course_file is None:
-            self.course_file = (
-                self.config.G_COURSE_DIR + self.selected_item.list_info["id"]
-            )
+            self.course_file = self.selected_item.list_info["path"]
         # from Ride with GPS (CourseDetailWidget)
         else:
             self.course_file = course_file
@@ -328,7 +326,7 @@ class CourseDetailWidget(MenuWidget):
         self.elevation_label.setText("{:.0f}m up".format(course_info["elevation_gain"]))
         self.locality_label.setText(self.address_format.format(**course_info))
 
-        self.list_id = course_info["id"]
+        self.list_id = course_info["name"]
 
         self.timer.start(self.config.G_DRAW_INTERVAL)
 

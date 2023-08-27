@@ -141,7 +141,7 @@ class LoaderTcx:
         # }
 
         dir_list = sorted(
-            glob.glob(self.config.G_COURSE_DIR + "/*.tcx"),
+            glob.glob(os.path.join(self.config.G_COURSE_DIR, "*.tcx")),
             key=lambda f: os.stat(f).st_mtime,
             reverse=True,
         )
@@ -154,8 +154,8 @@ class LoaderTcx:
         courses = []
         for c in file_list:
             info = {
-                "id": c[len(self.config.G_COURSE_DIR) :],
-                "name": c[len(self.config.G_COURSE_DIR) :],
+                "path": c,
+                "name": os.path.basename(c),
             }
             # heavy: delayed updates required
             # with open(c, 'r', encoding="utf-8_sig") as f:
