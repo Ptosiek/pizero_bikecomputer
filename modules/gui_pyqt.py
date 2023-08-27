@@ -787,8 +787,8 @@ class GUI_PyQt(QtCore.QObject):
             next_button = None
             prev_button = None
 
-            def focusNextPrevChild(self, next):
-                if next:
+            def focusNextPrevChild(self, is_next):
+                if is_next:
                     self.next_button.setFocus()
                 else:
                     self.prev_button.setFocus()

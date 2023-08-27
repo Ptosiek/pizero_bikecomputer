@@ -935,8 +935,8 @@ class Config:
         path = "maptile/" + map_name
         if os.path.exists(path):
             files = os.listdir(path)
-            dir = [f for f in files if os.path.isdir(os.path.join(path, f))]
-            for d in dir:
+            dirs = [f for f in files if os.path.isdir(os.path.join(path, f))]
+            for d in dirs:
                 shutil.rmtree(os.path.join(path, d))
 
     def get_serial(self):
