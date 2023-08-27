@@ -10,6 +10,7 @@ from crdp import rdp
 
 import numpy as np
 
+from logger import app_logger
 
 POLYLINE_DECODER = False
 try:
@@ -109,13 +110,12 @@ class LoaderTcx:
 
         if not len(self.latitude):
             return
-        print()
-        print("[logger] Loading course:")
-        print("  read_tcx            : {:.3f} sec".format(time_profile[0]))
-        print("  downsample          : {:.3f} sec".format(time_profile[1]))
-        print("  calc_slope_smoothing: {:.3f} sec".format(time_profile[2]))
-        print("  modify_course_points: {:.3f} sec".format(time_profile[3]))
-        print("  total               : {:.3f} sec".format(sum(time_profile)))
+        app_logger.info(f"[logger] Loading course:")
+        app_logger.info(f"read_tcx            : {time_profile[0]:.3f} sec")
+        app_logger.info(f"downsample          : {time_profile[1]:.3f} sec")
+        app_logger.info(f"calc_slope_smoothing: {time_profile[2]:.3f} sec")
+        app_logger.info(f"modify_course_points: {time_profile[3]:.3f} sec")
+        app_logger.info(f"total               : {sum(time_profile):.3f} sec")
 
         if self.config.G_THINGSBOARD_API["STATUS"]:
             self.config.network.api.send_livetrack_course_load()
@@ -191,7 +191,7 @@ class LoaderTcx:
     def read_tcx(self):
         if not os.path.exists(self.config.G_COURSE_FILE_PATH):
             return
-        print("loading", self.config.G_COURSE_FILE_PATH)
+        app_logger.info(f"loading {self.config.G_COURSE_FILE_PATH}")
 
         # read with regex
         pattern = {
@@ -290,7 +290,7 @@ class LoaderTcx:
             == len(self.altitude)
             == len(self.distance)
         ):
-            print("ERROR parse course")
+            app_logger.error("Can not parse course")
             check_course = True
         if not (
             len(self.point_name)
@@ -298,7 +298,7 @@ class LoaderTcx:
             == len(self.point_longitude)
             == len(self.point_type)
         ):
-            print("ERROR parse course point")
+            app_logger.error("Can not parse course point")
             check_course = True
         if check_course:
             self.distance = np.array([])
@@ -327,7 +327,7 @@ class LoaderTcx:
 
     async def get_google_route(self, x1, y1, x2, y2):
         json_routes = await self.config.network.api.get_google_routes(x1, y1, x2, y2)
-        print(json_routes)
+        app_logger.debug(json_routes)
         if not POLYLINE_DECODER or json_routes is None or json_routes["status"] != "OK":
             return
 
@@ -474,7 +474,7 @@ class LoaderTcx:
             self.config.G_GPS_SEARCH_RANGE = diff_dist_max
         # print("G_GPS_SEARCH_RANGE[km]:", self.config.G_GPS_SEARCH_RANGE, diff_dist_max)
 
-        print("downsampling:{} -> {}".format(len_lat, len(self.latitude)))
+        app_logger.info(f"downsampling:{len_lat} -> {len(self.latitude)}")
 
     def calc_slope_smoothing(self):
         # parameters
