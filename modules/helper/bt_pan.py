@@ -96,7 +96,6 @@ class BTPanDbusNext(BTPan):
             try:
                 await self.interface.call_connect(self.service_uuid)
             except DBusError as e:
-                # error = e.get_dbus_name()
                 print(e)
                 await asyncio.sleep(1)
             else:
@@ -112,7 +111,6 @@ class BTPanDbusNext(BTPan):
         try:
             await self.interface.call_disconnect()
         except DBusError as e:
-            # error = e.get_dbus_name()
             print(e)
         connected = await self.interface.get_connected()
 

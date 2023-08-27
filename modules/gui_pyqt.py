@@ -382,7 +382,6 @@ class GUI_PyQt(QtCore.QObject):
         # integrate main_layout
         self.main_layout.addWidget(self.main_page)
         if self.config.display.has_touch():
-            # button
             from modules.pyqt.pyqt_button_box_widget import ButtonBoxWidget
 
             self.button_box_widget = ButtonBoxWidget(self.main_widget, self.config)
@@ -423,7 +422,6 @@ class GUI_PyQt(QtCore.QObject):
             self.screen_shape, self.remove_bytes = self.gui_config.get_screen_shape(p)
 
     def exec(self):
-        # self.app.exec()
         with self.config.loop:
             self.config.loop.run_forever()
             # loop is stopped
@@ -436,7 +434,7 @@ class GUI_PyQt(QtCore.QObject):
         # loop is closed
 
     def add_font(self):
-        # default font (macOS is not allowed relative path)
+        # default font (macOS is not allowing relative paths)
         res = QtGui.QFontDatabase.addApplicationFont(
             "fonts/Yantramanav/Yantramanav-Black.ttf"
         )

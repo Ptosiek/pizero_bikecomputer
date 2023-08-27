@@ -39,7 +39,6 @@ class ButtonBoxWidget(QtWidgets.QWidget):
         if self.config.G_IS_RASPI:
             self.icon_dir = self.config.G_INSTALL_PATH
 
-        # self.start_button = QtWidgets.QPushButton(QtGui.QIcon(self.icon_dir+'img/next_white.png'),"")
         self.start_button = QtWidgets.QPushButton(
             QtGui.QIcon(self.icon_dir + "img/next_white.png"), ""
         )

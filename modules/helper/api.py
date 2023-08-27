@@ -598,7 +598,6 @@ class api:
             },
         }
 
-        # self.thingsboard_client.disconnect()
         try:
             self.thingsboard_client.connect()
             res = self.thingsboard_client.send_telemetry(data).get()

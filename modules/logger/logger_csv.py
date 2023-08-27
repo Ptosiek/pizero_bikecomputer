@@ -58,7 +58,6 @@ total_ascent,total_descent,pressure,temperature,heading,gps_track,motion,acc_x,a
             sqlite3_cmd = ["sh", "-c", sql_cmd]
             self.config.exec_cmd(sqlite3_cmd)
         else:
-            # file open
             f = open(filename, "w", encoding="UTF-8")
 
             # get Lap Records
@@ -70,7 +69,6 @@ total_ascent,total_descent,pressure,temperature,heading,gps_track,motion,acc_x,a
             cur.close()
             con.close()
 
-        # success
         return True
 
 

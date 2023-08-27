@@ -36,7 +36,6 @@ class ScreenWidget(QtWidgets.QWidget):
         self.setup_ui()
 
     def resizeEvent(self, event):
-        # w = self.size().width()
         h = self.size().height()
         self.set_font_size(h)
         for i in self.items:
@@ -155,7 +154,6 @@ class ScreenWidget(QtWidgets.QWidget):
             return
 
         for item in self.items:
-            # item.update_value(eval(self.config.gui.gui_config.[item.name][1]))
             try:
                 item.update_value(
                     eval(self.config.gui.gui_config.G_ITEM_DEF[item.name][1])

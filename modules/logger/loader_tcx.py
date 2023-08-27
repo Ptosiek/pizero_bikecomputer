@@ -64,7 +64,9 @@ class LoaderTcx:
         self.slope = np.array([])
         self.slope_smoothing = np.array([])
         self.colored_altitude = np.array([])
-        self.climb_segment = []
+        self.climb_segment = (
+            []
+        )  # [start_index, end_index, distance, average_grade, volume(=dist*average), cat]
 
         # for course points
         self.point_name = np.array([])
@@ -543,7 +545,6 @@ class LoaderTcx:
             slope_smoothing_cat,
         )
 
-        # self.climb_segment = [] #[start_index, end_index, distance, average_grade, volume(=dist*average), cat]
         climb_search_state = False
         climb_start_cutoff = 2
         climb_end_cutoff = 1

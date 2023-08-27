@@ -241,7 +241,7 @@ class KalmanFilter(object):
         self.x_post = self.x.copy()
         self.P_post = self.P.copy()
 
-        # Only computed only if requested via property
+        # Only computed if requested via property
         self._log_likelihood = log(sys.float_info.min)
         self._likelihood = sys.float_info.min
         self._mahalanobis = None
