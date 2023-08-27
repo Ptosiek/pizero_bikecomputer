@@ -30,7 +30,7 @@ class LoggerCsv(Logger):
         cur = con.cursor()
         cur.execute("SELECT timestamp, MIN(timestamp) FROM BIKECOMPUTER_LOG")
         first_row = cur.fetchone()
-        if first_row != None:
+        if first_row is not None:
             start_date = first_row[0]
         else:
             return False
@@ -47,7 +47,7 @@ total_ascent,total_descent,pressure,temperature,heading,gps_track,motion,acc_x,a
         # voltage_battery,current_battery,voltage_out,current_out,battery_percentage\
         # "
         # if sqlite3 command exists, use this command (much faster)
-        if shutil.which("sh") != None and shutil.which("sqlite3"):
+        if shutil.which("sh") is not None and shutil.which("sqlite3"):
             cur.close()
             con.close()
             sql_cmd = (

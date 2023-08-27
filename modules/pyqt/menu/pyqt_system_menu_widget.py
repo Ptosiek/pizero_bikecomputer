@@ -71,10 +71,10 @@ class NetworkMenuWidget(MenuWidget):
         self.bt_page_name = "BT Tethering"
         self.bt_index = self.config.gui.gui_config.G_GUI_INDEX[self.bt_page_name]
 
-        if self.config.bt_pan == None or len(self.config.G_BT_ADDRESS) == 0:
+        if self.config.bt_pan is None or len(self.config.G_BT_ADDRESS) == 0:
             self.button["BT Tethering"].disable()
 
-        if self.config.ble_uart == None:
+        if self.config.ble_uart is None:
             self.button["Gadgetbridge"].disable()
 
         self.button["Get Location"].disable()

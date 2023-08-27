@@ -125,7 +125,7 @@ class ANTListWidget(ListWidget):
         print(
             "connect {}: {}".format(self.list_type, self.selected_item.list_info["id"])
         )
-        if self.selected_item == None:
+        if self.selected_item is None:
             return
         ant_id = int(self.selected_item.list_info["id"])
         self.config.logger.sensor.sensor_ant.connect_ant_sensor(

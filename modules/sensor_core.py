@@ -549,13 +549,13 @@ class SensorCore:
                     self.config.G_STOPWATCH_STATUS == "STOP"
                     and flag_spd
                     and flag_moving
-                    and self.config.logger != None
+                    and self.config.logger is not None
                 ):
                     self.config.logger.start_and_stop()
                 elif (
                     self.config.G_STOPWATCH_STATUS == "START"
                     and (not flag_spd or not flag_moving)
-                    and self.config.logger != None
+                    and self.config.logger is not None
                 ):
                     self.config.logger.start_and_stop()
 
@@ -565,7 +565,7 @@ class SensorCore:
                 if (
                     (self.config.G_ANT["USE"]["SPD"] or "timestamp" in v["GPS"])
                     and self.config.G_STOPWATCH_STATUS == "START"
-                    and self.config.logger != None
+                    and self.config.logger is not None
                 ):
                     self.config.logger.start_and_stop()
             # time.sleep(1)

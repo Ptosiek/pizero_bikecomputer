@@ -250,7 +250,7 @@ class MapWidget(BaseMapWidget):
             and self.config.G_CUESHEET_DISPLAY_NUM > 0
             and self.config.G_COURSE_INDEXING
         ):
-            if self.cuesheet_widget == None:
+            if self.cuesheet_widget is None:
                 self.cuesheet_widget = CueSheetWidget(self, self.config)
                 self.cuesheet_widget.hide()  # adhoc
             # self.map_cuesheet_ratio = 0.7
@@ -307,7 +307,7 @@ class MapWidget(BaseMapWidget):
         time_profile = []
         t1 = datetime.datetime.now()
 
-        if self.course_plot != None:
+        if self.course_plot is not None:
             self.plot.removeItem(self.course_plot)
         self.course_plot = CoursePlotItem(
             x=self.config.logger.course.longitude,
@@ -320,7 +320,7 @@ class MapWidget(BaseMapWidget):
 
         # test
         if not self.config.G_IS_RASPI:
-            if self.plot_verification != None:
+            if self.plot_verification is not None:
                 self.plot.removeItem(self.plot_verification)
             self.plot_verification = pg.ScatterPlotItem(pxMode=True)
             self.plot_verification.setZValue(25)
@@ -349,7 +349,7 @@ class MapWidget(BaseMapWidget):
 
         t = datetime.datetime.utcnow()
 
-        if self.course_points_plot != None:
+        if self.course_points_plot is not None:
             self.plot.removeItem(self.course_points_plot)
         self.course_points_plot = pg.ScatterPlotItem(pxMode=True, symbol="t", size=12)
         self.course_points_plot.setZValue(40)
@@ -581,11 +581,11 @@ class MapWidget(BaseMapWidget):
             self.course_points_plot,
             self.instruction,
         ]:
-            if p != None:
+            if p is not None:
                 self.plot.removeItem(p)
                 p = None
 
-        if self.cuesheet_widget != None:
+        if self.cuesheet_widget is not None:
             self.cuesheet_widget.reset()
 
     @asyncSlot()
@@ -672,13 +672,13 @@ class MapWidget(BaseMapWidget):
                 init_time_list = await self.config.network.api.get_scw_list(
                     map_config[map_name], "inittime"
                 )
-                if init_time_list != None:
+                if init_time_list is not None:
                     map_config[map_name]["basetime"] = init_time_list[0]["it"]
 
                 timeline = await self.config.network.api.get_scw_list(
                     map_config[map_name], "fl"
                 )
-                if timeline != None:
+                if timeline is not None:
                     map_config[map_name]["fl"] = timeline
                     time_str = map_config[map_name]["nowtime"].strftime("%H%M")
                     for tl in map_config[map_name]["fl"]:
@@ -1031,7 +1031,7 @@ class MapWidget(BaseMapWidget):
             return
         await self.cuesheet_widget.update_extra()
 
-        if self.instruction != None:
+        if self.instruction is not None:
             self.plot.removeItem(self.instruction)
         image_src = '<img src="img/navi_flag.png">'  # svg
         if self.cuesheet_widget.cuesheet[0].name.text() == "Right":
@@ -1061,7 +1061,7 @@ class MapWidget(BaseMapWidget):
             # print(self.zoomlevel, self.cuesheet_widget.cuesheet[0].dist_num, self.auto_zoomlevel_back)
             if self.cuesheet_widget.cuesheet[0].dist_num < 1000:
                 if (
-                    self.auto_zoomlevel_back == None
+                    self.auto_zoomlevel_back is None
                     and self.zoomlevel < self.auto_zoomlevel - delta
                 ):
                     self.auto_zoomlevel_back = self.zoomlevel
@@ -1069,7 +1069,7 @@ class MapWidget(BaseMapWidget):
                     # print("zoom in",  self.auto_zoomlevel_back, self.zoomlevel)
             else:
                 if (
-                    self.auto_zoomlevel_back != None
+                    self.auto_zoomlevel_back is not None
                     and self.zoomlevel == self.auto_zoomlevel - delta
                 ):
                     self.zoomlevel = self.auto_zoomlevel_back

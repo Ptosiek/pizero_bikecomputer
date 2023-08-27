@@ -36,7 +36,7 @@ class GadgetbridgeService(Service):
         super().__init__(self.service_uuid, True)
 
     async def quit(self):
-        if not self.status and self.bus != None:
+        if not self.status and self.bus is not None:
             self.bus.disconnect()
 
     # direct access from central
@@ -75,7 +75,7 @@ class GadgetbridgeService(Service):
             res = re.match(
                 "^setTime\((\d+)\);E.setTimeZone\((\S+)\)", self.timestamp_str
             )
-            if res != None:
+            if res is not None:
                 self.timestamp_done = True
                 self.timestamp_status = False
                 time_diff = datetime.timedelta(hours=float(res.group(2)))

@@ -326,7 +326,7 @@ class LoaderTcx:
     async def get_google_route(self, x1, y1, x2, y2):
         json_routes = await self.config.network.api.get_google_routes(x1, y1, x2, y2)
         print(json_routes)
-        if not POLYLINE_DECODER or json_routes == None or json_routes["status"] != "OK":
+        if not POLYLINE_DECODER or json_routes is None or json_routes["status"] != "OK":
             return
 
         self.info["Name"] = "Google routes"
@@ -686,7 +686,7 @@ class LoaderTcx:
                     dist_diff_h < self.config.G_GPS_ON_ROUTE_CUTOFF
                     and dist_diff_h < min_dist_diff_h
                 ):
-                    if min_j != None and j - min_j > 2:
+                    if min_j is not None and j - min_j > 2:
                         continue
                     min_j = j
                     min_dist_diff_h = dist_diff_h
@@ -712,7 +712,7 @@ class LoaderTcx:
                             * min_dist_delta
                         )
 
-            if min_j == None:
+            if min_j is None:
                 min_j = 0
             min_index = min_index + min_j
 
@@ -768,7 +768,7 @@ class LoaderTcx:
             len_pnt_lat > 0
             and len_pnt_dist > 0
             and len_dist > 0
-            and end_distance != None
+            and end_distance is not None
             and end_distance > 5
         ):
             self.point_name.append("End")

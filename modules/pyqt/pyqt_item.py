@@ -73,7 +73,7 @@ class Item(QtWidgets.QVBoxLayout):
         self.update_value(np.nan)
 
     def update_value(self, value):
-        if value == None:
+        if value is None:
             self.value.setText("-")
         elif isinstance(value, str):
             self.value.setText(value)

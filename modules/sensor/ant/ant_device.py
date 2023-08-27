@@ -58,7 +58,7 @@ class ANT_Device:
         self.add_struct_pattern()
         self.init_value()
 
-        if node == None:
+        if node is None:
             return  # for dummy device
         self.make_channel(self.ant_config["channel_type"])
         self.init_extra()
@@ -95,7 +95,7 @@ class ANT_Device:
         pass
 
     def make_channel(self, c_type, ext_assign=None):
-        if self.config.G_ANT["STATUS"] and self.channel == None:
+        if self.config.G_ANT["STATUS"] and self.channel is None:
             self.channel = self.node.new_channel(c_type, ext_assign=ext_assign)
             print("{} ".format(self.name), end="")
             self.channel.on_broadcast_data = self.on_data

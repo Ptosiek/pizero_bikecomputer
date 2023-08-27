@@ -44,7 +44,7 @@ class Network:
         # for urls, header, save_paths, params:
         while True:
             q = await self.download_queue.get()
-            if q == None:
+            if q is None:
                 break
             try:
                 res = await self.download_files(**q)
@@ -53,7 +53,7 @@ class Network:
                 return
 
             # all False -> give up
-            if not any(res) or res == None:
+            if not any(res) or res is None:
                 failed.append((datetime.datetime.now(), q))
                 print("failed download")
                 print(q["urls"])
@@ -78,7 +78,7 @@ class Network:
     async def download_maptile(
         self, map_config, map_name, z, tiles, additional_download=False
     ):
-        if not self.config.detect_network() or map_config[map_name]["url"] == None:
+        if not self.config.detect_network() or map_config[map_name]["url"] is None:
             return False
 
         urls = []
@@ -98,8 +98,8 @@ class Network:
             self.config.G_WIND_OVERLAY_MAP_CONFIG,
         ]:
             if (
-                map_config[map_name]["basetime"] == None
-                or map_config[map_name]["validtime"] == None
+                map_config[map_name]["basetime"] is None
+                or map_config[map_name]["validtime"] is None
             ):
                 return False
             additional_var["basetime"] = map_config[map_name]["basetime"]
@@ -108,19 +108,19 @@ class Network:
                 map_config == self.config.G_WIND_OVERLAY_MAP_CONFIG
                 and "jpn_scw" in map_name
             ):
-                if map_config[map_name]["subdomain"] == None:
+                if map_config[map_name]["subdomain"] is None:
                     return False
                 additional_var["subdomain"] = map_config[map_name]["subdomain"]
 
         # make header
         if (
             "referer" in map_config[map_name]
-            and map_config[map_name]["referer"] != None
+            and map_config[map_name]["referer"] is not None
         ):
             request_header["Referer"] = map_config[map_name]["referer"]
         if (
             "user_agent" in map_config[map_name]
-            and map_config[map_name]["user_agent"] != None
+            and map_config[map_name]["user_agent"] is not None
         ):
             request_header["User-Agent"] = map_config[map_name]["user_agent"]
 

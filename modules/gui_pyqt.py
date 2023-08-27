@@ -47,7 +47,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
     # override from QtWidget
     def paintEvent(self, event):
-        if self.gui != None:
+        if self.gui is not None:
             self.gui.draw_display()
 
 
@@ -625,7 +625,7 @@ class GUI_PyQt(QtCore.QObject):
         p.save(self.config.G_SCREENSHOT_DIR + filename, "png")
 
     def draw_display(self, direct_update=False):
-        if not self.config.display.send_display or self.stack_widget == None:
+        if not self.config.display.send_display or self.stack_widget is None:
             return
 
         # self.config.check_time("draw_display start")
@@ -633,10 +633,10 @@ class GUI_PyQt(QtCore.QObject):
 
         # self.config.check_time("grab")
         ptr = p.constBits()
-        if ptr == None:
+        if ptr is None:
             return
 
-        if self.screen_image != None and p == self.screen_image:
+        if self.screen_image is not None and p == self.screen_image:
             return
         self.screen_image = p
 
@@ -654,7 +654,7 @@ class GUI_PyQt(QtCore.QObject):
         # self.config.check_time("draw_display end")
 
     def change_start_stop_button(self, status):
-        if self.button_box_widget != None:
+        if self.button_box_widget is not None:
             self.button_box_widget.change_start_stop_button(status)
 
     def brightness_control(self):
@@ -669,7 +669,7 @@ class GUI_PyQt(QtCore.QObject):
         if not self.config.display.has_touch() and hasattr(
             self.stack_widget.widget(page), "focus_widget"
         ):
-            if focus_reset and self.stack_widget.widget(page).focus_widget != None:
+            if focus_reset and self.stack_widget.widget(page).focus_widget is not None:
                 self.stack_widget.widget(page).focus_widget.setFocus()
 
     def change_menu_back(self):
@@ -690,7 +690,7 @@ class GUI_PyQt(QtCore.QObject):
     async def msg_worker(self):
         while True:
             msg = await self.msg_queue.get()
-            if msg == None:
+            if msg is None:
                 break
             self.msg_queue.task_done()
 
@@ -848,7 +848,7 @@ class GUI_PyQt(QtCore.QObject):
         # title_label_width = title_label.fontMetrics().horizontalAdvance(title_label.text())
 
         # title_icon
-        if title_icon != None:
+        if title_icon is not None:
             outer_widget = QtWidgets.QWidget(container)
 
             left_icon = QtWidgets.QLabel()
@@ -859,7 +859,7 @@ class GUI_PyQt(QtCore.QObject):
             label_layout.addWidget(left_icon)
             label_layout.addWidget(title_label, stretch=2)
             layout.addWidget(outer_widget)
-        elif message != None:
+        elif message is not None:
             outer_widget = QtWidgets.QWidget(container)
             font.setPointSize(int(fontsize * 1.5))
             message_label = QtWidgets.QLabel(message, font=font)
@@ -905,7 +905,7 @@ class GUI_PyQt(QtCore.QObject):
                 buttons[i].clicked.connect(background.deleteLater)
 
             # func with OK button
-            if fn != None:
+            if fn is not None:
                 buttons[0].clicked.connect(fn)
 
             layout.addWidget(button_widget)

@@ -92,7 +92,7 @@ class MapOverlayMenuWidget(MenuWidget):
         self.button[list_key].onoff_button(status)
 
         # OFF: remove overlay
-        if self.config.gui.map_widget != None:
+        if self.config.gui.map_widget is not None:
             self.config.gui.map_widget.reset_map()
 
     def select_heatmap(self):

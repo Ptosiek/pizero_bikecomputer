@@ -247,7 +247,7 @@ class LoggerFit(Logger):
         # get datetime object (timestamp)
         cur.execute("SELECT timestamp, MIN(timestamp) FROM BIKECOMPUTER_LOG")
         first_row = cur.fetchone()
-        if first_row != None:
+        if first_row is not None:
             start_date = first_row[0]
         else:
             return False
@@ -255,7 +255,7 @@ class LoggerFit(Logger):
         end_date = None
         cur.execute("SELECT timestamp, MAX(timestamp) FROM BIKECOMPUTER_LOG")
         first_row = cur.fetchone()
-        if first_row != None:
+        if first_row is not None:
             end_date = first_row[0]
         else:
             return False
@@ -317,17 +317,17 @@ class LoggerFit(Logger):
                 available_data = []
                 if None in row:
                     for i, v in enumerate(row):
-                        if v == None:
+                        if v is None:
                             continue
                         available_fields.append(record_index[i])
                         available_data.append(
                             self.convertValue((v,), message_num, record_index[i])
                         )
 
-                    # available_fields = [j for i, j in zip(row, record_index) if i != None]
-                    # available_data = list(map(self.convertValue, [(i,) for i in row if i != None], [message_num]*len(available_fields), available_fields))
+                    # available_fields = [j for i, j in zip(row, record_index) if i is not None]
+                    # available_data = list(map(self.convertValue, [(i,) for i in row if i is not None], [message_num]*len(available_fields), available_fields))
 
-                    # available_data_gen = [(self.convertValue((i,),message_num,j), j) for i, j in zip(row, record_index) if i != None]
+                    # available_data_gen = [(self.convertValue((i,),message_num,j), j) for i, j in zip(row, record_index) if i is not None]
                     # available_fields = [row[1] for row in available_data_gen]
                     # available_data = [row[0] for row in available_data_gen]
                 else:
@@ -547,7 +547,7 @@ class LoggerFit(Logger):
                 else:
                     cur.execute("SELECT %s FROM BIKECOMPUTER_LOG" % (lap_sql[k]))
             v = list((cur.fetchone()))
-            if len(v) == 0 or v[0] == None:
+            if len(v) == 0 or v[0] is None:
                 continue
             lap_fields.append(k)
             lap_data.append(self.convertValue(v, message_num, k))

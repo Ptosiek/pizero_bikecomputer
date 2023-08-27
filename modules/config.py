@@ -713,7 +713,7 @@ class Config:
                 shutil.copy("./layouts/layout-cycling.yaml", self.G_LAYOUT_FILE)
 
         # font file
-        if self.G_FONT_FILE != "" or self.G_FONT_FILE != None:
+        if self.G_FONT_FILE != "" or self.G_FONT_FILE is not None:
             if os.path.exists(self.G_FONT_FILE):
                 self.G_FONT_FULLPATH = self.G_FONT_FILE
 
@@ -885,23 +885,23 @@ class Config:
                 self.logger.count_laps()
             elif key == "r":
                 self.logger.reset_count()
-            elif key == "n" and self.gui != None:
+            elif key == "n" and self.gui is not None:
                 self.gui.scroll_next()
-            elif key == "p" and self.gui != None:
+            elif key == "p" and self.gui is not None:
                 self.gui.scroll_prev()
-            elif key == "q" and self.gui != None:
+            elif key == "q" and self.gui is not None:
                 await self.quit()
             ##### temporary #####
             # test hardware key signals
-            elif key == "," and self.gui != None:
+            elif key == "," and self.gui is not None:
                 self.gui.press_tab()
-            elif key == "." and self.gui != None:
+            elif key == "." and self.gui is not None:
                 self.gui.press_shift_tab()
-            elif key == "b" and self.gui != None:
+            elif key == "b" and self.gui is not None:
                 self.gui.back_menu()
-            elif key == "c" and self.gui != None:
+            elif key == "c" and self.gui is not None:
                 self.gui.show_message("name", "message")
-            elif key == "x" and self.gui != None:
+            elif key == "x" and self.gui is not None:
                 self.gui.delete_popup()
 
     def set_logger(self, logger):
@@ -1015,7 +1015,7 @@ class Config:
 
     async def quit(self):
         print("quit")
-        if self.ble_uart != None:
+        if self.ble_uart is not None:
             await self.ble_uart.quit()
         await self.network.quit()
 
@@ -1122,7 +1122,7 @@ class Config:
             return
         if self.G_BT_USE_ADDRESS == "":
             return
-        if self.bt_pan == None:
+        if self.bt_pan is None:
             return
 
         res = None
@@ -1134,7 +1134,7 @@ class Config:
             res = await self.bt_pan.disconnect_tethering(
                 self.G_BT_ADDRESS[self.G_BT_USE_ADDRESS]
             )
-        if res != None and res:
+        if res is not None and res:
             return True
         else:
             return False
@@ -1149,10 +1149,10 @@ class Config:
         with open(self.G_MAP_LIST) as file:
             text = file.read()
             map_list = yaml.safe_load(text)
-            if map_list == None:
+            if map_list is None:
                 return
             for key in map_list:
-                if map_list[key]["attribution"] == None:
+                if map_list[key]["attribution"] is None:
                     map_list[key]["attribution"] = ""
             self.G_MAP_CONFIG.update(map_list)
 

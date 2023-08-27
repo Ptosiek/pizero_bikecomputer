@@ -119,13 +119,13 @@ class api:
                 params=self.config.G_RIDEWITHGPS_API["PARAMS"],
             )
             user = response.get("user")
-            if user != None:
+            if user is not None:
                 self.config.G_RIDEWITHGPS_API["USER_ID"] = user.get("id")
-            if self.config.G_RIDEWITHGPS_API["USER_ID"] == None:
+            if self.config.G_RIDEWITHGPS_API["USER_ID"] is None:
                 return
 
         # get user route (total_num)
-        if self.config.G_RIDEWITHGPS_API["USER_ROUTES_NUM"] == None:
+        if self.config.G_RIDEWITHGPS_API["USER_ROUTES_NUM"] is None:
             response = await self.config.network.get_json(
                 self.config.G_RIDEWITHGPS_API["URL_USER_ROUTES"].format(
                     user=self.config.G_RIDEWITHGPS_API["USER_ID"], offset=0, limit=0
@@ -481,7 +481,7 @@ class api:
             traceback.print_exc()
 
     def thingsboard_check(self):
-        if self.thingsboard_client != None:
+        if self.thingsboard_client is not None:
             return True
         else:
             return False

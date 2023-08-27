@@ -774,7 +774,7 @@ class SensorI2C(Sensor):
         if (
             _SENSOR_MAG_DECLINATION
             and not self.is_mag_declination_modified
-            and self.config.logger != None
+            and self.config.logger is not None
             and self.config.detect_network()
         ):
             v = self.config.logger.sensor.values["GPS"]
@@ -925,7 +925,7 @@ class SensorI2C(Sensor):
         if (
             self.motion_sensor["ACC"]
             and self.motion_sensor["GYRO"]
-            and self.kfp != None
+            and self.kfp is not None
         ):
             self.kfp.update(
                 math.atan2(-self.values["acc_raw"][X], self.values["acc_raw"][Z]),
@@ -1054,7 +1054,10 @@ class SensorI2C(Sensor):
             self.vspeed_array[0:-1] = self.vspeed_array[1:]
             # self.vspeed_array[-1] = self.values['altitude']
             self.vspeed_array[-1] = self.values["pre_altitude"]
-            if self.timestamp_array[0] != None and self.timestamp_array[-1] != None:
+            if (
+                self.timestamp_array[0] is not None
+                and self.timestamp_array[-1] is not None
+            ):
                 i = 0
                 time_delta = (
                     self.timestamp_array[-1] - self.timestamp_array[i]
@@ -1070,7 +1073,7 @@ class SensorI2C(Sensor):
             or np.isnan(alt)
         ):
             return
-        if self.config.logger == None:
+        if self.config.logger is None:
             return
 
         # get temperature
@@ -1102,7 +1105,7 @@ class SensorI2C(Sensor):
                 api_data = await self.config.network.api.get_openweathermap_data(
                     v["lon"], v["lat"]
                 )
-                if api_data == None:
+                if api_data is None:
                     raise Exception()
                 if "temp" in api_data["main"]:
                     temperature = api_data["main"]["temp"] - 273.15
@@ -1127,7 +1130,7 @@ class SensorI2C(Sensor):
         print("update sealevel pressure")
         print("    altitude:", alt, "m")
         print("    pressure:", round(self.values["pressure"], 3), "hPa")
-        if temperature != None:
+        if temperature is not None:
             print("    temp:", round(temperature, 1), "C")
         print("    sealevel temperature:", round(self.sealevel_temp - 273.15, 1), "C")
         print("    sealevel pressure:", round(self.sealevel_pa, 3), "hPa")

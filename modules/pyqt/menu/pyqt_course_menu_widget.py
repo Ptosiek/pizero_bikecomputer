@@ -86,7 +86,7 @@ class CoursesMenuWidget(MenuWidget):
 
     def cancel_course(self, replace=False):
         self.config.gui.map_widget.reset_course()
-        if self.config.gui.course_profile_graph_widget != None:
+        if self.config.gui.course_profile_graph_widget is not None:
             self.config.gui.course_profile_graph_widget.reset_course()
         self.config.logger.reset_course(delete_course=True, replace=replace)
         self.onoff_course_cancel_button()
@@ -117,7 +117,7 @@ class CourseListWidget(ListWidget):
 
     @asyncSlot()
     async def change_course_detail_page(self):
-        if self.selected_item == None:
+        if self.selected_item is None:
             return
         self.change_page(
             self.child_page_name,
@@ -138,7 +138,7 @@ class CourseListWidget(ListWidget):
 
     async def list_ride_with_gps(self, add=False, reset=False):
         course = await self.config.network.api.get_ridewithgps_route(add, reset)
-        if course == None:
+        if course is None:
             return
 
         for c in reversed(course):
@@ -147,11 +147,11 @@ class CourseListWidget(ListWidget):
             self.add_list_item(course_item)
 
     def set_course(self, course_file=None):
-        if self.selected_item == None:
+        if self.selected_item is None:
             return
 
         # from Local Storage (self.list)
-        if course_file == None:
+        if course_file is None:
             self.course_file = (
                 self.config.G_COURSE_DIR + self.selected_item.list_info["id"]
             )
@@ -178,7 +178,7 @@ class CourseListWidget(ListWidget):
     def set_new_course(self):
         self.config.logger.course.set_course(self.course_file)
         self.config.gui.map_widget.reinit_course()
-        if self.config.gui.course_profile_graph_widget != None:
+        if self.config.gui.course_profile_graph_widget is not None:
             self.config.gui.course_profile_graph_widget.reinit_course()
 
         self.parentWidget().widget(
@@ -352,21 +352,21 @@ class CourseDetailWidget(MenuWidget):
         # sequentially draw with download
         # 1st download check
         if (
-            self.privacy_code == None
+            self.privacy_code is None
             and self.config.network.api.check_ridewithgps_files(self.list_id, "1st")
         ):
             self.draw_images(draw_map_image=True, draw_profile_image=False)
             self.privacy_code = self.config.logger.course.get_ridewithgps_privacycode(
                 self.list_id
             )
-            if self.privacy_code != None:
+            if self.privacy_code is not None:
                 # download files with privacy code (2nd download)
                 await self.config.network.api.get_ridewithgps_files_with_privacy_code(
                     self.list_id, self.privacy_code
                 )
         # 2nd download with privacy_code check
         elif (
-            self.privacy_code != None
+            self.privacy_code is not None
             and self.config.network.api.check_ridewithgps_files(self.list_id, "2nd")
         ):
             self.draw_images(draw_map_image=False, draw_profile_image=True)
@@ -375,7 +375,7 @@ class CourseDetailWidget(MenuWidget):
 
     def check_all_image_and_draw(self):
         # if all files exists, reload images and buttons, stop timer and exit
-        if not self.all_downloaded and self.config.network != None:
+        if not self.all_downloaded and self.config.network is not None:
             self.all_downloaded = self.config.network.api.check_ridewithgps_files(
                 self.list_id, "ALL"
             )
@@ -398,7 +398,7 @@ class CourseDetailWidget(MenuWidget):
         )
 
     def draw_images(self, draw_map_image=True, draw_profile_image=True):
-        if self.list_id == None:
+        if self.list_id is None:
             return False
 
         if draw_map_image:
@@ -406,7 +406,7 @@ class CourseDetailWidget(MenuWidget):
                 self.config.G_RIDEWITHGPS_API["URL_ROUTE_DOWNLOAD_DIR"]
                 + "preview-{route_id}.png"
             ).format(route_id=self.list_id)
-            if self.map_image_size == None:
+            if self.map_image_size is None:
                 # self.map_image_size = Image.open(filename).size
                 self.map_image_size = QtGui.QImage(filename).size()
             if self.map_image_size.width() == 0:
@@ -423,7 +423,7 @@ class CourseDetailWidget(MenuWidget):
                 self.config.G_RIDEWITHGPS_API["URL_ROUTE_DOWNLOAD_DIR"]
                 + "elevation_profile-{route_id}.jpg"
             ).format(route_id=self.list_id)
-            if self.profile_image_size == None:
+            if self.profile_image_size is None:
                 # self.profile_image_size = Image.open(filename).size
                 self.profile_image_size = QtGui.QImage(filename).size()
             if self.profile_image_size.width() == 0:

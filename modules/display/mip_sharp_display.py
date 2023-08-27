@@ -102,7 +102,7 @@ class MipSharpDisplay:
     async def draw_worker(self):
         while True:
             img_bytes = await self.draw_queue.get()
-            if img_bytes == None:
+            if img_bytes is None:
                 break
             self.pi.write(GPIO_SCS, 1)
             await asyncio.sleep(0.000006)
