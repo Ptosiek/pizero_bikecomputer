@@ -45,10 +45,10 @@ class Item(QtWidgets.QVBoxLayout):
         self.addWidget(self.value)
 
         bottom_border_width = "1px"
-        if bottom_flag == True:
+        if bottom_flag:
             bottom_border_width = "0px"
         right_border_width = "1px"
-        if right_flag == True:
+        if right_flag:
             right_border_width = "0px"
 
         self.label.setStyleSheet(
