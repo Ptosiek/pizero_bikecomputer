@@ -1,15 +1,6 @@
-try:
-    import PyQt6.QtCore as QtCore
-    import PyQt6.QtWidgets as QtWidgets
-    import PyQt6.QtGui as QtGui
-except ImportError:
-    import PyQt5.QtCore as QtCore
-    import PyQt5.QtWidgets as QtWidgets
-    import PyQt5.QtGui as QtGui
-
 import asyncio
-from qasync import asyncSlot
 
+from modules._pyqt import QtCore, QtWidgets, QtGui, qasync
 from .pyqt_menu_widget import MenuWidget, ListWidget, ListItemWidget
 
 
@@ -55,12 +46,12 @@ class CoursesMenuWidget(MenuWidget):
     def preprocess(self):
         self.onoff_course_cancel_button()
 
-    @asyncSlot()
+    @qasync.asyncSlot()
     async def load_local_courses(self):
         await self.change_course_page("Local Storage")
         await self.parentWidget().widget(self.child_index).list_local_courses()
 
-    @asyncSlot()
+    @qasync.asyncSlot()
     async def load_rwgps_courses(self):
         asyncio.gather(
             self.change_course_page("Ride with GPS"),
@@ -102,20 +93,20 @@ class CourseListWidget(ListWidget):
         self.vertical_scrollbar = self.list.verticalScrollBar()
         self.vertical_scrollbar.valueChanged.connect(self.detect_bottom)
 
-    @asyncSlot(int)
+    @qasync.asyncSlot(int)
     async def detect_bottom(self, value):
         if self.list_type == "Ride with GPS":
             if value == self.vertical_scrollbar.maximum():
                 await self.list_ride_with_gps(add=True)
 
-    @asyncSlot()
+    @qasync.asyncSlot()
     async def button_func(self):
         if self.list_type == "Local Storage":
             self.set_course()
         elif self.list_type == "Ride with GPS":
             await self.change_course_detail_page()
 
-    @asyncSlot()
+    @qasync.asyncSlot()
     async def change_course_detail_page(self):
         if self.selected_item is None:
             return
@@ -341,7 +332,7 @@ class CourseDetailWidget(MenuWidget):
     def on_back_menu(self):
         self.timer.stop()
 
-    @asyncSlot()
+    @qasync.asyncSlot()
     async def update_display(self):
         if self.check_all_image_and_draw():
             self.timer.stop()
