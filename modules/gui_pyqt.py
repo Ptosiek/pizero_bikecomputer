@@ -427,9 +427,12 @@ class GUI_PyQt(QtCore.QObject):
             # loop is stopped
 
             if not USE_PYQT6:
-                tasks = asyncio.all_tasks()
-                if len(tasks):
-                    print("Remaining tasks:", asyncio.all_tasks())
+                try:
+                    tasks = asyncio.all_tasks()
+                    if len(tasks):
+                        print(f"Remaining tasks: {asyncio.all_tasks()}")
+                except RuntimeError:
+                    pass
 
         # loop is closed
 
