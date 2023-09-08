@@ -11,6 +11,7 @@ import math
 from logging.handlers import TimedRotatingFileHandler
 
 import numpy as np
+from git import Repo, InvalidGitRepositoryError
 import oyaml as yaml
 from PIL import Image
 
@@ -23,6 +24,11 @@ try:
     _IS_RASPI = True
 except ImportError:
     pass
+
+try:
+    repo = Repo()
+except InvalidGitRepositoryError:
+    repo = None
 
 from logger import app_logger
 from modules.helper.setting import Setting
@@ -1013,12 +1019,25 @@ class Config:
             exec_cmd(["scripts/uncomment.sh"])
 
     def update_application(self):
-        if self.G_IS_RASPI:
-            exec_cmd(["git", "pull", "origin", "master"])
-            self.restart_application()
+        # only work if we are in a git repo
+        if repo:
+            # check if we are behind, if yes we update, else do nothing (warn user)
+            branch = repo.active_branch.name
+            # first fetch remote
+            repo.remotes.origin.fetch(branch)
+            # no check if we are behind
+            behind = bool(list(repo.iter_commits(f"{branch}..origin/{branch}")))
+            if behind:
+                repo.remotes.origin.pull(branch)
+                self.restart_application()
+            else:
+                self.gui.show_dialog_ok_only(None, "Up to date")
+        else:
+            self.gui.show_dialog_ok_only(None, "Not available")
 
+    # TODO, this doesn't handle new requirements, so restart might fail
     def restart_application(self):
-        if self.G_IS_RASPI:
+        if is_running_as_service():
             exec_cmd(["sudo", "systemctl", "restart", "pizero_bikecomputer"])
 
     def detect_network(self):
