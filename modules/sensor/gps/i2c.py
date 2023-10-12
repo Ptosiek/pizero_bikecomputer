@@ -6,13 +6,11 @@ from .base import AbstractSensorGPS
 
 _SENSOR_GPS_I2C = False
 try:
-    import pa1010d
+    from modules.utils.pa1010d import PA1010D
 
-    _sensor_i2c_gps = pa1010d.PA1010D()
+    _sensor_i2c_gps = PA1010D()
     _sensor_i2c_gps.read_sentence(timeout=1)
     _SENSOR_GPS_I2C = True
-except ImportError:
-    pass
 except Exception:  # noqa
     app_logger.exception("Failed to init GPS_I2C")
 
