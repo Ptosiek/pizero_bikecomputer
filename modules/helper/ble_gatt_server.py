@@ -1,20 +1,26 @@
 import asyncio
+import base64
 import json
 import re
-import base64
-import traceback
-import datetime
+from datetime import datetime, timedelta
 
-from bluez_peripheral.gatt.service import Service
-from bluez_peripheral.gatt.characteristic import (
-    characteristic,
-    CharacteristicFlags as CharFlags,
-)
-from bluez_peripheral.util import *
-from bluez_peripheral.advert import Advertisement
-from bluez_peripheral.agent import NoIoAgent
+try:
+    from bluez_peripheral.gatt.service import Service
+    from bluez_peripheral.gatt.characteristic import (
+        characteristic,
+        CharacteristicFlags as CharFlags,
+    )
+    from bluez_peripheral.util import *
+    from bluez_peripheral.advert import Advertisement
+    from bluez_peripheral.agent import NoIoAgent
+except ImportError:
+    raise ImportError("Missing bluez requirements")
 
 from logger import app_logger
+
+# Message first and last byte markers
+F_BYTE_MARKER = 0x10
+L_BYTE_MARKER = 0x0A  # ord("\n")
 
 
 class GadgetbridgeService(Service):
@@ -30,12 +36,20 @@ class GadgetbridgeService(Service):
     value = bytearray()
     value_extend = False
 
-    timestamp_str = ""
-    timestamp_status = False
+    # TODO this has become useless. AFAIU it's preventing to handle more than once the setTime message during the \
+    #  lifetime of the service, with current changes it time would be set each time the message is received
     timestamp_done = False
 
-    def __init__(self, config):
-        self.config = config
+    message = None
+
+    # TODO,
+    #  if we want to be precise we should account the time of sending/receiving message for the setTime command
+    #  it is sent through 8 messages (should still be less than 1s)
+    time_correction = 0  # seconds
+
+    def __init__(self, product, sensor):
+        self.product = product
+        self.sensor = sensor
         super().__init__(self.service_uuid, True)
 
     async def quit(self):
@@ -45,94 +59,33 @@ class GadgetbridgeService(Service):
     # direct access from central
     @characteristic(tx_characteristic_uuid, CharFlags.NOTIFY | CharFlags.READ)
     def tx_characteristic(self, options):
-        return bytes(self.config.G_PRODUCT, "utf-8")
+        return bytes(self.product, "utf-8")
 
     # notice to central
     def send_message(self, value):
         self.tx_characteristic.changed(bytes(value + "\\n\n", "utf-8"))
 
-    def atob(self, matchobj):
-        r = base64.b64decode(matchobj.group(1)).decode()
-        return f'"{r}"'
-
     # receive from central
     @characteristic(rx_characteristic_uuid, CharFlags.WRITE).setter
     def rx_characteristic(self, value, options):
-        app_logger.debug(value)
-        if value[0] == 0x10:
-            self.value = bytearray()
-            self.value_extend = True
-
-            self.timestamp_status = False
-            if (not self.timestamp_done or self.timestamp_status) and value[
-                1:8
-            ].decode() == "setTime":
-                self.timestamp_str = value.decode()[1:]
-                self.timestamp_status = True
-
-        elif self.timestamp_status:
-            self.timestamp_str += value.decode()
-
-            res = re.match(
-                "^setTime\((\d+)\);E.setTimeZone\((\S+)\)", self.timestamp_str
-            )
-            if res is not None:
-                self.timestamp_done = True
-                self.timestamp_status = False
-                time_diff = datetime.timedelta(hours=float(res.group(2)))
-                self.config.logger.sensor.sensor_gps.set_timediff_from_utc(time_diff)
-                utctime = datetime.datetime.fromtimestamp(int(res.group(1))) - time_diff
-                self.config.logger.sensor.sensor_gps.get_utc_time_from_datetime(utctime)
-
-        if self.value_extend:
-            self.value.extend(bytearray(value))
-
-        # for gadgetbridge JSON message
-        if (
-            len(self.value) > 8
-            and self.value[-3] == 0x7D
-            and self.value[-2] == 0x29
-            and self.value[-1] == 0x0A
-        ):
-            # remove emoji
-            text_mod = re.sub(":\w+:", "", self.value.decode().strip()[5:-2])
-
-            # decode base64
-            b64_decode_ptn = re.compile(r"atob\(\"(\S+)\"\)")
-            text_mod = re.sub(b64_decode_ptn, self.atob, text_mod)
-
-            message = {}
-            try:
-                message = json.loads("{" + text_mod + "}", strict=False)
-            except json.JSONDecodeError:
-                app_logger.exception("failed to load json")
-                app_logger.exception(self.value.decode().strip()[5:-2])
-                app_logger.exception(text_mod)
-
-            if (
-                "t" in message
-                and message["t"] == "notify"
-                and "title" in message
-                and "body" in message
-            ):
-                self.config.gui.show_message(
-                    message["title"], message["body"], limit_length=True
+        # GB messages handler/decoder
+        # messages are sent as \x10<content>\n (https://www.espruino.com/Gadgetbridge)
+        # They are mostly \x10GB<>content\n but the setTime message which does not have the GB prefix
+        if value[0] == F_BYTE_MARKER:
+            if self.message:
+                app_logger.warning(
+                    f"Previous message was not received fully and got discarded: {self.message}"
                 )
-                app_logger.info(f"success: {message}")
-            elif (
-                "t" in message
-                and len(message["t"]) >= 4
-                and message["t"][0:4] == "find"
-                and "n" in message
-                and message["n"]
-            ):
-                self.config.gui.show_dialog_ok_only(fn=None, title="Gadgetbridge")
-            elif "t" in message and message["t"] == "gps":
-                asyncio.create_task(
-                    self.config.logger.sensor.sensor_gps.update_GB(message)
-                )
+            self.message = bytearray(value)
+        else:
+            self.message.extend(bytearray(value))
 
-            self.value_extend = False
+        if self.message[-1] == L_BYTE_MARKER:
+            # full message received, we can decode it
+            message_str = self.message.decode()
+            app_logger.debug(f"Received message: {message_str}")
+            self.decode_message(message_str)
+            self.message = None
 
     async def on_off_uart_service(self):
         if self.status:
@@ -143,7 +96,7 @@ class GadgetbridgeService(Service):
             agent = NoIoAgent()
             await agent.register(self.bus)
             adapter = await Adapter.get_first(self.bus)
-            advert = Advertisement(self.config.G_PRODUCT, [self.service_uuid], 0, 60)
+            advert = Advertisement(self.product, [self.service_uuid], 0, 60)
             await advert.register(self.bus, adapter)
 
         self.status = not self.status
@@ -154,3 +107,52 @@ class GadgetbridgeService(Service):
         else:
             self.send_message('{t:"gps_power", status:false}')
         self.gps_status = not self.gps_status
+
+    @staticmethod
+    def decode_b64(match_object):
+        return f'"{base64.b64decode(match_object.group(1)).decode()}"'
+
+    def decode_message(self, message: str):
+        message = message.lstrip(chr(F_BYTE_MARKER)).rstrip(chr(L_BYTE_MARKER))
+
+        if message.startswith("setTime"):
+            res = re.match(r"^setTime\((\d+)\);E.setTimeZone\((\S+)\);", message)
+
+            if res is not None:
+                time_diff = timedelta(hours=float(res.group(2)))
+                utctime = (
+                    datetime.fromtimestamp(int(res.group(1)))
+                    - time_diff
+                    + timedelta(seconds=self.time_correction)
+                )
+
+                self.sensor.set_gb_timediff_from_utc(time_diff)
+                self.sensor.get_utc_time(utctime)
+
+        elif message.startswith("GB("):
+            message = message.lstrip("GB(").rstrip(")")
+            # GadgetBridge uses a json-ish message format ('{t:"is_gps_active"}'), so we need to add "" to keys
+            # It can also encode value in base64 using {key: atob("...")}
+
+            message = re.sub(r'(\w+):("?\w*"?)', '"\\1":\\2', message)
+            message = re.sub(r"atob\(\"(\S+)\"\)", self.decode_b64, message)
+
+            try:
+                message = json.loads(message, strict=False)
+
+                m_type = message.get("t")
+                if m_type == "notify" and "title" in message and "body" in message:
+                    self.config.gui.show_message(
+                        message["title"], message["body"], limit_length=True
+                    )
+                    app_logger.info(f"success: {message}")
+                elif m_type.startswith("find") and message.get("n", False):
+                    self.config.gui.show_dialog_ok_only(fn=None, title="Gadgetbridge")
+                elif m_type == "gps":
+                    asyncio.create_task(self.sensor.update_manual(message))
+
+            except json.JSONDecodeError:
+                app_logger.exception(f"Failed to load message as json {message}")
+
+        else:
+            app_logger.warning(f"{message} unknown message received")
