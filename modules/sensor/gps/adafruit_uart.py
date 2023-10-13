@@ -70,9 +70,9 @@ class Adafruit_GPS(AbstractSensorGPS):
                         None,
                         [g.pdop, g.hdop, g.vdop],
                         (used, total),
+                        g.timestamp_utc,
                     )
-                    self.get_utc_time(time.strftime(self.time_format, g.timestamp_utc))
-                self.get_sleep_time(self.config.G_GPS_INTERVAL)
+                self.get_sleep_time()
         except asyncio.CancelledError:
             pass
 

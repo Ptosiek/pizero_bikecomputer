@@ -65,8 +65,8 @@ class GPSD(AbstractSensorGPS):
                     [g.epx, g.epy, g.epv],
                     [g.pdop, g.hdop, g.vdop],
                     (used, total),
+                    g.time,
                 )
-                self.get_utc_time(g.time)
                 self.get_sleep_time()
         except asyncio.CancelledError:
             pass

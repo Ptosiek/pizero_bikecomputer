@@ -130,7 +130,7 @@ class AbstractSensorGPS(Sensor, metaclass=abc.ABCMeta):
         return valid
 
     async def get_basic_values(
-        self, lat, lon, alt, speed, track, mode, error, dop, satellites
+        self, lat, lon, alt, speed, track, mode, error, dop, satellites, gps_time
     ):
         # TODO, this probably has to go in the long term
         self.init_values()
@@ -252,6 +252,9 @@ class AbstractSensorGPS(Sensor, metaclass=abc.ABCMeta):
 
         # timestamp
         self.values["timestamp"] = datetime.now()
+        # set time
+        self.get_utc_time(gps_time)
+
         # raw coordinates
         self.values["raw_lat"] = lat
         self.values["raw_lon"] = lon
@@ -276,12 +279,12 @@ class AbstractSensorGPS(Sensor, metaclass=abc.ABCMeta):
             self.values["used_sats_str"] = f"{satellites[0]}"
 
     def get_utc_time(self, gps_time):
-        if isinstance(gps_time, (datetime, time)):
-            gps_time = gps_time.strftime(self.time_format)
-
         # UTC time
         if self.is_null_value(gps_time):
             return
+
+        if isinstance(gps_time, (datetime, time)):
+            gps_time = gps_time.strftime(self.time_format)
 
         self.values["time"] = gps_time
         self.values["utctime"] = self.values["time"][11:16]  # [11:19] for HH:MM:SS
@@ -380,8 +383,8 @@ class AbstractSensorGPS(Sensor, metaclass=abc.ABCMeta):
             None,
             [hdop, hdop, hdop],
             (int(message.get("satellites", 0)), None),
+            timestamp,
         )
-        self.get_utc_time(timestamp)
 
     def set_gb_timediff_from_utc(self, timediff):
         self.gb_timediff_from_utc = timediff

@@ -40,7 +40,6 @@ class GPS_I2C(AbstractSensorGPS):
 
                 result = g.update()
                 if result:
-                    timestamp = g.data["timestamp"]
                     mode = (
                         int(g.data["mode_fix_type"])
                         if not self.is_null_value(g.data["mode_fix_type"])
@@ -52,7 +51,9 @@ class GPS_I2C(AbstractSensorGPS):
                         else 0
                     )
                     dop = [
-                        float(g.data[x]) if g.data[x] not in ['', self.NULL_VALUE] else None
+                        float(g.data[x])
+                        if g.data[x] not in ["", self.NULL_VALUE]
+                        else None
                         for x in ["pdop", "hdop", "vdop"]
                     ]
 
@@ -66,8 +67,8 @@ class GPS_I2C(AbstractSensorGPS):
                         None,
                         dop,
                         (int(g.data["num_sats"] or 0), None),
+                        g.data["timestamp"],  # this is a time object not a datetime
                     )
-                    self.get_utc_time(timestamp)
                 self.get_sleep_time()
         except asyncio.CancelledError:
             pass
