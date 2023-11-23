@@ -66,6 +66,11 @@ class CoursesMenuWidget(MenuWidget):
     def cancel_course(self):
         self.config.logger.reset_course(delete_course_file=True)
         self.onoff_course_cancel_button()
+    
+    def set_new_course(self, course_file):
+        self.config.logger.set_new_course(course_file)
+        self.config.gui.init_course()
+        self.onoff_course_cancel_button()
 
     async def load_tcx_route(self, filename):
         self.cancel_course()
@@ -75,11 +80,6 @@ class CoursesMenuWidget(MenuWidget):
         shutil.move(os.path.join(settings.COURSE_DIR, filename), course_file)
         self.set_new_course(course_file)
         self.config.gui.show_forced_message("Loading succeeded!")
-
-    def set_new_course(self, course_file):
-        self.config.logger.set_new_course(course_file)
-        self.config.gui.init_course()
-        self.onoff_course_cancel_button()
 
 
 class CourseListWidget(ListWidget):
