@@ -1,12 +1,13 @@
-import struct
-import datetime
 import math
+import struct
+from datetime import datetime
 
 from logger import app_logger
-from . import ant_device
+from modules.settings import settings
+from .ant_device import ANT_Device
 
 
-class ANT_Device_Power(ant_device.ANT_Device):
+class ANT_Device_Power(ANT_Device):
     ant_config = {
         "interval": (8182, 16364, 32728),
         "type": 0x0B,
@@ -48,7 +49,7 @@ class ANT_Device_Power(ant_device.ANT_Device):
             self.values[page] = {}
         for page in self.elements:
             for element in self.elements[page]:
-                self.values[page][element] = self.config.G_ANT_NULLVALUE
+                self.values[page][element] = settings.ANT_NULLVALUE
         self.init_common_page_status()
 
     def reset_value(self):
@@ -60,6 +61,7 @@ class ANT_Device_Power(ant_device.ANT_Device):
         self.values[0x11]["distance"] = 0.0
         self.values[0x11]["accumulated_power"] = 0.0
         self.values[0x12]["accumulated_power"] = 0.0
+
         for page in self.pre_values:
             self.pre_values[page] = [-1, -1, -1, -1]
             self.power_values[page] = [-1, -1, -1, -1]
@@ -119,7 +121,7 @@ class ANT_Device_Power(ant_device.ANT_Device):
             power_values[1],
             power_16_simple,
         ) = self.structPattern[self.name][0x10].unpack(data[0:8])
-        t = datetime.datetime.now()
+        t = datetime.now()
 
         if pre_values[0] == -1:
             pre_values[0:2] = power_values[0:2]
@@ -133,11 +135,11 @@ class ANT_Device_Power(ant_device.ANT_Device):
         if -65535 <= delta[1] < 0:
             delta[1] += 65536
         delta_t = (t - values["on_data_timestamp"]).total_seconds()
-        # print("ANT+ Power(16) delta: ", datetime.datetime.now().strftime("%Y%m%d %H:%M:%S"), delta)
+        # print("ANT+ Power(16) delta: ", datetime.now().strftime("%Y%m%d %H:%M:%S"), delta)
 
         if (
             delta[0] > 0 and delta[1] >= 0 and delta_t < self.stop_cutoff
-        ):  # delta[1] < 16384: #for spike
+        ):  # delta[1] < 16384: # for spike
             pwr = delta[1] / delta[0]
             # max value in .fit file is 65536 [w]
             if pwr <= 65535 and (pwr - values["power"]) < self.spike_threshold["power"]:
@@ -174,7 +176,7 @@ class ANT_Device_Power(ant_device.ANT_Device):
             values["lr_balance"] = ":"
         else:
             app_logger.error(
-                f"ANT+ Power(16) err: {datetime.datetime.now().strftime('%Y%m%d %H:%M:%S')} {delta}",
+                f"ANT+ Power(16) err: {datetime.now().strftime('%Y%m%d %H:%M:%S')} {delta}",
             )
 
         pre_values[0:2] = power_values[0:2]
@@ -191,7 +193,7 @@ class ANT_Device_Power(ant_device.ANT_Device):
             power_values[0],
             power_values[1],
         ) = self.structPattern[self.name][0x11].unpack(data[0:8])
-        t = datetime.datetime.now()
+        t = datetime.now()
 
         if pre_values[0] == -1:
             pre_values = power_values
@@ -210,7 +212,7 @@ class ANT_Device_Power(ant_device.ANT_Device):
             if pwr_diff > 0:
                 values["accumulated_power"] += 128 * math.pi * pwr_diff / 2048
             if spd_diff > 0:
-                values["distance"] += self.config.G_WHEEL_CIRCUMFERENCE * spd_diff
+                values["distance"] += settings.WHEEL_CIRCUMFERENCE_M * spd_diff
             return
 
         delta = [a - b for (a, b) in zip(power_values, pre_values)]
@@ -243,12 +245,12 @@ class ANT_Device_Power(ant_device.ANT_Device):
             else:
                 self.print_spike("Power(17)", pwr, values["power"], delta, delta_t)
 
-            spd = 3.6 * self.config.G_WHEEL_CIRCUMFERENCE * delta[2] / (delta[0] / 2048)
+            spd = 3.6 * settings.WHEEL_CIRCUMFERENCE_M * delta[2] / (delta[0] / 2048)
             # max value in .fit file is 65.536 [m/s]
             if spd <= 65 and (spd - values["speed"]) < self.spike_threshold["speed"]:
                 values["speed"] = spd
                 if self.config.G_MANUAL_STATUS == "START":
-                    values["distance"] += self.config.G_WHEEL_CIRCUMFERENCE * delta[3]
+                    values["distance"] += settings.WHEEL_CIRCUMFERENCE_M * delta[3]
                 # refresh timestamp called from sensor_core
                 values["timestamp"] = t
             else:
@@ -259,7 +261,7 @@ class ANT_Device_Power(ant_device.ANT_Device):
             values["speed"] = 0
         else:
             app_logger.error(
-                f"ANT+ Power(17) err: {datetime.datetime.now().strftime('%Y%m%d %H:%M:%S')} {delta}",
+                f"ANT+ Power(17) err: {datetime.now().strftime('%Y%m%d %H:%M:%S')} {delta}",
             )
 
         pre_values = power_values
@@ -270,11 +272,11 @@ class ANT_Device_Power(ant_device.ANT_Device):
         self.config.state.set_value("ant+_power_values_17", power_values)
 
     def on_data_power_0x12(self, data, power_values, pre_values, values):
-        # (page), x, x, cadence, period(2byte), accumulatd power(2byte)
+        # (page), x, x, cadence, period(2byte), accumulated power(2byte)
         (cadence, power_values[0], power_values[1]) = self.structPattern[self.name][
             0x12
         ].unpack(data[0:8])
-        t = datetime.datetime.now()
+        t = datetime.now()
         if pre_values[0] == -1:
             pre_values[0:2] = power_values[0:2]
             values["on_data_timestamp"] = t
@@ -302,7 +304,7 @@ class ANT_Device_Power(ant_device.ANT_Device):
         if -65535 <= delta[1] < 0:
             delta[1] += 65536
         delta_t = (t - values["on_data_timestamp"]).total_seconds()
-        # print("ANT+ Power(18) delta: ", datetime.datetime.now().strftime("%Y%m%d %H:%M:%S"), delta)
+        # print("ANT+ Power(18) delta: ", datetime.now().strftime("%Y%m%d %H:%M:%S"), delta)
 
         # delta[1] < 16384: #for spike
         if delta[0] > 0 and delta[1] >= 0 and delta_t < self.stop_cutoff:
@@ -330,7 +332,7 @@ class ANT_Device_Power(ant_device.ANT_Device):
                 pass
             else:
                 app_logger.error(
-                    f"ANT+ Power(18) err: {datetime.datetime.now().strftime('%Y%m%d %H:%M:%S')} {delta}",
+                    f"ANT+ Power(18) err: {datetime.now().strftime('%Y%m%d %H:%M:%S')} {delta}",
                 )
 
         pre_values[0:2] = power_values[0:2]

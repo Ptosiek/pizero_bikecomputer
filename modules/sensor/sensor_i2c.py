@@ -5,6 +5,7 @@ import asyncio
 import numpy as np
 
 from logger import app_logger
+from modules.settings import settings
 from modules.utils.filters import KalmanFilter, KalmanFilter_pitch
 from modules.utils.geo import get_track_str
 from modules.utils.network import detect_network
@@ -228,7 +229,7 @@ class SensorI2C(Sensor):
         sampling_num = 100
 
         # kalman filter for altitude
-        self.dt = self.config.G_I2C_INTERVAL
+        self.dt = settings.I2C_INTERVAL
 
         self.kf = KalmanFilter(dim_x=3, dim_z=2)
         self.kf.H = np.array([[1, 0, 0], [0, 0, 1]])
@@ -272,7 +273,7 @@ class SensorI2C(Sensor):
                 np.var(acc_list),  # theta_variance
                 np.mean(gyro_list),  # theta_dot_means
                 np.var(gyro_list),  # theta_dot_variance
-                self.config.G_I2C_INTERVAL,
+                settings.I2C_INTERVAL,
             )
 
     def detect_sensors(self):
@@ -398,7 +399,7 @@ class SensorI2C(Sensor):
             self.values_mod[key] = np.zeros(3)
         self.values_mod["mag_min"] = np.full(3, np.inf)
         self.values_mod["mag_max"] = np.full(3, -np.inf)
-        self.gyro_average_array = np.zeros((3, int(2 / self.config.G_I2C_INTERVAL) + 1))
+        self.gyro_average_array = np.zeros((3, int(2 / settings.I2C_INTERVAL) + 1))
 
         self.values["total_ascent"] = 0
         self.values["total_descent"] = 0
@@ -409,12 +410,10 @@ class SensorI2C(Sensor):
 
         self.graph_values = {}
         for g in self.graph_keys:
-            self.graph_values[g] = np.full(
-                (3, self.config.G_GUI_ACC_TIME_RANGE), np.nan
-            )
+            self.graph_values[g] = np.full((3, settings.GUI_ACC_TIME_RANGE), np.nan)
 
         # for moving status
-        self.mov_window_size = int(2 / self.config.G_I2C_INTERVAL) + 1
+        self.mov_window_size = int(2 / settings.I2C_INTERVAL) + 1
         self.acc_raw_hist = np.zeros((3, self.mov_window_size))
         self.acc_hist = np.zeros((3, self.mov_window_size))
         self.euler_array = np.zeros((2, self.mov_window_size))
@@ -422,8 +421,8 @@ class SensorI2C(Sensor):
         self.moving = np.ones(self.mov_window_size)
         self.do_position_calibration = True
 
-        self.vspeed_window_size *= int(1 / self.config.G_I2C_INTERVAL)
-        self.timestamp_size *= int(1 / self.config.G_I2C_INTERVAL)
+        self.vspeed_window_size *= int(1 / settings.I2C_INTERVAL)
+        self.timestamp_size *= int(1 / settings.I2C_INTERVAL)
         self.timestamp_array = [None] * self.timestamp_size
         self.vspeed_array = [np.nan] * self.vspeed_window_size
 
@@ -436,7 +435,7 @@ class SensorI2C(Sensor):
             while True:
                 await self.sleep()
                 await self.update()
-                self.get_sleep_time(self.config.G_I2C_INTERVAL)
+                self.get_sleep_time(settings.I2C_INTERVAL)
         except asyncio.CancelledError:
             pass
 
@@ -524,16 +523,16 @@ class SensorI2C(Sensor):
         # Z: to down (minus)
 
         # X-Y swap
-        if is_mag and self.config.G_IMU_MAG_AXIS_SWAP_XY["STATUS"]:
+        if is_mag and settings.IMU_MAG_AXIS_SWAP_XY_STATUS:
             a[0:2] = a[1::-1]
-        elif self.config.G_IMU_AXIS_SWAP_XY["STATUS"]:
+        elif settings.IMU_AXIS_SWAP_XY_STATUS:
             a[0:2] = a[1::-1]
 
         # X, Y, Zinversion
-        if is_mag and self.config.G_IMU_MAG_AXIS_CONVERSION["STATUS"]:
-            a = a * self.config.G_IMU_MAG_AXIS_CONVERSION["COEF"]
-        elif self.config.G_IMU_AXIS_CONVERSION["STATUS"]:
-            a = a * self.config.G_IMU_AXIS_CONVERSION["COEF"]
+        if is_mag and settings.IMU_MAG_AXIS_CONVERSION_STATUS:
+            a = a * settings.IMU_MAG_AXIS_CONVERSION_COEF
+        elif settings.IMU_AXIS_CONVERSION_STATUS:
+            a = a * settings.IMU_AXIS_CONVERSION_COEF
 
         return a
 
@@ -623,10 +622,7 @@ class SensorI2C(Sensor):
             acc_angle[1] = self.values["pitch"] - self.values["fixed_pitch"]
         self.values["gyro"] = (
             ratio
-            * (
-                self.values["gyro"]
-                + self.values["gyro_mod"] * self.config.G_I2C_INTERVAL
-            )
+            * (self.values["gyro"] + self.values["gyro_mod"] * settings.I2C_INTERVAL)
             + (1 - ratio) * acc_angle
         )
 
@@ -782,18 +778,15 @@ class SensorI2C(Sensor):
                 calculator = MagneticFieldCalculator()
                 try:
                     result = calculator.calculate(latitude=v["lat"], longitude=v["lon"])
-                    self.config.G_IMU_MAG_DECLINATION = int(
-                        result["field-value"]["declination"]["value"]
-                    )
-                    app_logger.info(
-                        f"_SENSOR_MAG_DECLINATION: {self.config.G_IMU_MAG_DECLINATION}"
-                    )
+                    mag_declination = int(result["field-value"]["declination"]["value"])
+                    settings.update_setting("IMU_MAG_DECLINATION", mag_declination)
+                    app_logger.info(f"_SENSOR_MAG_DECLINATION: {mag_declination}")
                     self.is_mag_declination_modified = True
                 except:
                     pass
 
         self.values["heading"] = (
-            int(math.degrees(tilt_heading)) - self.config.G_IMU_MAG_DECLINATION
+            int(math.degrees(tilt_heading)) - settings.IMU_MAG_DECLINATION
         )
         self.values["heading_str"] = get_track_str(self.values["heading"])
 
@@ -1091,7 +1084,7 @@ class SensorI2C(Sensor):
                 self.config.G_ANT["ID_TYPE"]["TEMP"]
             ]["temperature"]
 
-        # from ANT+ sensor (tempe), not use I2C sensor because of inaccuracy
+        # from ANT+ sensor (temp), do not use I2C sensor because of inaccuracy
         if (
             self.config.G_ANT["USE"]["TEMP"]
             and self.config.G_ANT["ID_TYPE"]["TEMP"] != 0
@@ -1099,21 +1092,6 @@ class SensorI2C(Sensor):
         ):
             temperature = ant_value
             self.sealevel_temp = 273.15 + ant_value + 0.0065 * alt
-
-        # from OpenWeatherMap API with current point
-        else:
-            v = self.config.logger.sensor.values["GPS"]
-            try:
-                api_data = await self.config.api.get_openweathermap_data(
-                    v["lon"], v["lat"]
-                )
-                if api_data is None:
-                    raise Exception()
-                if "temp" in api_data["main"]:
-                    temperature = api_data["main"]["temp"] - 273.15
-                    self.sealevel_temp = api_data["main"]["temp"] + 0.0065 * alt
-            except:
-                pass
 
         self.sealevel_pa = self.values["pressure"] * pow(
             (self.sealevel_temp - 0.0065 * alt) / self.sealevel_temp, -5.257

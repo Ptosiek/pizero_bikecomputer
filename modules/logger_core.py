@@ -11,6 +11,7 @@ import numpy as np
 from crdp import rdp
 
 from logger import app_logger
+from modules.settings import settings
 from modules.utils.cmd import exec_cmd
 from modules.utils.date import datetime_myparser
 from modules.utils.timer import Timer
@@ -88,11 +89,11 @@ class LoggerCore:
         asyncio.create_task(self.sql_worker())
         try:
             self.count_up_lock = False
-            self.config.loop.add_signal_handler(signal.SIGALRM, self.count_up)
+            asyncio.get_running_loop().add_signal_handler(signal.SIGALRM, self.count_up)
             signal.setitimer(
                 signal.ITIMER_REAL,
-                self.config.G_LOGGING_INTERVAL,
-                self.config.G_LOGGING_INTERVAL,
+                settings.LOGGING_INTERVAL,
+                settings.LOGGING_INTERVAL,
             )
         except:
             # for windows
@@ -105,8 +106,8 @@ class LoggerCore:
 
         self.sensor = sensor_core.SensorCore(self.config)
         self.course = Course(self.config)
-        self.logger_csv = logger_csv.LoggerCsv(self.config)
-        self.logger_fit = logger_fit.LoggerFit(self.config)
+        self.logger_csv = logger_csv.LoggerCsv()
+        self.logger_fit = logger_fit.LoggerFit()
 
         self.sensor.start_coroutine()
 
@@ -122,7 +123,7 @@ class LoggerCore:
 
         # sqlite3
         # usage of sqlite3 is "insert" only, so check_same_thread=False
-        self.con = sqlite3.connect(self.config.G_LOG_DB, check_same_thread=False)
+        self.con = sqlite3.connect(settings.LOG_DB, check_same_thread=False)
         self.cur = self.con.cursor()
         self.init_db()
         self.cur.execute("SELECT timestamp FROM BIKECOMPUTER_LOG LIMIT 1")
@@ -178,8 +179,9 @@ class LoggerCore:
         self.cur.close()
         self.con.close()
 
-    def remove_handler(self):
-        self.config.loop.remove_signal_handler(signal.SIGALRM)
+    @staticmethod
+    def remove_handler():
+        asyncio.get_running_loop().remove_signal_handler(signal.SIGALRM)
 
     async def sql_worker(self):
         while True:
@@ -269,16 +271,16 @@ class LoggerCore:
             and len(res) >= 5
             and res[4].replace(" ", "") != self.create_table_sql.replace(" ", "")
         ):
-            log_db_moved = self.config.G_LOG_DB + "-old_layout"
+            log_db_moved = settings.LOG_DB + "-old_layout"
             self.cur.close()
             self.con.close()
 
-            shutil.move(self.config.G_LOG_DB, log_db_moved)
+            shutil.move(settings.LOG_DB, log_db_moved)
             app_logger.info(
-                f"The layout of {self.config.G_LOG_DB} is changed to {log_db_moved}"
+                f"The layout of {settings.LOG_DB} is changed to {log_db_moved}"
             )
 
-            self.con = sqlite3.connect(self.config.G_LOG_DB, check_same_thread=False)
+            self.con = sqlite3.connect(settings.LOG_DB, check_same_thread=False)
             self.cur = self.con.cursor()
             replace_flg = True
         if res is None or replace_flg:
@@ -294,8 +296,10 @@ class LoggerCore:
 
     def count_up(self):
         self.calc_gross()
+
         if self.config.G_STOPWATCH_STATUS != "START" or self.count_up_lock:
             return
+
         self.count_up_lock = True
         self.values["count"] += 1
         self.values["count_lap"] += 1
@@ -351,10 +355,13 @@ class LoggerCore:
     def start_and_stop(self, status=None):
         if status is not None:
             self.config.G_STOPWATCH_STATUS = status
+
         time_str = datetime.now().strftime("%Y%m%d %H:%M:%S")
+
         if self.config.G_STOPWATCH_STATUS != "START":
             self.config.G_STOPWATCH_STATUS = "START"
             app_logger.info(f"->START   {time_str}")
+
         elif self.config.G_STOPWATCH_STATUS == "START":
             self.config.G_STOPWATCH_STATUS = "STOP"
             app_logger.info(f"->STOP    {time_str}")
@@ -407,7 +414,7 @@ class LoggerCore:
         start_date = end_date = None  # UTC time
 
         con = sqlite3.connect(
-            self.config.G_LOG_DB,
+            settings.LOG_DB,
             detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
         )
         sqlite3.dbapi2.converters["DATETIME"] = sqlite3.dbapi2.converters["TIMESTAMP"]
@@ -448,7 +455,7 @@ class LoggerCore:
 
         start_date_local = start_date.astimezone().strftime("%Y-%m-%d_%H-%M-%S")
 
-        filename = os.path.join(self.config.G_LOG_DIR, start_date_local)
+        filename = os.path.join(settings.LOG_DIR, start_date_local)
         fit_text = f"Write fit({self.logger_fit.mode}):"
         csv_text = f"Write csv{' ' * (len(self.logger_fit.mode) + 2)}:"
 
@@ -458,30 +465,31 @@ class LoggerCore:
             Timer(auto_start=False, auto_log=True, text="DELETE : {:0.4f} sec"),
         ]
 
-        if self.config.G_LOG_WRITE_CSV:
+        if settings.LOG_WRITE_CSV:
             with timers[0]:
                 if not self.logger_csv.write_log(f"{filename}.csv"):
                     return
 
-        if self.config.G_LOG_WRITE_FIT:
+        if settings.LOG_WRITE_FIT:
             with timers[1]:
                 if not self.logger_fit.write_log(
                     f"{filename}.fit", start_date, end_date
                 ):
                     return
+                self.config.G_UPLOAD_FILE = f"{filename}.fit"
 
         # backup and reset database
         with timers[2]:
             shutil.move(
-                self.config.G_LOG_DB,
-                f"{self.config.G_LOG_DB}-{start_date_local}",
+                settings.LOG_DB,
+                f"{settings.LOG_DB}-{start_date_local}",
             )
 
             self.reset()
 
             # restart db connect
             # usage of sqlite3 is "insert" only, so check_same_thread=False
-            self.con = sqlite3.connect(self.config.G_LOG_DB, check_same_thread=False)
+            self.con = sqlite3.connect(settings.LOG_DB, check_same_thread=False)
             self.cur = self.con.cursor()
             self.init_db()
 
@@ -570,7 +578,7 @@ class LoggerCore:
                     t2 = self.values["count"]  # [s]
                 # average including/excluding zero (cadence, power)
                 elif k in ["cadence", "power"]:
-                    if v == 0 and not self.config.G_AVERAGE_INCLUDING_ZERO[k]:
+                    if v == 0 and not settings.AVERAGE_INCLUDING_ZERO[k]:
                         continue
                     for l_e in ["lap", "entire"]:
                         self.average[l_e][k]["sum"] += v
@@ -732,15 +740,16 @@ class LoggerCore:
         )
 
         # gross_diff_time
-        if self.config.G_GROSS_AVE_SPEED == 0:
+        if settings.GROSS_AVE_SPEED == 0:
             return
+
         # [km]/[km/h] = +-[h] -> +-[m]
         diff_time = (
             (
                 self.sensor.values["integrated"]["distance"] / 1000
-                - self.config.G_GROSS_AVE_SPEED * self.values["elapsed_time"] / 3600
+                - settings.GROSS_AVE_SPEE * self.values["elapsed_time"] / 3600
             )
-            / self.config.G_GROSS_AVE_SPEED
+            / settings.GROSS_AVE_SPEE
             * 60
         )
         diff_h, diff_m = divmod(abs(diff_time), 60)
@@ -876,8 +885,7 @@ class LoggerCore:
                 datetime_myparser(first_row[0]).timestamp() - 1
             )
 
-        # if not self.config.G_IS_RASPI and self.config.G_DUMMY_OUTPUT:
-        if self.config.G_DUMMY_OUTPUT:
+        if settings.DUMMY_OUTPUT:
             self.cur.execute(
                 "SELECT position_lat,position_long,distance,gps_track FROM BIKECOMPUTER_LOG"
             )
@@ -946,8 +954,8 @@ class LoggerCore:
             self.short_log_available = True
         # get values from copied db when initial execution or migration from short_log to db in logging
         else:
-            db_file = self.config.G_LOG_DB + ".tmp"
-            shutil.copy(self.config.G_LOG_DB, db_file)
+            db_file = settings.LOG_DB + ".tmp"
+            shutil.copy(settings.LOG_DB, db_file)
 
             query = (
                 "SELECT distance,position_lat,position_long FROM BIKECOMPUTER_LOG "

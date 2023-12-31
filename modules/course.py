@@ -9,6 +9,7 @@ from crdp import rdp
 
 from logger import app_logger
 from modules.loaders import TcxLoader
+from modules.settings import settings
 from modules.utils.filters import savitzky_golay
 from modules.utils.geo import calc_azimuth, get_dist_on_earth, get_dist_on_earth_array
 from modules.utils.timer import Timer, log_timers
@@ -37,10 +38,10 @@ class CourseIndex:
 
     check = None
 
-    cutoff = None
+    on_route_cutoff = None
 
     def __init__(self, cutoff):
-        self.cutoff = cutoff
+        self.on_route_cutoff = cutoff
         self.reset()
 
     def reset(self):
@@ -49,7 +50,7 @@ class CourseIndex:
         self.distance = 0
         self.altitude = np.nan
         self.on_course_status = False
-        self.check = [True] * self.cutoff
+        self.check = [True] * self.on_route_cutoff
 
 
 class CoursePoints:
@@ -93,6 +94,7 @@ class Course:
 
     course_points = None
     index = None
+    search_range = settings.GPS_SEARCH_RANGE  # default
 
     # calculated
     points_diff = np.array([])
@@ -112,7 +114,7 @@ class Course:
         super().__init__()
         self.config = config
         self.course_points = CoursePoints()
-        self.index = CourseIndex(config.G_GPS_KEEP_ON_COURSE_CUTOFF)
+        self.index = CourseIndex(settings.GPS_KEEP_ON_COURSE_CUTOFF)
 
     def __str__(self):
         return f"Course:\n" f"{oyaml.dump(self.info, allow_unicode=True)}\n"
@@ -138,22 +140,23 @@ class Course:
         self.slope_smoothing = np.array([])
         self.colored_altitude = np.array([])
         self.climb_segment = []
+        self.search_range = settings.GPS_SEARCH_RANGE
 
         if self.course_points:
             self.course_points.reset()
 
         if delete_course_file:
-            if os.path.exists(self.config.G_COURSE_FILE_PATH):
-                os.remove(self.config.G_COURSE_FILE_PATH)
+            if os.path.exists(settings.COURSE_FILE_PATH):
+                os.remove(settings.COURSE_FILE_PATH)
             if not replace and self.config.G_THINGSBOARD_API["STATUS"]:
                 self.config.api.send_livetrack_course_reset()
 
     def load(self, file=None):
-        # if file is given, copy it to self.config.G_COURSE_FILE_PATH firsthand, we are loading a new course
+        # if file is given, copy it to settings.COURSE_FILE_PATH firsthand, we are loading a new course
         if file:
             _, ext = os.path.splitext(file)
-            shutil.copy(file, self.config.G_COURSE_FILE_PATH)
-            # shutil.copy2(file, self.config.G_COURSE_FILE_PATH)
+            shutil.copy(file, settings.COURSE_FILE_PATH)
+            # shutil.copy2(file, settings.COURSE_FILE_PATH)
             # if ext:
             #    os.setxattr(
             #        self.config.G_COURSE_FILE_PATH, "user.ext", ext[1:].encode()
@@ -170,7 +173,7 @@ class Course:
 
         with timers[0]:
             # get loader based on the extension
-            if os.path.exists(self.config.G_COURSE_FILE_PATH):
+            if os.path.exists(settings.COURSE_FILE_PATH):
                 # get file extension in order to find the correct loader
                 # extension was set in custom attributes as the current course is always
                 # loaded from '.current'
@@ -181,7 +184,7 @@ class Course:
                     ext = "tcx"
                     if ext in LOADERS:
                         course_data, course_points_data = LOADERS[ext].load_file(
-                            self.config.G_COURSE_FILE_PATH
+                            settings.COURSE_FILE_PATH
                         )
                         if course_data:
                             for k, v in course_data.items():
@@ -475,11 +478,11 @@ class Course:
             # np.savetxt('log/course_altitude_dem.csv', alt_dem, fmt='%.3f')
 
         diff_dist_max = int(np.max(dist_diff)) * 2 / 1000  # [m->km]
-        if diff_dist_max > self.config.G_GPS_SEARCH_RANGE:  # [km]
+        if diff_dist_max > settings.GPS_SEARCH_RANGE:  # [km]
             app_logger.debug(
-                f"G_GPS_SEARCH_RANGE[km]: {self.config.G_GPS_SEARCH_RANGE} -> {diff_dist_max}"
+                f"G_GPS_SEARCH_RANGE[km]: {settings.GPS_SEARCH_RANGE} -> {diff_dist_max}"
             )
-            self.config.G_GPS_SEARCH_RANGE = diff_dist_max
+            self.search_range = diff_dist_max
 
         app_logger.info(f"downsampling:{len_lat} -> {len(self.latitude)}")
 
@@ -491,7 +494,7 @@ class Course:
         LP_coefficient = 0.15
 
         self.colored_altitude = np.full(
-            (course_n, 3), self.config.G_SLOPE_COLOR[0]
+            (course_n, 3), settings.SLOPE_COLOR[0]
         )  # 3 is RGB
 
         if course_n < 2 * diff_num or len(self.altitude) < 2 * diff_num:
@@ -517,7 +520,7 @@ class Course:
         cond_all = np.full(course_n, False)
 
         for i in range(diff_num - 1):
-            cond = dist_diff[i] >= self.config.G_CLIMB_DISTANCE_CUTOFF
+            cond = dist_diff[i] >= settings.CLIMB_DISTANCE_CUTOFF
             cond_diff = cond ^ cond_all
             grade_mod[cond_diff] = grade[i][cond_diff]
             cond_all = cond
@@ -546,17 +549,17 @@ class Course:
         # detect climbs
         slope_smoothing_cat = np.zeros(course_n).astype("uint8")
 
-        for i in range(i, len(self.config.G_SLOPE_CUTOFF) - 1):
+        for i in range(i, len(settings.SLOPE_CUTOFF) - 1):
             slope_smoothing_cat = np.where(
-                (self.config.G_SLOPE_CUTOFF[i - 1] < self.slope_smoothing)
-                & (self.slope_smoothing <= self.config.G_SLOPE_CUTOFF[i]),
+                (settings.SLOPE_CUTOFF[i - 1] < self.slope_smoothing)
+                & (self.slope_smoothing <= settings.SLOPE_CUTOFF[i]),
                 i,
                 slope_smoothing_cat,
             )
 
         slope_smoothing_cat = np.where(
-            (self.config.G_SLOPE_CUTOFF[-1] < self.slope_smoothing),
-            len(self.config.G_SLOPE_CUTOFF) - 1,
+            (settings.SLOPE_CUTOFF[-1] < self.slope_smoothing),
+            len(settings.SLOPE_CUTOFF) - 1,
             slope_smoothing_cat,
         )
 
@@ -612,24 +615,23 @@ class Course:
                     end_index
                 ]
                 if (
-                    self.climb_segment[-1]["distance"]
-                    < self.config.G_CLIMB_DISTANCE_CUTOFF
+                    self.climb_segment[-1]["distance"] < settings.CLIMB_DISTANCE_CUTOFF
                     or self.climb_segment[-1]["average_grade"]
-                    < self.config.G_CLIMB_GRADE_CUTOFF
+                    < settings.CLIMB_GRADE_CUTOFF
                     or self.climb_segment[-1]["volume"]
-                    < self.config.G_CLIMB_CATEGORY[0]["volume"]
+                    < settings.CLIMB_CATEGORY[0]["volume"]
                 ):
                     # app_logger.debug(f"{self.climb_segment[-1]['distance']}, {self.climb_segment[-1]['volume']}, {self.climb_segment[-1]['distance']}, {self.climb_segment[-1]['average_grade']}")
                     self.climb_segment.pop()
                 else:
-                    for j in reversed(range(len(self.config.G_CLIMB_CATEGORY))):
+                    for j in reversed(range(len(settings.CLIMB_CATEGORY))):
                         if (
                             self.climb_segment[-1]["volume"]
-                            > self.config.G_CLIMB_CATEGORY[j]["volume"]
+                            > settings.CLIMB_CATEGORY[j]["volume"]
                         ):
-                            self.climb_segment[-1][
-                                "cat"
-                            ] = self.config.G_CLIMB_CATEGORY[j]["name"]
+                            self.climb_segment[-1]["cat"] = settings.CLIMB_CATEGORY[j][
+                                "name"
+                            ]
                             break
                 climb_search_state = False
             # detect climb start
@@ -648,10 +650,10 @@ class Course:
                 climb_search_state = True
 
         # app_logger.debug(self.climb_segment)
-        self.colored_altitude = np.array(self.config.G_SLOPE_COLOR)[slope_smoothing_cat]
+        self.colored_altitude = np.array(settings.SLOPE_COLOR)[slope_smoothing_cat]
 
     def modify_course_points(self):
-        if not self.config.G_COURSE_INDEXING:
+        if not settings.COURSE_INDEXING:
             return
 
         self.azimuth = calc_azimuth(self.latitude, self.longitude)
@@ -724,7 +726,7 @@ class Course:
                     )
 
                     if (
-                        dist_diff_h < self.config.G_GPS_ON_ROUTE_CUTOFF
+                        dist_diff_h < settings.GPS_ON_ROUTE_CUTOFF
                         and dist_diff_h < min_dist_diff_h
                     ):
                         if min_j is not None and j - min_j > 2:
@@ -847,8 +849,8 @@ class Course:
                     course_points.altitude, self.altitude[-1]
                 )
 
-    def get_index(self, lat, lon, track, search_range, on_route_cutoff, azimuth_cutoff):
-        if not self.config.G_COURSE_INDEXING:
+    def get_index(self, lat, lon, track):
+        if not settings.COURSE_INDEXING:
             self.index.on_course_status = False
             return
 
@@ -856,7 +858,7 @@ class Course:
             return
 
         # not running
-        if self.config.G_IS_RASPI and self.config.G_STOPWATCH_STATUS != "START":
+        if settings.IS_RASPI and self.config.G_STOPWATCH_STATUS != "START":
             return
 
         course_n = len(self.longitude)
@@ -870,12 +872,12 @@ class Course:
         forward_search_index = min(start + 5, course_n - 1)
         # 2nd search index(a several kilometers ahead: weak GPS signal, long tunnel)
         forward_search_index_next = max(
-            self.get_index_with_distance_cutoff(start, search_range),
+            self.get_index_with_distance_cutoff(start, self.search_range),
             forward_search_index,
         )
         # 3rd search index(backward)
         backward_search_index = self.get_index_with_distance_cutoff(
-            start, -search_range
+            start, -self.search_range
         )
 
         b_a_x = self.points_diff[0]
@@ -906,7 +908,7 @@ class Course:
         # search with no penalty
         # 1st start -> forward_search_index
         # 2nd forward_search_index -> forward_search_index_next
-        # with penalty (continue running while G_GPS_KEEP_ON_COURSE_CUTOFF seconds, then change course_index)
+        # with penalty (continue running while GPS_KEEP_ON_COURSE_CUTOFF seconds, then change course_index)
         # 3rd backward_search_index -> start
         # 4th forward_search_index -> end of course
         # 5th start of course -> backward_search_index
@@ -929,8 +931,11 @@ class Course:
             m = s[0]
 
             dist_diff_mod = np.where(
-                ((0 <= azimuth_diff) & (azimuth_diff <= azimuth_cutoff[0]))
-                | ((azimuth_cutoff[1] <= azimuth_diff) & (azimuth_diff <= 360)),
+                ((0 <= azimuth_diff) & (azimuth_diff <= settings.GPS_AZIMUTH_CUTOFF[0]))
+                | (
+                    (settings.GPS_AZIMUTH_CUTOFF[1] <= azimuth_diff)
+                    & (azimuth_diff <= 360)
+                ),
                 dist_diff,
                 np.inf,
             )
@@ -952,8 +957,8 @@ class Course:
                 # GPS is lost(return start finally)
                 continue
             if (
-                0 <= azimuth_diff[m] <= azimuth_cutoff[0]
-                or azimuth_cutoff[1] <= azimuth_diff[m] <= 360
+                0 <= azimuth_diff[m] <= settings.GPS_AZIMUTH_CUTOFF[0]
+                or settings.GPS_AZIMUTH_CUTOFF[1] <= azimuth_diff[m] <= 360
             ):
                 # go forward
                 pass
@@ -972,8 +977,8 @@ class Course:
 
             # grade check if available
             grade = self.config.logger.sensor.values["integrated"]["grade"]
-            if not np.isnan(grade) and (grade > self.config.G_SLOPE_CUTOFF[0]) != (
-                self.slope_smoothing[m] > self.config.G_SLOPE_CUTOFF[0]
+            if not np.isnan(grade) and (grade > settings.SLOPE_CUTOFF[0]) != (
+                self.slope_smoothing[m] > settings.SLOPE_CUTOFF[0]
             ):
                 continue
 
@@ -1001,9 +1006,9 @@ class Course:
             )
             dist_diff_h = get_dist_on_earth(h_lon, h_lat, lon, lat)
 
-            if dist_diff_h > on_route_cutoff:
+            if dist_diff_h > settings.GPS_ON_ROUTE_CUTOFF:
                 app_logger.debug(
-                    f"dist_diff_h: {dist_diff_h:.0f} > cutoff {on_route_cutoff}[m]"
+                    f"dist_diff_h: {dist_diff_h:.0f} > cutoff {settings.GPS_ON_ROUTE_CUTOFF}[m]"
                 )
                 app_logger.debug(
                     f"\ti:{i}, s:{s}, m:{m}, azimuth_diff:{azimuth_diff[m]}, "
@@ -1021,7 +1026,7 @@ class Course:
                 )
                 continue
 
-            # stay forward while self.config.G_GPS_KEEP_ON_COURSE_CUTOFF if search_indexes is except forward
+            # stay forward while GPS_KEEP_ON_COURSE_CUTOFF if search_indexes is except forward
             # prevent from changing course index quickly
             self.index.check[:-1] = self.index.check[1:]
             if i < penalty_index:

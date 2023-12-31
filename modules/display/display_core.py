@@ -1,6 +1,7 @@
 import os
 
 from logger import app_logger
+from modules.settings import settings
 
 DEFAULT_RESOLUTION = (400, 240)
 
@@ -34,7 +35,7 @@ class Display:
 
         if self.has_auto_brightness:
             # set initial status
-            self.auto_brightness = config.G_USE_AUTO_BACKLIGHT
+            self.auto_brightness = settings.USE_AUTO_BACKLIGHT
 
             # set index properly if on
             if self.auto_brightness:
@@ -86,6 +87,12 @@ class Display:
     def set_brightness(self, b):
         pass
 
+    def change_color_low(self):
+        pass
+
+    def change_color_high(self):
+        pass
+
 
 def detect_display():
     hatdir = "/proc/device-tree/hat"
@@ -109,41 +116,40 @@ def detect_display():
 def init_display(config):
     # default dummy display
 
-    display = Display(config)
+    display, display_name = Display(config), settings.DISPLAY
 
-    if not config.G_IS_RASPI:
-        config.G_DISPLAY = "None"
-        return display
+    if not settings.IS_RASPI:
+        display_name = "None"
+    else:
+        auto_detect = detect_display()
 
-    auto_detect = detect_display()
+        if auto_detect is not None:
+            display_name = auto_detect
 
-    if auto_detect is not None:
-        config.G_DISPLAY = auto_detect
+        if display_name == "PiTFT":
+            from .pitft_28_r import _SENSOR_DISPLAY, PiTFT28r
 
-    if config.G_DISPLAY == "PiTFT":
-        from .pitft_28_r import _SENSOR_DISPLAY, PiTFT28r
+            if _SENSOR_DISPLAY:
+                display = PiTFT28r(config)
+        elif display_name in ("MIP", "MIP_640"):
+            from .mip_display import _SENSOR_DISPLAY, MipDisplay
 
-        if _SENSOR_DISPLAY:
-            display = PiTFT28r(config)
-    elif config.G_DISPLAY in ("MIP", "MIP_640"):
-        from .mip_display import _SENSOR_DISPLAY, MipDisplay
+            if _SENSOR_DISPLAY:
+                display = MipDisplay(config, SUPPORTED_DISPLAYS[display_name])
+        elif display_name in ("MIP_Sharp", "MIP_Sharp_320"):
+            from .mip_sharp_display import _SENSOR_DISPLAY, MipSharpDisplay
 
-        if _SENSOR_DISPLAY:
-            display = MipDisplay(config, SUPPORTED_DISPLAYS[config.G_DISPLAY])
-    elif config.G_DISPLAY in ("MIP_Sharp", "MIP_Sharp_320"):
-        from .mip_sharp_display import _SENSOR_DISPLAY, MipSharpDisplay
+            if _SENSOR_DISPLAY:
+                display = MipSharpDisplay(config, SUPPORTED_DISPLAYS[display_name])
+        elif display_name == "Papirus":
+            from .papirus_display import _SENSOR_DISPLAY, PapirusDisplay
 
-        if _SENSOR_DISPLAY:
-            display = MipSharpDisplay(config, SUPPORTED_DISPLAYS[config.G_DISPLAY])
-    elif config.G_DISPLAY == "Papirus":
-        from .papirus_display import _SENSOR_DISPLAY, PapirusDisplay
+            if _SENSOR_DISPLAY:
+                display = PapirusDisplay(config)
+        elif display_name == "DFRobot_RPi_Display":
+            from .dfrobot_rpi_display import _SENSOR_DISPLAY, DFRobotRPiDisplay
 
-        if _SENSOR_DISPLAY:
-            display = PapirusDisplay(config)
-    elif config.G_DISPLAY == "DFRobot_RPi_Display":
-        from .dfrobot_rpi_display import _SENSOR_DISPLAY, DFRobotRPiDisplay
+            if _SENSOR_DISPLAY:
+                display = DFRobotRPiDisplay(config)
 
-        if _SENSOR_DISPLAY:
-            display = DFRobotRPiDisplay(config)
-
-    return display
+    return display, display_name

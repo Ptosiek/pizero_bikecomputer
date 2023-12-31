@@ -10,6 +10,7 @@ from logger import app_logger
 from modules._pyqt import QT_COMPOSITION_MODE_DARKEN, QtCore, pg, qasync
 from modules.pyqt.pyqt_cuesheet_widget import CueSheetWidget
 from modules.pyqt.graph.pyqtgraph.CoursePlotItem import CoursePlotItem
+from modules.settings import settings
 from modules.utils.geo import (
     calc_y_mod,
     get_mod_lat,
@@ -70,6 +71,11 @@ class MapWidget(BaseMapWidget):
     auto_zoomlevel_diff = 2  # auto_zoomlevel = zoomlevel + auto_zoomlevel_diff
     auto_zoomlevel_back = None
 
+    # overlays
+    use_heatmap_overlay_map = False
+    use_rain_overlay_map = False
+    use_wind_overlay_map = False
+
     # signal for physical button
     signal_search_route = QtCore.pyqtSignal()
 
@@ -96,8 +102,8 @@ class MapWidget(BaseMapWidget):
     def setup_ui_extra(self):
         super().setup_ui_extra()
 
-        self.map_pos["x"] = self.config.G_DUMMY_POS_X
-        self.map_pos["y"] = self.config.G_DUMMY_POS_Y
+        self.map_pos["x"] = settings.DUMMY_POS_X
+        self.map_pos["y"] = settings.DUMMY_POS_Y
 
         # self.plot.showGrid(x=True, y=True, alpha=1)
         self.track_plot = self.plot.plot(pen=self.track_pen)
@@ -193,44 +199,45 @@ class MapWidget(BaseMapWidget):
 
     def reset_map(self):
         # adjust zoom level for large tiles
-        zoom_delta_from_tilesize = (
-            int(self.config.G_MAP_CONFIG[self.config.G_MAP]["tile_size"] / 256) - 1
-        )
+        zoom_delta_from_tilesize = int(settings.CURRENT_MAP["tile_size"] / 256) - 1
         self.zoomlevel += self.zoom_delta_from_tilesize - zoom_delta_from_tilesize
         self.zoom_delta_from_tilesize = zoom_delta_from_tilesize
+
         if self.zoomlevel < 1:
             self.zoomlevel = 1
+
         self.auto_zoomlevel = self.zoomlevel + self.auto_zoomlevel_diff
 
         for key in [
-            self.config.G_MAP,
-            self.config.G_HEATMAP_OVERLAY_MAP,
-            self.config.G_RAIN_OVERLAY_MAP,
-            self.config.G_WIND_OVERLAY_MAP,
+            settings.MAP,
+            settings.HEATMAP_OVERLAY_MAP,
+            settings.RAIN_OVERLAY_MAP,
+            settings.WIND_OVERLAY_MAP,
         ]:
             self.drawn_tile[key] = {}
             self.existing_tiles[key] = {}
             self.pre_zoomlevel[key] = np.nan
 
-        attribution_text = self.config.G_MAP_CONFIG[self.config.G_MAP]["attribution"]
-        if self.config.G_USE_HEATMAP_OVERLAY_MAP:
+        attribution_text = settings.CURRENT_MAP["attribution"]
+
+        if self.use_heatmap_overlay_map:
             attribution_text += (
                 "<br />"
-                + self.config.G_HEATMAP_OVERLAY_MAP_CONFIG[
-                    self.config.G_HEATMAP_OVERLAY_MAP
-                ]["attribution"]
-            )
-        if self.config.G_USE_RAIN_OVERLAY_MAP:
-            attribution_text += (
-                "<br />"
-                + self.config.G_RAIN_OVERLAY_MAP_CONFIG[self.config.G_RAIN_OVERLAY_MAP][
+                + settings.HEATMAP_OVERLAY_MAP_CONFIG[settings.HEATMAP_OVERLAY_MAP][
                     "attribution"
                 ]
             )
-        if self.config.G_USE_WIND_OVERLAY_MAP:
+        if self.use_rain_overlay_map:
             attribution_text += (
                 "<br />"
-                + self.config.G_WIND_OVERLAY_MAP_CONFIG[self.config.G_WIND_OVERLAY_MAP][
+                + settings.RAIN_OVERLAY_MAP_CONFIG[settings.RAIN_OVERLAY_MAP][
+                    "attribution"
+                ]
+            )
+        if self.use_wind_overlay_map:
+            attribution_text += (
+                "<br />"
+                + settings.WIND_OVERLAY_MAP_CONFIG[settings.WIND_OVERLAY_MAP][
                     "attribution"
                 ]
             )
@@ -248,8 +255,8 @@ class MapWidget(BaseMapWidget):
         # init cuesheet_widget
         if (
             self.config.logger.course.course_points.is_set
-            and self.config.G_CUESHEET_DISPLAY_NUM
-            and self.config.G_COURSE_INDEXING
+            and settings.CUESHEET_DISPLAY_NUM
+            and settings.COURSE_INDEXING
         ):
             if self.cuesheet_widget is None:
                 self.cuesheet_widget = CueSheetWidget(self, self.config)
@@ -269,11 +276,11 @@ class MapWidget(BaseMapWidget):
     def resizeEvent(self, event):
         if (
             not self.course_points.is_set
-            or not self.config.G_CUESHEET_DISPLAY_NUM
-            or not self.config.G_COURSE_INDEXING
+            or not settings.CUESHEET_DISPLAY_NUM
+            or not settings.COURSE_INDEXING
         ):
             self.map_cuesheet_ratio = 1.0
-        # if self.config.G_CUESHEET_DISPLAY_NUM:
+        # if settings.CUESHEET_DISPLAY_NUM:
         else:
             # self.cuesheet_widget.setFixedWidth(int(self.width()*(1-self.map_cuesheet_ratio)))
             # self.cuesheet_widget.setFixedHeight(self.height())
@@ -323,7 +330,7 @@ class MapWidget(BaseMapWidget):
                 self.plot.addItem(self.course_plot)
 
                 # test
-                if not self.config.G_IS_RASPI:
+                if not settings.IS_RASPI:
                     if self.plot_verification is not None:
                         self.plot.removeItem(self.plot_verification)
                     self.plot_verification = pg.ScatterPlotItem(pxMode=True)
@@ -405,8 +412,8 @@ class MapWidget(BaseMapWidget):
                 ]
             else:
                 self.point["pos"] = [
-                    self.config.G_DUMMY_POS_X,
-                    self.config.G_DUMMY_POS_Y,
+                    settings.DUMMY_POS_X,
+                    settings.DUMMY_POS_Y,
                 ]
         # update y_mod (adjust for lat:lon=1:1)
         self.y_mod = calc_y_mod(self.point["pos"][1])
@@ -588,13 +595,13 @@ class MapWidget(BaseMapWidget):
 
         # map
         drawn_main_map = await self.draw_map_tile_by_overlay(
-            self.config.G_MAP_CONFIG,
-            self.config.G_MAP,
+            settings.MAP_CONFIG,
+            settings.MAP,
             self.zoomlevel,
             p0,
             p1,
             overlay=False,
-            use_mbtiles=self.config.G_MAP_CONFIG[self.config.G_MAP].get("use_mbtiles"),
+            use_mbtiles=settings.CURRENT_MAP.get("use_mbtiles", False),
         )
 
         await self.overlay_heatmap(drawn_main_map, p0, p1)
@@ -602,22 +609,24 @@ class MapWidget(BaseMapWidget):
         await self.overlay_windmap(drawn_main_map, p0, p1)
 
     async def overlay_heatmap(self, drawn_main_map, p0, p1):
-        if not self.config.G_USE_HEATMAP_OVERLAY_MAP:
+        if not self.use_heatmap_overlay_map:
             return
+
         await self.overlay_map(
             drawn_main_map,
             p0,
             p1,
-            self.config.G_HEATMAP_OVERLAY_MAP_CONFIG,
-            self.config.G_HEATMAP_OVERLAY_MAP,
+            settings.HEATMAP_OVERLAY_MAP_CONFIG,
+            settings.HEATMAP_OVERLAY_MAP,
         )
 
     async def overlay_rainmap(self, drawn_main_map, p0, p1):
-        if not self.config.G_USE_RAIN_OVERLAY_MAP:
+        if not self.use_rain_overlay_map:
             return
 
-        map_config = self.config.G_RAIN_OVERLAY_MAP_CONFIG
-        map_name = self.config.G_RAIN_OVERLAY_MAP
+        map_config = settings.RAIN_OVERLAY_MAP_CONFIG
+        map_name = settings.RAIN_OVERLAY_MAP
+
         if self.update_overlay_basetime(map_config, map_name):
             # basetime update
             if map_config[map_name]["time_format"] == "unix_timestamp":
@@ -630,17 +639,18 @@ class MapWidget(BaseMapWidget):
             map_config[map_name]["basetime"] = basetime_str
             map_config[map_name]["validtime"] = map_config[map_name]["basetime"]
 
-            # re-draw from self.config.G_MAP
+            # re-draw from settings.MAP
             return
 
         await self.overlay_map(drawn_main_map, p0, p1, map_config, map_name)
 
     async def overlay_windmap(self, drawn_main_map, p0, p1):
-        if not self.config.G_USE_WIND_OVERLAY_MAP:
+        if not self.use_wind_overlay_map:
             return
 
-        map_config = self.config.G_WIND_OVERLAY_MAP_CONFIG
-        map_name = self.config.G_WIND_OVERLAY_MAP
+        map_config = settings.WIND_OVERLAY_MAP_CONFIG
+        map_name = settings.WIND_OVERLAY_MAP
+
         if self.update_overlay_basetime(map_config, map_name):
             # basetime update
             if "jpn_scw" in map_name:
@@ -668,7 +678,7 @@ class MapWidget(BaseMapWidget):
                 map_config[map_name]["basetime"] = basetime_str
                 map_config[map_name]["validtime"] = map_config[map_name]["basetime"]
 
-            # re-draw from self.config.G_MAP
+            # re-draw from settings.MAP
             return
 
         await self.overlay_map(drawn_main_map, p0, p1, map_config, map_name)
@@ -684,13 +694,14 @@ class MapWidget(BaseMapWidget):
 
         if delta_seconds < delta_seconds_cutoff:
             delta_minutes = delta_minutes + config["time_interval"]
+
         nowtime_mod = (nowtime + datetime.timedelta(minutes=-delta_minutes)).replace(
             second=0, microsecond=0
         )
 
         if config["nowtime"] != nowtime_mod:
             # clear tile
-            self.drawn_tile[self.config.G_MAP] = {}
+            self.drawn_tile[settings.MAP] = {}
             self.drawn_tile[map_name] = {}
             self.existing_tiles[map_name] = {}
             self.pre_zoomlevel[map_name] = np.nan
@@ -707,10 +718,7 @@ class MapWidget(BaseMapWidget):
 
         z = (
             self.zoomlevel
-            + int(
-                self.config.G_MAP_CONFIG[self.config.G_MAP]["tile_size"]
-                / map_config[map_name]["tile_size"]
-            )
+            + int(settings.CURRENT_MAP["tile_size"] / map_config[map_name]["tile_size"])
             - 1
         )
         # supported zoom levels
@@ -758,6 +766,7 @@ class MapWidget(BaseMapWidget):
             # download
             if z not in self.existing_tiles[map_name]:
                 self.existing_tiles[map_name][z_draw] = {}
+
             await self.download_tiles(tiles, map_config, map_name, z_draw)
 
         # tile check
@@ -772,6 +781,7 @@ class MapWidget(BaseMapWidget):
         )
 
         self.pre_zoomlevel[map_name] = z
+
         if not draw_flag:
             if use_mbtiles:
                 self.cur.close()
@@ -801,8 +811,10 @@ class MapWidget(BaseMapWidget):
                 )
 
             imgitem = pg.ImageItem(imgarray)
+
             if overlay:
                 imgitem.setCompositionMode(QT_COMPOSITION_MODE_DARKEN)
+
             imgarray_min_x, imgarray_max_y = get_lon_lat_from_tile_xy(
                 z, keys[0], keys[1]
             )
@@ -820,6 +832,7 @@ class MapWidget(BaseMapWidget):
                     get_mod_lat(imgarray_max_y) - get_mod_lat(imgarray_min_y),
                 )
             )
+
         if use_mbtiles:
             self.cur.close()
             self.con.close()
@@ -998,8 +1011,8 @@ class MapWidget(BaseMapWidget):
     ):
         if (
             not self.course_points.is_set
-            or not self.config.G_CUESHEET_DISPLAY_NUM
-            or not self.config.G_COURSE_INDEXING
+            or not settings.CUESHEET_DISPLAY_NUM
+            or not settings.COURSE_INDEXING
         ):
             return
         await self.cuesheet_widget.update_display()
@@ -1050,7 +1063,7 @@ class MapWidget(BaseMapWidget):
         if np.isnan(x) or np.isnan(y):
             return np.nan, np.nan
 
-        tile_size = self.config.G_MAP_CONFIG[self.config.G_MAP]["tile_size"]
+        tile_size = settings.CURRENT_MAP["tile_size"]
 
         tile_x, tile_y, _, _ = get_tilexy_and_xy_in_tile(
             self.zoomlevel,
@@ -1075,3 +1088,16 @@ class MapWidget(BaseMapWidget):
             )
             % self.arrow_direction_num
         )
+
+    def toggle_overlay(self, overlay_type):
+        if overlay_type == "Heatmap":
+            status = not self.use_heatmap_overlay_map
+            self.use_heatmap_overlay_map = status
+        elif overlay_type == "Rain map":
+            status = not self.use_rain_overlay_map
+            self.use_rain_overlay_map = status
+        elif overlay_type == "Wind map":
+            status = not self.use_wind_overlay_map
+            self.use_wind_overlay_map = status
+        self.reset_map()
+        return status

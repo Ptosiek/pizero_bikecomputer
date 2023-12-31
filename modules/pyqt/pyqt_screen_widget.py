@@ -1,5 +1,6 @@
 from logger import app_logger
 from modules._pyqt import QT_EXPANDING, QtCore, QtWidgets, qasync
+from modules.settings import settings
 
 from .pyqt_item import Item
 
@@ -71,7 +72,7 @@ class ScreenWidget(QtWidgets.QWidget):
 
     # call from on_change_main_page in gui_pyqt.py
     def start(self):
-        self.timer.start(self.config.G_DRAW_INTERVAL)
+        self.timer.start(settings.DRAW_INTERVAL)
 
     # call from on_change_main_page in gui_pyqt.py
     def stop(self):

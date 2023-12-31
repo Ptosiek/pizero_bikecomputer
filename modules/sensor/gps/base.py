@@ -5,6 +5,7 @@ from datetime import datetime, time
 import numpy as np
 
 from modules.sensor.sensor import Sensor
+from modules.settings import settings
 from modules.utils.geo import get_dist_on_earth, get_track_str, calc_azimuth
 from modules.utils.time import set_time, set_timezone
 
@@ -49,7 +50,6 @@ class AbstractSensorGPS(Sensor, metaclass=abc.ABCMeta):
     is_fixed = False
     is_altitude_modified = False
     course_index_check = []
-    azimuth_cutoff = [0, 360]
     datetime_format = "%Y/%m/%d %H:%M:%S +0000"
 
     NULL_VALUE = "n/a"
@@ -65,11 +65,6 @@ class AbstractSensorGPS(Sensor, metaclass=abc.ABCMeta):
 
         for element in self.elements:
             self.values[element] = np.nan
-
-        self.azimuth_cutoff = [
-            self.config.G_GPS_AZIMUTH_CUTOFF,
-            360 - self.config.G_GPS_AZIMUTH_CUTOFF,
-        ]
 
     def reset(self):
         self.values["distance"] = 0
@@ -199,7 +194,7 @@ class AbstractSensorGPS(Sensor, metaclass=abc.ABCMeta):
         # speed
         if valid_pos and speed is not None:
             # unit m/s
-            if speed <= self.config.G_GPS_SPEED_CUTOFF:
+            if speed <= settings.GPS_SPEED_CUTOFF:
                 self.values["speed"] = 0.0
             else:
                 self.values["speed"] = speed
@@ -208,7 +203,7 @@ class AbstractSensorGPS(Sensor, metaclass=abc.ABCMeta):
         if (
             track is not None
             and speed is not None
-            and speed > self.config.G_GPS_SPEED_CUTOFF
+            and speed > settings.GPS_SPEED_CUTOFF
         ):
             self.values["track"] = int(track)
             self.values["track_str"] = get_track_str(self.values["track"])
@@ -216,7 +211,7 @@ class AbstractSensorGPS(Sensor, metaclass=abc.ABCMeta):
         elif (
             track is None
             and speed is not None
-            and speed > self.config.G_GPS_SPEED_CUTOFF
+            and speed > settings.GPS_SPEED_CUTOFF
             and valid_pos
         ):
             self.values["track"] = int(
@@ -235,9 +230,6 @@ class AbstractSensorGPS(Sensor, metaclass=abc.ABCMeta):
             self.values["lat"],
             self.values["lon"],
             self.values["track"],
-            self.config.G_GPS_SEARCH_RANGE,
-            self.config.G_GPS_ON_ROUTE_CUTOFF,
-            self.azimuth_cutoff,
         )
 
         # timezone
@@ -311,3 +303,8 @@ class AbstractSensorGPS(Sensor, metaclass=abc.ABCMeta):
 
         if not self.is_time_modified:
             self.is_time_modified = set_time(gps_time)
+
+    def get_sleep_time(self, interval=None):
+        if interval is None:
+            interval = settings.GPS_INTERVAL
+        super().get_sleep_time(interval)

@@ -1,11 +1,11 @@
 import struct
-import datetime
+from datetime import datetime
 
-from . import ant_device
-from . import ant_device_ctrl
+from .ant_device import ANT_Device
+from .ant_device_ctrl import ANT_Device_CTRL
 
 
-class ANT_Device_Search(ant_device.ANT_Device):
+class ANT_Device_Search(ANT_Device):
     name = "SEARCH"
     ant_config = {
         "interval": (),  # Not use
@@ -26,6 +26,7 @@ class ANT_Device_Search(ant_device.ANT_Device):
     def on_data(self, data):
         if not self.searchState:
             return
+
         if len(data) == 13:
             (antID, antType) = self.structPattern["ID"].unpack(data[9:12])
             if antType in self.config.G_ANT["TYPES"][self.antName]:
@@ -35,6 +36,7 @@ class ANT_Device_Search(ant_device.ANT_Device):
     def on_data_ctrl(self, data):
         if not self.searchState:
             return
+
         if len(data) == 8:
             (antID,) = struct.Struct("<H").unpack(data[1:3])
             antType = 0x10
@@ -69,7 +71,7 @@ class ANT_Device_Search(ant_device.ANT_Device):
                 self.connect(isCheck=False, isChange=False)  # USE: False -> True
 
             elif self.antName == "CTRL":
-                self.ctrl_searcher = ant_device_ctrl.ANT_Device_CTRL(
+                self.ctrl_searcher = ANT_Device_CTRL(
                     self.node, self.config, {}, antName
                 )
                 self.ctrl_searcher.channel.on_acknowledge_data = self.on_data_ctrl
@@ -105,7 +107,7 @@ class ANT_Device_Search(ant_device.ANT_Device):
             return self.searchList
         else:
             # dummy
-            timestamp = datetime.datetime.now()
+            timestamp = datetime.now()
             if 0 < timestamp.second % 30 < 15:
                 return {
                     12345: (0x79, False),

@@ -670,7 +670,7 @@ map.yaml entry
 
 If ANT+ power meter is available, set `cp` as CP and `w_prime` as W prime balance.
 
-#### SENSOR_IMU section
+#### IMU section
 In modules/sensor_i2c.py, use the change_axis method to change the axis direction of the IMU (accelerometer/magnetometer/gyroscope) according to its mounting direction.
 The settings are common, so if you use individual sensors, make sure they are all pointing in the same direction.
 
@@ -729,10 +729,6 @@ If you want to upload activities to Garmin Connect, set your `email` and `passwo
 #### GOOGLE_DIRECTION_API section
 
 If you want to search for a route on a map, set your `token` of the Google Directions API.
-
-#### OPENWEATHERMAP_API section
-
-If you want to correct the altitude using a barometric pressure sensor, set your `token` of the OpenWeatherMap API. 
 
 #### THINGSBOARD_API section
 

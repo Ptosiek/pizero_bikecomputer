@@ -4,12 +4,10 @@ import asyncio
 import traceback
 import concurrent
 
-import aiohttp
-import aiofiles
-
 from logger import app_logger
+from modules.settings import settings
 from modules.utils.map import get_maptile_filename
-from modules.utils.network import detect_network
+from modules.utils.network import detect_network, download_files
 
 
 class Network:
@@ -24,62 +22,17 @@ class Network:
     async def quit(self):
         await self.download_queue.put(None)
 
-    @staticmethod
-    async def get_http_request(session, url, save_path, headers, params):
-        try:
-            async with session.get(url, headers=headers, params=params) as dl_file:
-                if dl_file.status == 200:
-                    async with aiofiles.open(save_path, mode="wb") as f:
-                        await f.write(await dl_file.read())
-                    return True
-                else:
-                    app_logger.info(
-                        f"dl_file status {dl_file.status}: {dl_file.reason}\n{url}"
-                    )
-                    return False
-        except asyncio.CancelledError:
-            return False
-        except:
-            return False
-
-    @staticmethod
-    async def get_json(url, params=None, headers=None, timeout=10):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                url, params=params, headers=headers, timeout=timeout
-            ) as res:
-                json = await res.json()
-                return json
-
-    @staticmethod
-    async def post(url, headers=None, params=None, data=None):
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                url, headers=headers, params=params, data=data
-            ) as res:
-                json = await res.json()
-                return json
-
-    async def download_files(self, urls, save_paths, headers=None, params=None):
-        tasks = []
-        async with asyncio.Semaphore(self.config.G_COROUTINE_SEM):
-            async with aiohttp.ClientSession() as session:
-                for url, save_path in zip(urls, save_paths):
-                    tasks.append(
-                        self.get_http_request(session, url, save_path, headers, params)
-                    )
-                res = await asyncio.gather(*tasks)
-        return res
-
     async def download_worker(self):
         failed = []
         # for urls, header, save_paths, params:
         while True:
             q = await self.download_queue.get()
+
             if q is None:
                 break
+
             try:
-                res = await self.download_files(**q)
+                res = await download_files(**q)
                 self.download_queue.task_done()
             except concurrent.futures._base.CancelledError:
                 return
@@ -90,12 +43,7 @@ class Network:
                 app_logger.error("failed download")
                 app_logger.debug(q["urls"])
             # retry
-            elif (
-                not all(res)
-                and len(q["urls"])
-                and len(res)
-                and len(q["urls"]) == len(res)
-            ):
+            elif not all(res) and len(q["urls"]) and len(q["urls"]) == len(res):
                 retry_urls = []
                 retry_save_paths = []
                 for url, save_path, status in zip(q["urls"], q["save_paths"], res):
@@ -114,47 +62,46 @@ class Network:
         if not detect_network() or map_config[map_name]["url"] is None:
             return False
 
+        map_settings = map_config[map_name]
         urls = []
         save_paths = []
         request_header = {}
         additional_var = {}
 
         if (
-            map_config == self.config.G_HEATMAP_OVERLAY_MAP_CONFIG
+            map_config == settings.HEATMAP_OVERLAY_MAP_CONFIG
             and "strava_heatmap" in map_name
         ):
             additional_var["key_pair_id"] = self.config.G_STRAVA_COOKIE["KEY_PAIR_ID"]
             additional_var["policy"] = self.config.G_STRAVA_COOKIE["POLICY"]
             additional_var["signature"] = self.config.G_STRAVA_COOKIE["SIGNATURE"]
         elif map_config in [
-            self.config.G_RAIN_OVERLAY_MAP_CONFIG,
-            self.config.G_WIND_OVERLAY_MAP_CONFIG,
+            settings.RAIN_OVERLAY_MAP_CONFIG,
+            settings.WIND_OVERLAY_MAP_CONFIG,
         ]:
-            if (
-                map_config[map_name]["basetime"] is None
-                or map_config[map_name]["validtime"] is None
-            ):
+            if map_settings["basetime"] is None or map_settings["validtime"] is None:
                 return False
-            additional_var["basetime"] = map_config[map_name]["basetime"]
-            additional_var["validtime"] = map_config[map_name]["validtime"]
-            if (
-                map_config == self.config.G_WIND_OVERLAY_MAP_CONFIG
-                and "jpn_scw" in map_name
-            ):
-                if map_config[map_name]["subdomain"] is None:
+
+            additional_var["basetime"] = map_settings["basetime"]
+            additional_var["validtime"] = map_settings["validtime"]
+
+            if map_name.startswith("jpn_scw"):
+                if map_settings["subdomain"] is None:
                     return False
-                additional_var["subdomain"] = map_config[map_name]["subdomain"]
+
+                additional_var["subdomain"] = map_settings["subdomain"]
 
         # make header
-        if map_config[map_name].get("referer"):
-            request_header["Referer"] = map_config[map_name]["referer"]
+        if map_settings.get("referer"):
+            request_header["Referer"] = map_settings["referer"]
 
-        if map_config[map_name].get("user_agent"):
-            request_header["User-Agent"] = self.config.G_PRODUCT
+        if map_settings.get("user_agent"):
+            request_header["User-Agent"] = settings.PRODUCT
 
         for tile in tiles:
             os.makedirs(f"maptile/{map_name}/{z}/{tile[0]}/", exist_ok=True)
-            url = map_config[map_name]["url"].format(
+
+            url = map_settings["url"].format(
                 z=z, x=tile[0], y=tile[1], **additional_var
             )
             save_path = get_maptile_filename(map_name, z, *tile)
@@ -172,16 +119,16 @@ class Network:
             max_zoom_cond = True
 
             if (
-                "max_zoomlevel" in map_config[map_name]
-                and z + 1 >= map_config[map_name]["max_zoomlevel"]
+                "max_zoomlevel" in map_settings
+                and z + 1 >= map_settings["max_zoomlevel"]
             ):
                 max_zoom_cond = False
 
             min_zoom_cond = True
 
             if (
-                "min_zoomlevel" in map_config[map_name]
-                and z - 1 <= map_config[map_name]["min_zoomlevel"]
+                "min_zoomlevel" in map_settings
+                and z - 1 <= map_settings["min_zoomlevel"]
             ):
                 min_zoom_cond = False
 
@@ -193,7 +140,7 @@ class Network:
                             exist_ok=True,
                         )
                         for j in range(2):
-                            url = map_config[map_name]["url"].format(
+                            url = map_settings["url"].format(
                                 z=z + 1,
                                 x=2 * tile[0] + i,
                                 y=2 * tile[1] + j,
@@ -213,7 +160,7 @@ class Network:
                         f"maptile/{map_name}/{z - 1}/{int(tile[0] / 2)}",
                         exist_ok=True,
                     )
-                    zoomout_url = map_config[map_name]["url"].format(
+                    zoomout_url = map_settings["url"].format(
                         z=z - 1,
                         x=int(tile[0] / 2),
                         y=int(tile[1] / 2),
@@ -244,18 +191,16 @@ class Network:
 
         try:
             os.makedirs(
-                f"maptile/{self.config.G_DEM_MAP}/{z}/{x}/",
+                f"maptile/{settings.DEM_MAP}/{z}/{x}/",
                 exist_ok=True,
             )
             await self.download_queue.put(
                 {
                     "urls": [
-                        self.config.G_DEM_MAP_CONFIG[self.config.G_DEM_MAP][
-                            "url"
-                        ].format(z=z, x=x, y=y),
+                        settings.CURRENT_DEM_MAP["url"].format(z=z, x=x, y=y),
                     ],
                     "save_paths": [
-                        get_maptile_filename(self.config.G_DEM_MAP, z, x, y),
+                        get_maptile_filename(settings, z, x, y),
                     ],
                 }
             )

@@ -1,9 +1,10 @@
 import struct
 import time
-import datetime
+from datetime import datetime
 
 from logger import app_logger
-from . import ant_code
+from modules.settings import settings
+from .ant_code import AntCode
 
 
 class ANT_Device:
@@ -49,7 +50,10 @@ class ANT_Device:
         "power": 500,  # w
         "cadence": 255,  # rpm
     }
-    ant_idle_interval = {"NORMAL": 0.20, "QUICK": 0.01, "SCAN": 0.20}
+
+    ANT_IDLE_INTERVAL_NORMAL = 0.20
+    ANT_IDLE_INTERVAL_QUICK = 0.01
+    ANT_IDLE_INTERVAL_SCAN = 0.20
 
     def __init__(self, node=None, config=None, values=None, name=""):
         self.node = node
@@ -64,12 +68,13 @@ class ANT_Device:
 
         if node is None:
             return  # for dummy device
+
         self.make_channel(self.ant_config["channel_type"])
         self.init_extra()
         self.ready_connect()
         self.connect(isCheck=True, isChange=False)  # USE: True -> True
 
-    def on_data(self):
+    def on_data(self, data):
         pass
 
     def add_struct_pattern(self):
@@ -84,12 +89,12 @@ class ANT_Device:
 
     def set_null_value(self):
         for element in self.elements:
-            self.values[element] = self.config.G_ANT_NULLVALUE
+            self.values[element] = settings.ANT_NULLVALUE
         self.init_common_page_status()
 
     def init_common_page_status(self):
         for element in self.common_page_elements:
-            self.values[element] = self.config.G_ANT_NULLVALUE
+            self.values[element] = settings.ANT_NULLVALUE
         self.values["stored_page"] = {}
         for key in (0x50, 0x51):
             self.values["stored_page"][key] = False
@@ -137,6 +142,7 @@ class ANT_Device:
     def connect(self, isCheck=True, isChange=False):
         if not self.config.G_ANT["STATUS"]:
             return
+
         if isCheck:
             if not self.config.G_ANT["USE"][self.name]:
                 return
@@ -157,6 +163,7 @@ class ANT_Device:
     def disconnect(self, isCheck=True, isChange=False, wait=0):
         if not self.config.G_ANT["STATUS"]:
             return
+
         if isCheck:
             if not self.config.G_ANT["USE"][self.name]:
                 return
@@ -201,8 +208,8 @@ class ANT_Device:
         (values["hw_ver"], values["manu_id"], values["model_num"]) = self.structPattern[
             0x50
         ].unpack(data[0:8])
-        if values["manu_id"] in ant_code.AntCode.MANUFACTURER:
-            values["manu_name"] = ant_code.AntCode.MANUFACTURER[values["manu_id"]]
+        if values["manu_id"] in AntCode.MANUFACTURER:
+            values["manu_name"] = AntCode.MANUFACTURER[values["manu_id"]]
         values["stored_page"][0x50] = True
 
     def setCommonPage81(self, data, values):
@@ -221,18 +228,19 @@ class ANT_Device:
     @staticmethod
     def print_spike(device_str, val, pre_val, delta, delta_t):
         app_logger.info(
-            f"ANT+ {device_str} spike: {datetime.datetime.now().strftime('%Y%m%d %H:%M:%S')}, value:{val:.0f}, pre:{pre_val:.0f}, delta: {delta}, delta_t: {delta_t}"
+            f"ANT+ {device_str} spike: {datetime.now().strftime('%Y%m%d %H:%M:%S')}, "
+            f"value:{val:.0f}, pre:{pre_val:.0f}, delta: {delta}, delta_t: {delta_t}"
         )
 
     def set_wait(self, interval):
         self.node.ant.set_wait(interval)
 
-    # ant_idle_interval = {'NORMAL':0.20, 'QUICK':0.01, 'SCAN': 0.20}
+    # ant_idle_intervals NORMAL 0.20 QUICK 0.01, SCAN 0.20
     def set_wait_normal_mode(self):
-        self.set_wait(self.ant_idle_interval["NORMAL"])
+        self.set_wait(self.ANT_IDLE_INTERVAL_NORMAL)
 
     def set_wait_quick_mode(self):
-        self.set_wait(self.ant_idle_interval["QUICK"])
+        self.set_wait(self.ANT_IDLE_INTERVAL_QUICK)
 
     def set_wait_scan_mode(self):
-        self.set_wait(self.ant_idle_interval["SCAN"])
+        self.set_wait(self.ANT_IDLE_INTERVAL_SCAN)

@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timezone
 
 from logger import app_logger
+from modules.settings import settings
 from .base import AbstractSensorGPS
 
 _SENSOR_GPS_GPSD = False
@@ -41,9 +42,9 @@ class GPSD(AbstractSensorGPS):
         super().sensor_init()
 
         self.valid_cutoff_ep = (
-            self.config.G_GPSD_PARAM["EPX_EPY_CUTOFF"],
-            self.config.G_GPSD_PARAM["EPX_EPY_CUTOFF"],
-            self.config.G_GPSD_PARAM["EPV_CUTOFF"],
+            settings.GPSD_PARAM_EPX_EPY_CUTOFF,
+            settings.GPSD_PARAM_EPX_EPY_CUTOFF,
+            settings.GPSD_PARAM_EPV_CUTOFF,
         )
 
     async def quit(self):
@@ -79,6 +80,7 @@ class GPSD(AbstractSensorGPS):
 
     def is_position_valid(self, lat, lon, mode, dop, satellites, error=None):
         valid = super().is_position_valid(lat, lon, mode, dop, satellites, error)
+
         if valid and error:
             epv = error[2]
             if None in error or any(
@@ -87,8 +89,8 @@ class GPSD(AbstractSensorGPS):
                 valid = False
             # special condition #1
             elif (
-                satellites[0] < self.config.G_GPSD_PARAM["SP1_USED_SATS_CUTOFF"]
-                and epv > self.config.G_GPSD_PARAM["SP1_EPV_CUTOFF"]
+                satellites[0] < settings.GPSD_PARAM_SP1_USED_SATS_CUTOFF
+                and epv > settings.GPSD_PARAM_SP1_EPV_CUTOFF
             ):
                 valid = False
         return valid

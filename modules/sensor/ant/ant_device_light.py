@@ -1,15 +1,15 @@
-import struct
-import datetime
-import time
 import array
-import threading
 import queue
+import threading
+import struct
+import time
+from datetime import datetime
 
 from logger import app_logger
-from . import ant_device
+from .ant_device import ANT_Device
 
 
-class ANT_Device_Light(ant_device.ANT_Device):
+class ANT_Device_Light(ANT_Device):
     ant_config = {
         "interval": (4084, 4084, 4084),  # 4084 / 8168 / 16336 / 32672
         "type": 0x23,
@@ -61,14 +61,14 @@ class ANT_Device_Light(ant_device.ANT_Device):
         self.values["lgt_state"] = None
         self.values["button_state"] = False
         self.values["auto_state"] = False
-        self.values["last_changed_timestamp"] = datetime.datetime.now()
+        self.values["last_changed_timestamp"] = datetime.now()
 
     def close_extra(self):
         if self.ant_state in ["quit", "disconnect_ant_sensor"]:
             self.send_disconnect_light()
             self.reset_value()
             self.send_queue.put(None)
-            # need to wait for a pediod
+            # need to wait for a period
             time.sleep(
                 self.ant_config["interval"][self.config.G_ANT["INTERVAL"]] / 32672 + 0.5
             )
@@ -90,12 +90,12 @@ class ANT_Device_Light(ant_device.ANT_Device):
         if data[0] == 0x01:
             mode = self.get_mode(data[6] >> 2)
             seq_no = data[4]
-            # print("###", mode, self.values['lgt_state'], self.page_34_count, seq_no, (datetime.datetime.now() - self.values['last_changed_timestamp']).total_seconds())
+            # print("###", mode, self.values['lgt_state'], self.page_34_count, seq_no, (datetime.now() - self.values['last_changed_timestamp']).total_seconds())
             if (
                 self.values["lgt_state"] is not None
                 and seq_no != self.page_34_count
                 and (
-                    datetime.datetime.now() - self.values["last_changed_timestamp"]
+                    datetime.now() - self.values["last_changed_timestamp"]
                 ).total_seconds()
                 > self.light_retry_timeout
             ):
@@ -106,7 +106,7 @@ class ANT_Device_Light(ant_device.ANT_Device):
                     f"{self.values['lgt_state']}"
                     f"{seq_no}"
                     f"{self.page_34_count}"
-                    f"{(datetime.datetime.now() - self.values['last_changed_timestamp']).total_seconds()}"
+                    f"{(datetime.now() - self.values['last_changed_timestamp']).total_seconds()}"
                 )
                 self.send_light_setting(self.values["lgt_state"])
             self.battery_status = data[2] >> 5
@@ -162,7 +162,7 @@ class ANT_Device_Light(ant_device.ANT_Device):
                 ],
             )
         )
-        self.values["last_changed_timestamp"] = datetime.datetime.now()
+        self.values["last_changed_timestamp"] = datetime.now()
 
     def send_light_setting_flash_low(self, auto=False):
         # mode 63, 15 hours

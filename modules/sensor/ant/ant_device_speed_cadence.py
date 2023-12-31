@@ -1,12 +1,13 @@
 import struct
-import datetime
+from datetime import datetime
 
 from logger import app_logger
-from . import ant_device
-from . import ant_code
+from modules.settings import settings
+from .ant_device import ANT_Device
+from .ant_code import AntCode
 
 
-class ANT_Device_Speed_Cadence(ant_device.ANT_Device):
+class ANT_Device_Speed_Cadence(ANT_Device):
     ant_config = {
         "interval": (8086, 16172, 32344),
         "type": 0x79,
@@ -32,7 +33,7 @@ class ANT_Device_Speed_Cadence(ant_device.ANT_Device):
 
     def on_data(self, data):
         self.sc_values = self.structPattern[self.name].unpack(data[0:8])
-        t = datetime.datetime.now()
+        t = datetime.now()
 
         if self.pre_values[0] == -1:
             self.pre_values = list(self.sc_values)
@@ -44,15 +45,16 @@ class ANT_Device_Speed_Cadence(ant_device.ANT_Device):
                 self.pickle_key, self.pre_values[3]
             )
             diff = self.pre_values[3] - pre_speed_value
+
             if -65535 <= diff < 0:
                 diff += 65536
             if diff > 0:
-                self.values["distance"] += self.config.G_WHEEL_CIRCUMFERENCE * diff
+                self.values["distance"] += settings.WHEEL_CIRCUMFERENCE_M * diff
                 app_logger.info(
                     f"### resume spd {self.pre_values[3]} {pre_speed_value} {diff} ###"
                 )
                 app_logger.info(
-                    f"### resume spd {int(self.values['distance'])} {int(self.config.G_WHEEL_CIRCUMFERENCE * diff)} [m] ###"
+                    f"### resume spd {int(self.values['distance'])} {int(settings.WHEEL_CIRCUMFERENCE_M * diff)} [m] ###"
                 )
 
             return
@@ -66,9 +68,7 @@ class ANT_Device_Speed_Cadence(ant_device.ANT_Device):
         # speed
         if self.delta[2] > 0 and 0 <= self.delta[3] < 6553:  # for spike
             # unit: m/s
-            spd = (
-                self.config.G_WHEEL_CIRCUMFERENCE * self.delta[3] * 1024 / self.delta[2]
-            )
+            spd = settings.WHEEL_CIRCUMFERENCE_M * self.delta[3] * 1024 / self.delta[2]
             # max value in .fit file is 65.536 [m/s]
             if (
                 spd <= 65
@@ -78,7 +78,7 @@ class ANT_Device_Speed_Cadence(ant_device.ANT_Device):
                 if self.config.G_MANUAL_STATUS == "START":
                     # unit: m
                     self.values["distance"] += (
-                        self.config.G_WHEEL_CIRCUMFERENCE * self.delta[3]
+                        settings.WHEEL_CIRCUMFERENCE_M * self.delta[3]
                     )
                 # refresh timestamp called from sensor_core
                 self.values["timestamp"] = t
@@ -91,7 +91,7 @@ class ANT_Device_Speed_Cadence(ant_device.ANT_Device):
             self.values["speed"] = 0
         else:
             app_logger.error(
-                f"ANT+ S&C(speed) err: {datetime.datetime.now().strftime('%Y%m%d %H:%M:%S')} {self.delta}",
+                f"ANT+ S&C(speed) err: {datetime.now().strftime('%Y%m%d %H:%M:%S')} {self.delta}",
             )
         # store raw speed
         self.config.state.set_value(self.pickle_key, self.sc_values[3])
@@ -108,14 +108,14 @@ class ANT_Device_Speed_Cadence(ant_device.ANT_Device):
             self.values["cadence"] = 0
         else:
             app_logger.error(
-                f"ANT+ Power(16) err: {datetime.datetime.now().strftime('%Y%m%d %H:%M:%S')} {self.delta}",
+                f"ANT+ Power(16) err: {datetime.now().strftime('%Y%m%d %H:%M:%S')} {self.delta}",
             )
         self.pre_values = list(self.sc_values)
         # on_data timestamp
         self.values["on_data_timestamp"] = t
 
 
-class ANT_Device_Cadence(ant_device.ANT_Device):
+class ANT_Device_Cadence(ANT_Device):
     ant_config = {
         "interval": (8102, 16204, 32408),
         "type": 0x7A,
@@ -146,7 +146,7 @@ class ANT_Device_Cadence(ant_device.ANT_Device):
 
     def on_data(self, data):
         self.sc_values = self.structPattern[self.name].unpack(data[0:8])
-        t = datetime.datetime.now()
+        t = datetime.now()
 
         if self.pre_values[0] == -1:
             self.pre_values = list(self.sc_values)
@@ -182,7 +182,7 @@ class ANT_Device_Cadence(ant_device.ANT_Device):
             self.values[self.elements[0]] = 0
         else:
             app_logger.error(
-                f"ANT+ {self.elements[0]} err: {datetime.datetime.now().strftime('%Y%m%d %H:%M:%S')} {self.delta}",
+                f"ANT+ {self.elements[0]} err: {datetime.now().strftime('%Y%m%d %H:%M:%S')} {self.delta}",
             )
         self.pre_values = list(self.sc_values)
         # on_data timestamp
@@ -192,10 +192,8 @@ class ANT_Device_Cadence(ant_device.ANT_Device):
         # Data Page 2: Manufacturer ID
         if page == 2:
             self.values["manu_id"] = data[1]
-            if self.values["manu_id"] in ant_code.AntCode.MANUFACTURER:
-                self.values["manu_name"] = ant_code.AntCode.MANUFACTURER[
-                    self.values["manu_id"]
-                ]
+            if self.values["manu_id"] in AntCode.MANUFACTURER:
+                self.values["manu_name"] = AntCode.MANUFACTURER[self.values["manu_id"]]
             self.values["serial_num"] = data[3] * 256 + data[2]
         # Data Page 3: Product ID
         elif page == 3:
@@ -228,7 +226,7 @@ class ANT_Device_Speed(ANT_Device_Cadence):
 
     def resetExtra(self):
         self.values["distance"] = 0.0
-        self.const = self.config.G_WHEEL_CIRCUMFERENCE
+        self.const = settings.WHEEL_CIRCUMFERENCE_M
 
     def resumeAccumulatedValue(self):
         pre_speed_value = self.config.state.get_value(
@@ -238,7 +236,7 @@ class ANT_Device_Speed(ANT_Device_Cadence):
         if -65535 <= diff < 0:
             diff += 65536
         if diff > 0:
-            self.values["distance"] += self.config.G_WHEEL_CIRCUMFERENCE * diff
+            self.values["distance"] += settings.WHEEL_CIRCUMFERENCE_M * diff
             app_logger.info(
                 f"### resume spd {self.pre_values[1]}, {pre_speed_value}, {diff} ###"
             )
@@ -247,6 +245,6 @@ class ANT_Device_Speed(ANT_Device_Cadence):
     def accumulateValue(self):
         if self.config.G_MANUAL_STATUS == "START":
             # unit: m
-            self.values["distance"] += self.config.G_WHEEL_CIRCUMFERENCE * self.delta[1]
+            self.values["distance"] += settings.WHEEL_CIRCUMFERENCE_M * self.delta[1]
         # store raw speed
         self.config.state.set_value(self.pickle_key, self.sc_values[1])

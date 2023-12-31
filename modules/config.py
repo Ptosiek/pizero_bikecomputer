@@ -1,4 +1,3 @@
-import argparse
 import asyncio
 import datetime
 import json
@@ -8,12 +7,11 @@ import shutil
 from glob import glob
 
 import numpy as np
-import oyaml as yaml
 from PIL import Image
 
 
 from logger import CustomRotatingFileHandler, app_logger
-from modules.helper.setting import Setting
+from modules.config_parser import ConfParser
 from modules.button_config import Button_Config
 from modules.state import AppState
 from modules.utils.cmd import (
@@ -21,18 +19,15 @@ from modules.utils.cmd import (
     exec_cmd_return_value,
     is_running_as_service,
 )
-from modules.utils.map import get_maptile_filename, get_tilexy_and_xy_in_tile
+from modules.settings import settings
+from modules.utils.map import (
+    check_map_dir,
+    get_maptile_filename,
+    get_tilexy_and_xy_in_tile,
+)
 from modules.utils.timer import Timer
 
 BOOT_FILE = "/boot/config.txt"
-_IS_RASPI = False
-try:
-    import RPi.GPIO as GPIO
-
-    GPIO.setmode(GPIO.BCM)
-    _IS_RASPI = True
-except ImportError:
-    pass
 
 
 class Config:
@@ -40,296 +35,17 @@ class Config:
     # configurable values #
     #######################
 
-    # loop interval
-    G_SENSOR_INTERVAL = 1.0  # [s] for sensor_core
-    G_ANT_INTERVAL = 1.0  # [s] for ANT+. 0.25, 0.5, 1.0 only.
-    G_I2C_INTERVAL = 1.0  # 0.2 #[s] for I2C (altitude, accelerometer, etc)
-    G_GPS_INTERVAL = 1.0  # [s] for GPS
-    G_DRAW_INTERVAL = 1000  # [ms] for GUI (QtCore.QTimer)
-    G_LOGGING_INTERVAL = 1.0  # [s] for logger_core (log interval)
-    G_REALTIME_GRAPH_INTERVAL = 1000  # 200 #[ms] for pyqt_graph
-
-    # log format switch
-    G_LOG_WRITE_CSV = True
-    G_LOG_WRITE_FIT = True
-
-    # average including ZERO when logging
-    G_AVERAGE_INCLUDING_ZERO = {"cadence": False, "power": True}
-
-    # log several altitudes (from DEM and course file)
-    G_LOG_ALTITUDE_FROM_DATA_SOURCE = False
-
-    # calculate index on course
-    G_COURSE_INDEXING = True
-
-    # gross average speed
-    G_GROSS_AVE_SPEED = 15  # [km/h]
-
-    # W'bal
-    G_POWER_CP = 150
-    G_POWER_W_PRIME = 15000
-    G_POWER_W_PRIME_ALGORITHM = "WATERWORTH"  # WATERWORTH, DIFFERENTIAL
-
-    ###########################
-    # fixed or pointer values #
-    ###########################
-
-    # product name, version
-    G_PRODUCT = "Pizero Bikecomputer"
-    G_VERSION_MAJOR = 0  # need to be initialized
-    G_VERSION_MINOR = 1  # need to be initialized
-    G_UNIT_ID = "0000000000000000"  # initialized in get_serial
-    G_UNIT_ID_HEX = 0x1A2B3C4D  # initialized in get_serial
-    G_UNIT_MODEL = ""
-    G_UNIT_HARDWARE = ""
-
-    # layout def
-    G_LAYOUT_FILE = "layout.yaml"
-
-    # Language defined by G_LANG in gui_config.py
-    G_LANG = "EN"
-    G_FONT_FILE = ""
-
-    # courses
-    G_COURSE_DIR = "courses"
-    G_COURSE_FILE_PATH = os.path.join(G_COURSE_DIR, ".current")
-    G_CUESHEET_DISPLAY_NUM = 3  # max: 5
-    G_CUESHEET_SCROLL = False
-    G_OBEXD_CMD = "/usr/libexec/bluetooth/obexd"
-    G_RECEIVE_COURSE_FILE = "bluetooth_content_share.html"
-
-    # log setting
-    G_LOG_DIR = "log"
-    G_LOG_DB = os.path.join(G_LOG_DIR, "log.db")
-    G_LOG_DEBUG_FILE = os.path.join(G_LOG_DIR, "debug.log")
-
-    # asyncio semaphore
-    G_COROUTINE_SEM = 100
-
-    # map setting
-    # default map (can overwrite in settings.conf)
-    G_MAP = "toner"
-    G_MAP_CONFIG = {
-        # toner is deleted because API key is now needed.
-        # "toner": {
-        #    "url": "https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}.png?api_key=YOUR_API_KEY"
-        #    "attribution": "Map tiles by Stamen Design, under CC BY 3.0.<br />Data by OpenStreetMap, under ODbL",
-        #    "tile_size": 256,
-        # },
-        # basic map
-        "wikimedia": {
-            "url": "https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png",
-            "attribution": "© OpenStreetMap contributors",
-            "referer": "https://maps.wikimedia.org/",
-            "tile_size": 256,
-        },
-        "wikimedia_2x": {
-            "url": "https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}@2x.png",
-            "attribution": "© OpenStreetMap contributors",
-            "referer": "https://maps.wikimedia.org/",
-            "tile_size": 512,
-        },
-        # japanese tile
-        "jpn_kokudo_chiri_in": {
-            "url": "https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png",
-            "attribution": "国土地理院",
-            "tile_size": 256,
-        },
-    }
-
-    G_HEATMAP_OVERLAY_MAP_CONFIG = {
-        "rwg_heatmap": {
-            # start_color: low, white(FFFFFF) is recommended.
-            # end_color: high, any color you like.
-            "url": "https://heatmap.ridewithgps.com/normalized/{z}/{x}/{y}.png?start_color=%23FFFFFF&end_color=%23FF8800",
-            "attribution": "Ride with GPS",
-            "tile_size": 256,
-            "max_zoomlevel": 16,
-            "min_zoomlevel": 10,
-        },
-        # strava heatmap
-        # https://wiki.openstreetmap.org/wiki/Strava
-        # bluered / hot / blue / purple / gray
-        "strava_heatmap_bluered": {
-            "url": "https://heatmap-external-b.strava.com/tiles-auth/ride/bluered/{z}/{x}/{y}.png?px=256&Key-Pair-Id={key_pair_id}&Policy={policy}&Signature={signature}",
-            "attribution": "STRAVA",
-            "tile_size": 256,
-            "max_zoomlevel": 16,
-            "min_zoomlevel": 10,
-        },
-        "strava_heatmap_hot": {
-            "url": "https://heatmap-external-b.strava.com/tiles-auth/ride/hot/{z}/{x}/{y}.png?px=256&Key-Pair-Id={key_pair_id}&Policy={policy}&Signature={signature}",
-            "attribution": "STRAVA",
-            "tile_size": 256,
-            "max_zoomlevel": 16,
-            "min_zoomlevel": 10,
-        },
-        "strava_heatmap_blue": {
-            "url": "https://heatmap-external-b.strava.com/tiles-auth/ride/blue/{z}/{x}/{y}.png?px=256&Key-Pair-Id={key_pair_id}&Policy={policy}&Signature={signature}",
-            "attribution": "STRAVA",
-            "tile_size": 256,
-            "max_zoomlevel": 16,
-            "min_zoomlevel": 10,
-        },
-        "strava_heatmap_purple": {
-            "url": "https://heatmap-external-b.strava.com/tiles-auth/ride/purple/{z}/{x}/{y}.png?px=256&Key-Pair-Id={key_pair_id}&Policy={policy}&Signature={signature}",
-            "attribution": "STRAVA",
-            "tile_size": 256,
-            "max_zoomlevel": 16,
-            "min_zoomlevel": 10,
-        },
-        "strava_heatmap_gray": {
-            "url": "https://heatmap-external-b.strava.com/tiles-auth/ride/gray/{z}/{x}/{y}.png?px=256&Key-Pair-Id={key_pair_id}&Policy={policy}&Signature={signature}",
-            "attribution": "STRAVA",
-            "tile_size": 256,
-            "max_zoomlevel": 16,
-            "min_zoomlevel": 10,
-        },
-    }
-
-    G_RAIN_OVERLAY_MAP_CONFIG = {
-        # worldwide rain tile
-        "rainviewer": {
-            "url": "https://tilecache.rainviewer.com/v2/radar/{basetime}/256/{z}/{x}/{y}/6/1_1.png",
-            "attribution": "RainViewer",
-            "tile_size": 256,
-            "max_zoomlevel": 18,
-            "min_zoomlevel": 1,
-            "time_list": "https://api.rainviewer.com/public/weather-maps.json",
-            "nowtime": None,
-            "nowtime_func": datetime.datetime.now,  # local?
-            "basetime": None,
-            "time_interval": 10,  # [minutes]
-            "update_minutes": 1,  # typically int(time_interval/2) [minutes]
-            "time_format": "unix_timestamp",
-        },
-        # japanese rain tile
-        "jpn_jma_bousai": {
-            "url": "https://www.jma.go.jp/bosai/jmatile/data/nowc/{basetime}/none/{validtime}/surf/hrpns/{z}/{x}/{y}.png",
-            "attribution": "Japan Meteorological Agency",
-            "tile_size": 256,
-            "max_zoomlevel": 10,
-            "min_zoomlevel": 4,
-            "past_time_list": "https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N1.json",
-            "forcast_time_list": "https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N2.json",
-            "nowtime": None,
-            "nowtime_func": datetime.datetime.utcnow,
-            "basetime": None,
-            "validtime": None,
-            "time_interval": 5,  # [minutes]
-            "update_minutes": 1,  # [minutes]
-            "time_format": "%Y%m%d%H%M%S",
-        },
-    }
-
-    G_WIND_OVERLAY_MAP_CONFIG = {
-        # worldwide wind tile
-        # https://weather.openportguide.de/index.php/en/weather-forecasts/weather-tiles
-        "openportguide": {
-            "url": "https://weather.openportguide.de/tiles/actual/wind_stream/0h/{z}/{x}/{y}.png",
-            "attribution": "openportguide",
-            "tile_size": 256,
-            "max_zoomlevel": 7,
-            "min_zoomlevel": 0,
-            "nowtime": None,
-            "nowtime_func": datetime.datetime.utcnow,
-            "basetime": None,
-            "validtime": None,
-            "time_interval": 60,  # [minutes]
-            "update_minutes": 30,  # [minutes]
-            "time_format": "%H%MZ%d%b%Y",
-        },
-        # japanese wind tile
-        "jpn_scw": {
-            "url": "https://{subdomain}.supercweather.com/tl/msm/{basetime}/{validtime}/wa/{z}/{x}/{y}.png",
-            "attribution": "SCW",
-            "tile_size": 256,
-            "max_zoomlevel": 8,
-            "min_zoomlevel": 8,
-            "inittime": "https://k2.supercweather.com/tl/msm/initime.json?rand={rand}",
-            "fl": "https://k2.supercweather.com/tl/msm/{basetime}/fl.json?rand={rand}",
-            "nowtime": None,
-            "nowtime_func": datetime.datetime.utcnow,
-            "timeline": None,
-            "basetime": None,
-            "validtime": None,
-            "subdomain": None,
-            "time_interval": 60,  # [minutes]
-            "update_minutes": 30,  # [minutes]
-            "time_format": "%H%MZ%d%b%Y",  # need upper()
-            "referer": "https://supercweather.com/",
-        },
-    }
-
-    G_DEM_MAP_CONFIG = {
-        # worldwide DEM(Digital Elevation Model) map
-        # japanese DEM(Digital Elevation Model) map
-        "jpn_kokudo_chiri_in_DEM5A": {
-            "url": "https://cyberjapandata.gsi.go.jp/xyz/dem5a_png/{z}/{x}/{y}.png",  # DEM5A
-            "attribution": "国土地理院",
-            "fix_zoomlevel": 15,
-        },
-        "jpn_kokudo_chiri_in_DEM5B": {
-            "url": "https://cyberjapandata.gsi.go.jp/xyz/dem5b_png/{z}/{x}/{y}.png",  # DEM5B
-            "attribution": "国土地理院",
-            "fix_zoomlevel": 15,
-        },
-        "jpn_kokudo_chiri_in_DEM5C": {
-            "url": "https://cyberjapandata.gsi.go.jp/xyz/dem5c_png/{z}/{x}/{y}.png",  # DEM5C
-            "attribution": "国土地理院",
-            "fix_zoomlevel": 15,
-        },
-        "jpn_kokudo_chiri_in_DEM10B": {
-            "url": "https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png",  # DEM10B
-            "attribution": "国土地理院",
-            "fix_zoomlevel": 14,
-        },
-    }
-    # external input of G_MAP_CONFIG
-    G_MAP_LIST = "map.yaml"
-
-    # overlay map
-    G_USE_HEATMAP_OVERLAY_MAP = False
-    G_HEATMAP_OVERLAY_MAP = "rwg_heatmap"
-    G_USE_RAIN_OVERLAY_MAP = False
-    G_RAIN_OVERLAY_MAP = "rainviewer"
-    G_USE_WIND_OVERLAY_MAP = False
-    G_WIND_OVERLAY_MAP = "openportguide"
-
-    # DEM tile (Digital Elevation Model)
-    G_DEM_MAP = "jpn_kokudo_chiri_in_DEM5A"
-
-    # screenshot dir
-    G_SCREENSHOT_DIR = "screenshots"
-
-    # dummy sampling value output (change with --demo option)
-    G_DUMMY_OUTPUT = False
-
-    # enable headless mode (keyboard operation)
-    G_HEADLESS = False
-
-    # Raspberry Pi detection (detect in __init__())
-    G_IS_RASPI = False
-
     # stopwatch state
     G_MANUAL_STATUS = "INIT"
     G_STOPWATCH_STATUS = "INIT"  # with Auto Pause
 
-    # Auto Pause Cutoff [m/s] (overwritten with setting.conf)
-    # G_AUTOSTOP_CUTOFF = 0
-    G_AUTOSTOP_CUTOFF = 4.0 * 1000 / 3600
+    G_UPLOAD_FILE = ""
 
-    # wheel circumference [m] (overwritten from menu)
-    # 700x23c: 2.096, 700x25c: 2.105, 700x28c: 2.136
-    G_WHEEL_CIRCUMFERENCE = 2.105
-
-    # ANT Null value
-    G_ANT_NULLVALUE = np.nan
     # ANT+ setting (overwritten with setting.conf)
     # [Todo] multiple pairing(2 or more riders), ANT+ ctrl(like edge remote)
     G_ANT = {
         # ANT+ interval internal variable: 0:4Hz(0.25s), 1:2Hz(0.5s), 2:1Hz(1.0s)
-        # initialized by G_ANT_INTERVAL in __init()__
+        # initialized by settings.ANT_INTERVAL in __init()__
         "INTERVAL": 2,
         "STATUS": True,
         "USE": {
@@ -386,97 +102,7 @@ class Config:
             "CTRL": (0x10,),
             "TEMP": (0x19,),
         },
-        "TYPE_NAME": {
-            0x78: "HeartRate",
-            0x79: "Speed and Cadence",
-            0x7A: "Cadence",
-            0x7B: "Speed",
-            0x0B: "Power",
-            0x23: "Light",
-            0x10: "Control",
-            0x19: "Temperature",
-        },
-        # for display order in ANT+ menu (antMenuWidget)
-        "ORDER": ["HR", "SPD", "CDC", "PWR", "LGT", "CTRL", "TEMP"],
     }
-
-    # GPS speed cutoff (the distance in 1 seconds at 0.36km/h is 10cm)
-    G_GPS_SPEED_CUTOFF = G_AUTOSTOP_CUTOFF  # m/s
-    # GPSd error handling
-    G_GPSD_PARAM = {
-        "EPX_EPY_CUTOFF": 100.0,
-        "EPV_CUTOFF": 100.0,
-        "SP1_EPV_CUTOFF": 100.0,
-        "SP1_USED_SATS_CUTOFF": 3,
-    }
-
-    # fullscreen switch (overwritten with setting.conf)
-    G_FULLSCREEN = False
-
-    # display type (overwritten with setting.conf)
-    G_DISPLAY = "None"  # PiTFT, MIP, MIP_640, Papirus, MIP_Sharp, MIP_Sharp_320, DFRobot_RPi_Display
-
-    G_DISPLAY_PARAM = {
-        "SPI_CLOCK": 2000000,
-    }
-
-    # auto backlight
-    G_USE_AUTO_BACKLIGHT = True
-    G_AUTO_BACKLIGHT_CUTOFF = 30
-
-    # GUI mode
-    G_GUI_MODE = "PyQt"
-
-    # PerformanceGraph:
-    # 1st: POWER
-    # 2nd: HR or W_BAL_PLIME
-    # G_GUI_PERFORMANCE_GRAPH_DISPLAY_ITEM = ('POWER', 'HR')
-    G_GUI_PERFORMANCE_GRAPH_DISPLAY_ITEM = ("POWER", "W_BAL")
-    G_GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE = int(5 * 60 / G_SENSOR_INTERVAL)  # [s]
-    G_GUI_MIN_HR = 40
-    G_GUI_MAX_HR = 200
-    G_GUI_MIN_POWER = 30
-    G_GUI_MAX_POWER = 300
-    G_GUI_MIN_W_BAL = 0
-    G_GUI_MAX_W_BAL = 100
-    # acceleration graph (AccelerationGraphWidget)
-    G_GUI_ACC_TIME_RANGE = int(1 * 60 / (G_REALTIME_GRAPH_INTERVAL / 1000))  # [s]
-
-    # Graph color by slope
-    G_CLIMB_DISTANCE_CUTOFF = 0.3  # [km]
-    G_CLIMB_GRADE_CUTOFF = 2  # [%]
-    G_SLOPE_CUTOFF = (1, 3, 6, 9, 12, float("inf"))  # by grade
-    G_SLOPE_COLOR = (
-        (128, 128, 128),  # gray(base)
-        (0, 255, 0),  # green
-        (255, 255, 0),  # yellow
-        (255, 128, 0),  # orange
-        (255, 0, 0),  # red
-        (128, 0, 0),  # dark red
-    )
-    G_CLIMB_CATEGORY = [
-        {"volume": 8000, "name": "Cat4"},
-        {"volume": 16000, "name": "Cat3"},
-        {"volume": 32000, "name": "Cat2"},
-        {"volume": 64000, "name": "Cat1"},
-        {"volume": 80000, "name": "HC"},
-    ]
-
-    # map widgets
-    # for map dummy center: Tokyo station in Japan
-    G_DUMMY_POS_X = 139.764710814819
-    G_DUMMY_POS_Y = 35.68188106919333
-    # for search point on course
-    G_GPS_ON_ROUTE_CUTOFF = 50  # [m] #generate from course
-    G_GPS_SEARCH_RANGE = 6  # [km] #100km/h -> 27.7m/s
-    G_GPS_AZIMUTH_CUTOFF = 60  # degree(30/45/90): 0~G_GPS_AZIMUTH_CUTOFF, (360-G_GPS_AZIMUTH_CUTOFF)~G_GPS_AZIMUTH_CUTOFF
-    # for route downsampling cutoff
-    G_ROUTE_DISTANCE_CUTOFF = 1.0  # 1.0
-    G_ROUTE_AZIMUTH_CUTOFF = 3.0  # 3.0
-    G_ROUTE_ALTITUDE_CUTOFF = 1.0
-    G_ROUTE_SLOPE_CUTOFF = 2.0
-    # for keeping on course seconds
-    G_GPS_KEEP_ON_COURSE_CUTOFF = int(60 / G_GPS_INTERVAL)  # [s]
 
     # STRAVA token (need to write setting.conf manually)
     G_STRAVA_API_URL = {
@@ -497,7 +123,6 @@ class Config:
         "POLICY": "",
         "SIGNATURE": "",
     }
-    G_UPLOAD_FILE = ""
 
     G_GOOGLE_DIRECTION_API = {
         "TOKEN": "",
@@ -515,12 +140,6 @@ class Config:
         "HEADER": {"Referer": "https://mapstogpx.com/index.php"},
         "ROUTE_URL": "",
         "TIMEOUT": 30,
-    }
-
-    G_OPENWEATHERMAP_API = {
-        "TOKEN": "",
-        "HAVE_API_TOKEN": False,
-        "URL": "http://api.openweathermap.org/data/2.5/weather",
     }
 
     G_RIDEWITHGPS_API = {
@@ -559,21 +178,6 @@ class Config:
         "AUTO_UPLOAD_VIA_BT": False,
     }
 
-    # IMU axis conversion
-    #  X: to North (up rotation is plus)
-    #  Y: to West (up rotation is plus)
-    #  Z: to down (default is plus)
-    G_IMU_AXIS_SWAP_XY = {
-        "STATUS": False,  # Y->X, X->Y
-    }
-    G_IMU_AXIS_CONVERSION = {"STATUS": False, "COEF": np.ones(3)}  # X, Y, Z
-    # sometimes axes of magnetic sensor are different from acc or gyro
-    G_IMU_MAG_AXIS_SWAP_XY = {
-        "STATUS": False,  # Y->X, X->Y
-    }
-    G_IMU_MAG_AXIS_CONVERSION = {"STATUS": False, "COEF": np.ones(3)}  # X, Y, Z
-    G_IMU_MAG_DECLINATION = 0.0
-
     # Bluetooth tethering
     G_BT_ADDRESSES = {}
     G_BT_USE_ADDRESS = ""
@@ -589,96 +193,52 @@ class Config:
     ble_uart = None
     setting = None
     state = None
+    gui_class = None
     gui = None
     gui_config = None
     boot_time = 0
 
+    loaded_dem = None
+
     def __init__(self):
-        # Raspbian OS detection
-        if _IS_RASPI:
-            self.G_IS_RASPI = True
-
-        # get options
-        parser = argparse.ArgumentParser()
-        parser.add_argument("-f", "--fullscreen", action="store_true", default=False)
-        parser.add_argument("-d", "--debug", action="store_true", default=False)
-        parser.add_argument("--demo", action="store_true", default=False)
-        parser.add_argument("--version", action="version", version="%(prog)s 0.1")
-        parser.add_argument("--layout")
-        parser.add_argument("--headless", action="store_true", default=False)
-
-        args = parser.parse_args()
-
-        if args.debug:
+        if settings.DEBUG:
             app_logger.setLevel(logging.DEBUG)
-            app_logger.debug(args)
-        if args.fullscreen:
-            self.G_FULLSCREEN = True
-        if args.demo:
-            self.G_DUMMY_OUTPUT = True
-        if args.layout and os.path.exists(args.layout):
-            self.G_LAYOUT_FILE = args.layout
-        if args.headless:
-            self.G_HEADLESS = True
 
         # read setting.conf and state.pickle
-        self.setting = Setting(self)
+        self.conf_parser = ConfParser(self)
         self.state = AppState()
 
         # make sure all folders exist
-        os.makedirs(self.G_SCREENSHOT_DIR, exist_ok=True)
-        os.makedirs(self.G_LOG_DIR, exist_ok=True)
+        os.makedirs(settings.SCREENSHOT_DIR, exist_ok=True)
+        os.makedirs(settings.LOG_DIR, exist_ok=True)
 
-        if self.G_LOG_DEBUG_FILE:
-            delay = not os.path.exists(self.G_LOG_DEBUG_FILE)
-            fh = CustomRotatingFileHandler(self.G_LOG_DEBUG_FILE, delay=delay)
+        if settings.LOG_DEBUG_FILE:
+            delay = not os.path.exists(settings.LOG_DEBUG_FILE)
+            fh = CustomRotatingFileHandler(settings.LOG_DEBUG_FILE, delay=delay)
             fh.doRollover()
             fh_formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
             fh.setFormatter(fh_formatter)
             app_logger.addHandler(fh)
 
         # layout file
-        if not os.path.exists(self.G_LAYOUT_FILE):
+        if not os.path.exists(settings.LAYOUT_FILE):
             default_layout_file = os.path.join("layouts", "layout-cycling.yaml")
-            shutil.copy(default_layout_file, self.G_LAYOUT_FILE)
+            shutil.copy(default_layout_file, settings.LAYOUT_FILE)
 
-        # map list
-        if os.path.exists(self.G_MAP_LIST):
-            self.read_map_list()
-
-        # set default values
-        for map_config in [
-            self.G_MAP_CONFIG,
-            self.G_HEATMAP_OVERLAY_MAP_CONFIG,
-            self.G_RAIN_OVERLAY_MAP_CONFIG,
-            self.G_WIND_OVERLAY_MAP_CONFIG,
-            self.G_DEM_MAP_CONFIG,
-        ]:
-            for key in map_config:
-                if "tile_size" not in map_config[key]:
-                    map_config[key]["tile_size"] = 256
-
-        if self.G_MAP not in self.G_MAP_CONFIG:
-            app_logger.error(f"{self.G_MAP} does not exist in {self.G_MAP_LIST}")
-            self.G_MAP = "wikimedia"
-        if self.G_MAP_CONFIG[self.G_MAP].get("use_mbtiles") and not os.path.exists(
-            os.path.join("maptile", f"{self.G_MAP}.mbtiles")
+        if settings.CURRENT_MAP.get("use_mbtiles") and not os.path.exists(
+            os.path.join("maptile", f"{settings.MAP}.mbtiles")
         ):
-            self.G_MAP_CONFIG[self.G_MAP]["use_mbtiles"] = False
-        self.loaded_dem = None
+            settings.CURRENT_MAP["use_mbtiles"] = False
 
-        self.check_map_dir()
+        check_map_dir()
 
         self.G_RIDEWITHGPS_API["PARAMS"]["apikey"] = self.G_RIDEWITHGPS_API["APIKEY"]
         self.G_RIDEWITHGPS_API["PARAMS"]["auth_token"] = self.G_RIDEWITHGPS_API["TOKEN"]
 
-        # get serial number
-        self.get_serial()
-
         # set ant interval. 0:4Hz(0.25s), 1:2Hz(0.5s), 2:1Hz(1.0s)
-        if self.G_ANT_INTERVAL == 0.25:
+        if settings.ANT_INTERVAL == 0.25:
             self.G_ANT["INTERVAL"] = 0
-        elif self.G_ANT_INTERVAL == 0.5:
+        elif settings.ANT_INTERVAL == 0.5:
             self.G_ANT["INTERVAL"] = 1
         else:
             self.G_ANT["INTERVAL"] = 2
@@ -691,7 +251,7 @@ class Config:
         self.button_config = Button_Config(self)
 
     def init_loop(self, call_from_gui=False):
-        if self.G_GUI_MODE == "PyQt":
+        if settings.GUI_MODE == "PyQt":
             if call_from_gui:
                 # workaround for latest qasync and older version(~0.24.0)
                 asyncio.events._set_running_loop(self.loop)
@@ -699,6 +259,18 @@ class Config:
                 self.start_coroutine()
         else:
             self.loop = asyncio.get_event_loop()
+
+    def import_gui(self):
+        if settings.GUI_MODE == "PyQt":
+            from modules.gui_pyqt import GUI_PyQt
+
+            self.gui_class = GUI_PyQt
+        else:
+            raise ValueError(f"{settings.GUI_MODE} mode not supported")
+
+    def start_gui(self):
+        if self.gui_class:
+            self.gui_class(self)
 
     def start_coroutine(self):
         self.logger.start_coroutine()
@@ -713,14 +285,14 @@ class Config:
 
         # network
         await self.gui.set_boot_status("initialize network modules...")
-        from modules.helper.api import api
+        from modules.helper.api import Api
         from modules.helper.network import Network
 
-        self.api = api(self)
+        self.api = Api(self)
         self.network = Network(self)
 
         # bluetooth
-        if self.G_IS_RASPI:
+        if settings.IS_RASPI:
             await self.gui.set_boot_status("initialize bluetooth modules...")
 
             from modules.helper.bt_pan import (
@@ -744,12 +316,12 @@ class Config:
         self.logger.delay_init()
 
         # GadgetBridge (has to be before gui but after sensors for proper init state of buttons)
-        if self.G_IS_RASPI:
+        if settings.IS_RASPI:
             try:
                 from modules.helper.ble_gatt_server import GadgetbridgeService
 
                 self.ble_uart = GadgetbridgeService(
-                    self.G_PRODUCT,
+                    settings.PRODUCT,
                     self.logger.sensor.sensor_gps,
                     self.gui,
                     (
@@ -765,11 +337,11 @@ class Config:
         await self.gui.set_boot_status("initialize screens...")
         self.gui.delay_init()
 
-        if self.G_HEADLESS:
+        if settings.HEADLESS:
             asyncio.create_task(self.keyboard_check())
 
         # resume BT / thingsboard
-        if self.G_IS_RASPI:
+        if settings.IS_RASPI:
             self.G_BT_USE_ADDRESS = self.state.get_value(
                 "G_BT_USE_ADDRESS", self.G_BT_USE_ADDRESS
             )
@@ -797,7 +369,9 @@ class Config:
                 app_logger.info(
                     "s:start/stop, l: lap, r:reset, p: previous screen, n: next screen, q: quit"
                 )
-                key = await self.loop.run_in_executor(None, input, "> ")
+                key = await asyncio.get_running_loop().run_in_executor(
+                    None, input, "> "
+                )
 
                 if key == "s":
                     self.logger.start_and_stop_manual()
@@ -831,43 +405,9 @@ class Config:
     def set_logger(self, logger):
         self.logger = logger
 
-    def set_display(self, display):
+    def set_display(self, display, display_name):
         self.display = display
-
-    def check_map_dir(self):
-        if not self.G_MAP_CONFIG[self.G_MAP].get("use_mbtiles"):
-            os.makedirs(os.path.join("maptile", self.G_MAP), exist_ok=True)
-        os.makedirs(os.path.join("maptile", self.G_HEATMAP_OVERLAY_MAP), exist_ok=True)
-        os.makedirs(os.path.join("maptile", self.G_RAIN_OVERLAY_MAP), exist_ok=True)
-        os.makedirs(os.path.join("maptile", self.G_WIND_OVERLAY_MAP), exist_ok=True)
-
-        if self.G_LOG_ALTITUDE_FROM_DATA_SOURCE:
-            os.makedirs(os.path.join("maptile", self.G_DEM_MAP), exist_ok=True)
-
-    def get_serial(self):
-        if not self.G_IS_RASPI:
-            return
-
-        # Extract serial from cpuinfo file
-        with open("/proc/cpuinfo", "r") as f:
-            for line in f:
-                if line[0:6] == "Serial":
-                    # include char, not number only
-                    self.G_UNIT_ID = (line.split(":")[1]).replace(" ", "").strip()[-8:]
-                    self.G_UNIT_ID_HEX = int(self.G_UNIT_ID, 16)
-                if line[0:5] == "Model":
-                    self.G_UNIT_MODEL = (line.split(":")[1]).strip()
-                if line[0:8] == "Hardware":
-                    self.G_UNIT_HARDWARE = (line.split(":")[1]).replace(" ", "").strip()
-
-        model_path = "/proc/device-tree/model"
-        if self.G_UNIT_MODEL == "" and os.path.exists(model_path):
-            with open(model_path, "r") as f:
-                self.G_UNIT_MODEL = f.read().replace("\x00", "").strip()
-
-        app_logger.info(
-            f"{self.G_UNIT_MODEL}({self.G_UNIT_HARDWARE}), serial:{hex(self.G_UNIT_ID_HEX)}"
-        )
+        settings.update_setting("DISPLAY", display_name)
 
     def press_button(self, button_hard, press_button, index):
         self.button_config.press_button(button_hard, press_button, index)
@@ -879,7 +419,7 @@ class Config:
         tasks = asyncio.all_tasks()
         current_task = asyncio.current_task()
         for task in tasks:
-            if self.G_GUI_MODE == "PyQt":
+            if settings.GUI_MODE == "PyQt":
                 if task == current_task or task.get_coro().__name__ in [
                     "update_display"
                 ]:
@@ -903,7 +443,7 @@ class Config:
         self.display.quit()
 
         await self.logger.quit()
-        self.setting.write_config()
+        settings.save()
         self.state.delete()
 
         await asyncio.sleep(0.5)
@@ -911,7 +451,8 @@ class Config:
         self.logger.remove_handler()
         app_logger.info("quit done")
 
-    def poweroff(self):
+    @staticmethod
+    def poweroff():
         # TODO
         #  should be replaced by quit() with power_off option
         #  keep the logic for now but remove the shutdown service eg:
@@ -921,25 +462,28 @@ class Config:
 
         if is_running_as_service():
             exec_cmd(["sudo", "systemctl", "stop", "pizero_bikecomputer"])
-        if self.G_IS_RASPI:
+        if settings.IS_RASPI:
             exec_cmd(["sudo", "poweroff"])
 
-    def reboot(self):
-        if self.G_IS_RASPI:
+    @staticmethod
+    def reboot():
+        if settings.IS_RASPI:
             exec_cmd(["sudo", "reboot"])
 
     def update_application(self):
-        if self.G_IS_RASPI:
+        if settings.IS_RASPI:
             exec_cmd(["git", "pull", "origin", "master"])
             self.restart_application()
 
-    def restart_application(self):
-        if self.G_IS_RASPI:
+    @staticmethod
+    def restart_application():
+        if settings.IS_RASPI:
             exec_cmd(["sudo", "systemctl", "restart", "pizero_bikecomputer"])
 
-    def hardware_wifi_bt(self, status):
+    @staticmethod
+    def hardware_wifi_bt(status):
         app_logger.info(f"Hardware Wifi/BT: {status}")
-        if self.G_IS_RASPI:
+        if settings.IS_RASPI:
             with open(BOOT_FILE, "r") as f:
                 data = f.read()
             for dev in ["wifi", "bt"]:
@@ -1028,7 +572,7 @@ class Config:
                 )
 
     def get_wifi_bt_status(self):
-        if not self.G_IS_RASPI:
+        if not settings.IS_RASPI:
             return False, False
 
         status = {"wlan": False, "bluetooth": False}
@@ -1044,7 +588,8 @@ class Config:
             app_logger.warning(f"Exception occurred trying to get wifi/bt status: {e}")
         return status["wlan"], status["bluetooth"]
 
-    def parse_wifi_bt_json(self, json_status, status, keys):
+    @staticmethod
+    def parse_wifi_bt_json(json_status, status, keys):
         get_status = False
         for k in keys:
             if k not in json_status:
@@ -1060,7 +605,7 @@ class Config:
 
     def onoff_wifi_bt(self, key=None):
         # in the future, manage with pycomman
-        if not self.G_IS_RASPI:
+        if not settings.IS_RASPI:
             return
 
         onoff_cmd = {
@@ -1078,7 +623,7 @@ class Config:
         exec_cmd(onoff_cmd[key][status[key]])
 
     async def bluetooth_tethering(self, disconnect=False):
-        if not self.G_IS_RASPI or not self.G_BT_USE_ADDRESS or not self.bt_pan:
+        if not settings.IS_RASPI or not self.G_BT_USE_ADDRESS or not self.bt_pan:
             return
 
         if not disconnect:
@@ -1091,41 +636,28 @@ class Config:
             )
         return bool(res)
 
-    def check_time(self, log_str):
-        t = datetime.datetime.now()
-        print("###", log_str, (t - self.log_time).total_seconds())
-        self.log_time = t
-
-    def read_map_list(self):
-        with open(self.G_MAP_LIST) as file:
-            text = file.read()
-            map_list = yaml.safe_load(text)
-            if map_list is None:
-                return
-            for key in map_list:
-                if map_list[key]["attribution"] is None:
-                    map_list[key]["attribution"] = ""
-            self.G_MAP_CONFIG.update(map_list)
-
     async def get_altitude_from_tile(self, pos):
         if np.isnan(pos[0]) or np.isnan(pos[1]):
             return np.nan
 
-        z = self.G_DEM_MAP_CONFIG[self.G_DEM_MAP]["fix_zoomlevel"]
+        z = settings.CURRENT_DEM_MAP["fix_zoomlevel"]
         f_x, f_y, p_x, p_y = get_tilexy_and_xy_in_tile(z, pos[0], pos[1], 256)
-        filename = get_maptile_filename(self.G_DEM_MAP, z, f_x, f_y)
+        filename = get_maptile_filename(settings.DEM_MAP, z, f_x, f_y)
 
         if not os.path.exists(filename):
             await self.network.download_demtile(z, f_x, f_y)
             return np.nan
+
         if os.path.getsize(filename) == 0:
             return np.nan
 
         if self.loaded_dem != (f_x, f_y):
             self.dem_array = np.asarray(Image.open(filename))
             self.loaded_dem = (f_x, f_y)
+
         rgb_pos = self.dem_array[p_y, p_x]
         altitude = rgb_pos[0] * (2**16) + rgb_pos[1] * (2**8) + rgb_pos[2]
+
         if altitude < 2**23:
             altitude = altitude * 0.01
         elif altitude == 2**23:
@@ -1133,12 +665,12 @@ class Config:
         else:
             altitude = (altitude - 2**24) * 0.01
 
-        # print(altitude, filename, p_x, p_y, pos[1], pos[0])
         return altitude
 
-    def get_courses(self):
+    @staticmethod
+    def get_courses():
         dirs = sorted(
-            glob(os.path.join(self.G_COURSE_DIR, "*.tcx")),
+            glob(os.path.join(settings.COURSE_DIR, "*.tcx")),
             key=lambda f: os.stat(f).st_mtime,
             reverse=True,
         )
@@ -1172,5 +704,5 @@ class Config:
                 # **get_course_info(f)
             }
             for f in dirs
-            if os.path.isfile(f) and f != self.G_COURSE_FILE_PATH
+            if os.path.isfile(f) and f != settings.COURSE_FILE_PATH
         ]

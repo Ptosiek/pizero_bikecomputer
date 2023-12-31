@@ -1,9 +1,5 @@
 #include "logger_fit_c.hpp"
 
-void set_config_c(const config& _cfg) {
-  cfg.G_UNIT_ID_HEX = _cfg.G_UNIT_ID_HEX;
-}
-
 void reset() {
   fit_data.clear();
   struct_def_cache.clear();
@@ -477,7 +473,7 @@ bool get_summary(int lap_num, sqlite3 *db) {
   return true;
 }
 
-bool write_log_c(const char* db_file, const char* filename, const char* start_date, const char* end_date) {
+bool write_log_c(const char* db_file, const char* filename, const char* start_date, const char* end_date, unsigned int unit_id) {
   sqlite3 *db;
   char *zErrMsg = 0;
   int rc, max_lap, rows, lap_lows;
@@ -509,7 +505,7 @@ bool write_log_c(const char* db_file, const char* filename, const char* start_da
   write_definition(); //need message_num, local_message_num
   get_struct_def(_size, local_message_num, true);
   _data = {
-    cfg.G_UNIT_ID_HEX,     // serial_number: XXXXXXXXXX
+    unit_id,     // serial_number: XXXXXXXXXX
     (unsigned int)start_date_epoch, //timestamp()
     255,                   //manufacturer (255: development)
     4                      //type

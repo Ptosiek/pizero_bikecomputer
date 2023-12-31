@@ -4,6 +4,7 @@ import asyncio
 import numpy as np
 
 from logger import app_logger
+from modules.settings import settings
 from .display_core import Display
 
 _SENSOR_DISPLAY = False
@@ -41,6 +42,8 @@ UPDATE_MODE = 0x80
 
 # BACKLIGHT frequency
 GPIO_BACKLIGHT_FREQ = 64
+DITHERING_CUTOFF_LOW = [128, 150, 170]
+DITHERING_CUTOFF_HIGH = [170, 193, 216]
 
 
 class MipDisplay(Display):
@@ -56,10 +59,6 @@ class MipDisplay(Display):
     brightness_table = [0, 1, 2, 3, 5, 7, 10, 25, 50, 100]
     brightness = 0
 
-    dithering_cutoff = {
-        "LOW": [128, 150, 170],
-        "HIGH": [170, 193, 216],
-    }
     dithering_cutoff_low_index = 0
     dithering_cutoff_high_index = 2
 
@@ -74,7 +73,7 @@ class MipDisplay(Display):
         if MODE == "Cython":
             self.conv_color = conv_3bit_color
         elif MODE == "Cython_full":
-            self.mip_display_cpp = MipDisplay_CPP(config.G_DISPLAY_PARAM["SPI_CLOCK"])
+            self.mip_display_cpp = MipDisplay_CPP(settings.DISPLAY_PARAM_SPI_CLOCK)
             self.mip_display_cpp.set_screen_size(self.size[0], self.size[1])
             self.update = self.mip_display_cpp.update
             self.set_brightness = self.mip_display_cpp.set_brightness
@@ -88,7 +87,7 @@ class MipDisplay(Display):
 
         # spi
         self.pi = pigpio.pi()
-        self.spi = self.pi.spi_open(0, config.G_DISPLAY_PARAM["SPI_CLOCK"], 0)
+        self.spi = self.pi.spi_open(0, settings.DISPLAY_PARAM_SPI_CLOCK, 0)
 
         self.pi.set_mode(GPIO_DISP, pigpio.OUTPUT)
         self.pi.set_mode(GPIO_SCS, pigpio.OUTPUT)
@@ -170,7 +169,6 @@ class MipDisplay(Display):
             img_bytes = await self.draw_queue.get()
             if img_bytes is None:
                 break
-            # self.config.check_time("mip_draw_worker start")
             # t = datetime.datetime.now()
             self.pi.write(GPIO_SCS, 1)
             await asyncio.sleep(0.000006)
@@ -179,18 +177,15 @@ class MipDisplay(Display):
             self.pi.spi_write(self.spi, [0x00000000, 0])
             await asyncio.sleep(0.000006)
             self.pi.write(GPIO_SCS, 0)
-            # self.config.check_time("mip_draw_worker end")
             # print("####### draw(Py)", (datetime.datetime.now()-t).total_seconds())
             self.draw_queue.task_done()
 
     def update(self, im_array, direct_update):
         # direct update not yet supported for MPI_640
-        if direct_update and self.config.G_DISPLAY in ("MIP_640",):
+        if direct_update and settings.DISPLAY in ("MIP_640",):
             direct_update = False
 
-        # self.config.check_time("mip_update start")
         self.img_buff_rgb8[:, 2:] = self.conv_color(im_array)
-        # self.config.check_time("packbits")
 
         # differential update
         diff_lines = np.where(
@@ -202,7 +197,6 @@ class MipDisplay(Display):
         if not len(diff_lines):
             return
         self.pre_img[diff_lines] = self.img_buff_rgb8[diff_lines]
-        # self.config.check_time("diff_lines")
 
         if direct_update:
             self.pi.write(GPIO_SCS, 1)
@@ -248,19 +242,19 @@ class MipDisplay(Display):
         im_array_bin = np.zeros(im_array.shape).astype("bool")
         im_array_bin[0::2, 0::2, :][
             im_array[0::2, 0::2, :]
-            >= self.dithering_cutoff["LOW"][self.dithering_cutoff_low_index]
+            >= DITHERING_CUTOFF_LOW[self.dithering_cutoff_low_index]
         ] = 1
         im_array_bin[1::2, 1::2, :][
             im_array[1::2, 1::2, :]
-            >= self.dithering_cutoff["LOW"][self.dithering_cutoff_low_index]
+            >= DITHERING_CUTOFF_LOW[self.dithering_cutoff_low_index]
         ] = 1
         im_array_bin[0::2, 1::2, :][
             im_array[0::2, 1::2, :]
-            > self.dithering_cutoff["HIGH"][self.dithering_cutoff_high_index]
+            > DITHERING_CUTOFF_HIGH[self.dithering_cutoff_high_index]
         ] = 1
         im_array_bin[1::2, 0::2, :][
             im_array[1::2, 0::2, :]
-            > self.dithering_cutoff["HIGH"][self.dithering_cutoff_high_index]
+            > DITHERING_CUTOFF_HIGH[self.dithering_cutoff_high_index]
         ] = 1
 
         return np.packbits(im_array_bin.reshape(self.size[1], self.size[0] * 3), axis=1)
@@ -296,3 +290,18 @@ class MipDisplay(Display):
 
     def screen_flash_short(self):
         return self.inversion(0.3)
+
+    def change_color_low(self):
+        self.dithering_cutoff_low_index = (self.dithering_cutoff_low_index + 1) % len(
+            DITHERING_CUTOFF_LOW
+        )
+
+        app_logger.info(f"LOW: {DITHERING_CUTOFF_LOW[self.dithering_cutoff_low_index]}")
+
+    def change_color_high(self):
+        self.dithering_cutoff_high_index = (self.dithering_cutoff_high_index + 1) % len(
+            DITHERING_CUTOFF_HIGH
+        )
+        app_logger.info(
+            f"LOW: {DITHERING_CUTOFF_HIGH[self.dithering_cutoff_high_index]}"
+        )

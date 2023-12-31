@@ -1,11 +1,11 @@
-import struct
 import array
+import struct
 
 from logger import app_logger
-from . import ant_device
+from .ant_device import ANT_Device
 
 
-class ANT_Device_CTRL(ant_device.ANT_Device):
+class ANT_Device_CTRL(ANT_Device):
     ant_config = {
         "interval": (8192, 16384, 16384),  # 8192, 16384, 32768
         "type": 0x10,

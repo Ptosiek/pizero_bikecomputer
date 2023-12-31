@@ -6,7 +6,7 @@ import struct
 import numpy as np
 
 
-class Setting:
+class ConfParser:
     config = None
     config_parser = None
 
@@ -23,43 +23,6 @@ class Setting:
     def read(self):
         self.config_parser.read(self.config_file)
 
-        if "GENERAL" in self.config_parser:
-            if "AUTOSTOP_CUTOFF" in self.config_parser["GENERAL"]:
-                self.config.G_AUTOSTOP_CUTOFF = (
-                    int(self.config_parser["GENERAL"]["AUTOSTOP_CUTOFF"]) / 3.6
-                )
-                self.config.G_GPS_SPEED_CUTOFF = self.config.G_AUTOSTOP_CUTOFF
-            if "WHEEL_CIRCUMFERENCE" in self.config_parser["GENERAL"]:
-                self.config.G_WHEEL_CIRCUMFERENCE = (
-                    int(self.config_parser["GENERAL"]["WHEEL_CIRCUMFERENCE"]) / 1000
-                )
-            if "GROSS_AVE_SPEED" in self.config_parser["GENERAL"]:
-                self.config.G_GROSS_AVE_SPEED = int(
-                    self.config_parser["GENERAL"]["GROSS_AVE_SPEED"]
-                )
-            if "DISPLAY" in self.config_parser["GENERAL"]:
-                self.config.G_DISPLAY = self.config_parser["GENERAL"][
-                    "DISPLAY"
-                ]  # store temporary
-            if "AUTO_BACKLIGHT_CUTOFF" in self.config_parser["GENERAL"]:
-                self.config.G_AUTO_BACKLIGHT_CUTOFF = int(
-                    self.config_parser["GENERAL"]["AUTO_BACKLIGHT_CUTOFF"]
-                )  # store temporary
-            if "LANG" in self.config_parser["GENERAL"]:
-                self.config.G_LANG = self.config_parser["GENERAL"]["LANG"].upper()
-            if "FONT_FILE" in self.config_parser["GENERAL"]:
-                self.config.G_FONT_FILE = self.config_parser["GENERAL"]["FONT_FILE"]
-            if "MAP" in self.config_parser["GENERAL"]:
-                self.config.G_MAP = self.config_parser["GENERAL"]["MAP"].lower()
-
-        if "POWER" in self.config_parser:
-            if "CP" in self.config_parser["POWER"]:
-                self.config.G_POWER_CP = int(self.config_parser["POWER"]["CP"])
-            if "W_PRIME" in self.config_parser["POWER"]:
-                self.config.G_POWER_W_PRIME = int(
-                    self.config_parser["POWER"]["W_PRIME"]
-                )
-
         if "ANT" in self.config_parser:
             for key in self.config_parser["ANT"]:
                 if key.upper() == "STATUS":
@@ -67,6 +30,7 @@ class Setting:
                         key
                     )
                     continue
+
                 i = key.rfind("_")
 
                 if i < 0:
@@ -116,57 +80,6 @@ class Setting:
                         self.config.G_ANT["TYPE"][key],
                     )
 
-        if "SENSOR_IMU" in self.config_parser:
-            for s, c, m in [
-                [
-                    "AXIS_CONVERSION_STATUS",
-                    "AXIS_CONVERSION_COEF",
-                    self.config.G_IMU_AXIS_CONVERSION,
-                ],
-                ["AXIS_SWAP_XY_STATUS", "", self.config.G_IMU_AXIS_SWAP_XY],
-                [
-                    "MAG_AXIS_CONVERSION_STATUS",
-                    "MAG_AXIS_CONVERSION_COEF",
-                    self.config.G_IMU_MAG_AXIS_CONVERSION,
-                ],
-                ["MAG_AXIS_SWAP_XY_STATUS", "", self.config.G_IMU_MAG_AXIS_SWAP_XY],
-            ]:
-                if s.lower() in self.config_parser["SENSOR_IMU"]:
-                    m["STATUS"] = self.config_parser["SENSOR_IMU"].getboolean(s)
-                if c != "" and c.lower() in self.config_parser["SENSOR_IMU"]:
-                    coef = np.array(json.loads(self.config_parser["SENSOR_IMU"][c]))
-                    n = m["COEF"].shape[0]
-                    if np.sum((coef == 1) | (coef == -1)) == n:
-                        m["COEF"] = coef[0:n]
-                if "MAG_DECLINATION" in self.config_parser["SENSOR_IMU"]:
-                    self.config.G_IMU_MAG_DECLINATION = int(
-                        self.config_parser["SENSOR_IMU"]["MAG_DECLINATION"]
-                    )
-
-        if "DISPLAY_PARAM" in self.config_parser:
-            if "SPI_CLOCK" in self.config_parser["DISPLAY_PARAM"]:
-                self.config.G_DISPLAY_PARAM["SPI_CLOCK"] = int(
-                    self.config_parser["DISPLAY_PARAM"]["SPI_CLOCK"]
-                )
-
-        if "GPSD_PARAM" in self.config_parser:
-            if "EPX_EPY_CUTOFF" in self.config_parser["GPSD_PARAM"]:
-                self.config.G_GPSD_PARAM["EPX_EPY_CUTOFF"] = float(
-                    self.config_parser["GPSD_PARAM"]["EPX_EPY_CUTOFF"]
-                )
-            if "EPV_CUTOFF" in self.config_parser["GPSD_PARAM"]:
-                self.config.G_GPSD_PARAM["EPV_CUTOFF"] = float(
-                    self.config_parser["GPSD_PARAM"]["EPV_CUTOFF"]
-                )
-            if "SP1_EPV_CUTOFF" in self.config_parser["GPSD_PARAM"]:
-                self.config.G_GPSD_PARAM["SP1_EPV_CUTOFF"] = float(
-                    self.config_parser["GPSD_PARAM"]["SP1_EPV_CUTOFF"]
-                )
-            if "SP1_USED_SATS_CUTOFF" in self.config_parser["GPSD_PARAM"]:
-                self.config.G_GPSD_PARAM["SP1_USED_SATS_CUTOFF"] = int(
-                    self.config_parser["GPSD_PARAM"]["SP1_USED_SATS_CUTOFF"]
-                )
-
         if "STRAVA_API" in self.config_parser:
             for k in self.config.G_STRAVA_API.keys():
                 if k in self.config_parser["STRAVA_API"]:
@@ -181,7 +94,6 @@ class Setting:
 
         for token in (
             "GOOGLE_DIRECTION",
-            "OPENWEATHERMAP",
             "RIDEWITHGPS",
             "THINGSBOARD",
         ):
@@ -204,21 +116,15 @@ class Setting:
     def write_config(self):
         self.config_parser["GENERAL"] = {}
         self.config_parser["GENERAL"]["DISPLAY"] = self.config.G_DISPLAY
-        self.config_parser["GENERAL"]["AUTOSTOP_CUTOFF"] = str(
-            int(self.config.G_AUTOSTOP_CUTOFF * 3.6)
-        )
+        self.config_parser["GENERAL"]["AUTOSTOP_CUTOFF"] = "UNKNOWN: TO BE FIXED"
         self.config_parser["GENERAL"]["WHEEL_CIRCUMFERENCE"] = str(
             int(self.config.G_WHEEL_CIRCUMFERENCE * 1000)
         )
-        self.config_parser["GENERAL"]["GROSS_AVE_SPEED"] = str(
-            int(self.config.G_GROSS_AVE_SPEED)
-        )
-        self.config_parser["GENERAL"]["AUTO_BACKLIGHT_CUTOFF"] = str(
-            int(self.config.G_AUTO_BACKLIGHT_CUTOFF)
-        )
-        self.config_parser["GENERAL"]["LANG"] = self.config.G_LANG
-        self.config_parser["GENERAL"]["FONT_FILE"] = self.config.G_FONT_FILE
-        self.config_parser["GENERAL"]["MAP"] = self.config.G_MAP
+        self.config_parser["GENERAL"]["GROSS_AVE_SPEED"] = "UNKNOWN: TO BE FIXED"
+        self.config_parser["GENERAL"]["AUTO_BACKLIGHT_CUTOFF"] = "UNKNOWN: TO BE FIXED"
+        self.config_parser["GENERAL"]["LANG"] = "UNKNOWN: TO BE FIXED"
+        self.config_parser["GENERAL"]["FONT_FILE"] = "UNKNOWN: TO BE FIXED"
+        self.config_parser["GENERAL"]["MAP"] = "UNKNOWN: TO BE FIXED"
 
         self.config_parser["POWER"] = {}
         self.config_parser["POWER"]["CP"] = str(int(self.config.G_POWER_CP))
@@ -288,7 +194,6 @@ class Setting:
 
         for token in (
             "GOOGLE_DIRECTION",
-            "OPENWEATHERMAP",
             "RIDEWITHGPS",
             "THINGSBOARD",
         ):

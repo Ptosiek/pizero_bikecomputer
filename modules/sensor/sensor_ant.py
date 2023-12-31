@@ -9,6 +9,7 @@ import asyncio
 import numpy as np
 
 from logger import app_logger
+from modules.settings import settings
 from .sensor import Sensor
 from .ant import ant_device_heartrate
 from .ant import ant_device_speed_cadence
@@ -52,10 +53,10 @@ class SensorANT(Sensor):
     CHANNEL = 0x00
     DEVICE_ALL = 0
     scanner = None
+    searcher = None
     device = {}
 
     def sensor_init(self):
-        global _SENSOR_ANT
         if self.config.G_ANT["STATUS"] and not _SENSOR_ANT:
             self.config.G_ANT["STATUS"] = False
 
@@ -66,6 +67,7 @@ class SensorANT(Sensor):
         # initialize scan channel (reserve ch0)
         if _SENSOR_ANT:
             app_logger.info("detected ANT+ sensors")
+
         self.scanner = ant_device_multiscan.ANT_Device_MultiScan(self.node, self.config)
         self.searcher = ant_device_search.ANT_Device_Search(
             self.node, self.config, self.values
@@ -73,7 +75,7 @@ class SensorANT(Sensor):
         self.scanner.set_main_ant_device(self.device)
 
         # auto connect ANT+ sensor from setting.conf
-        if self.config.G_ANT["STATUS"] and not self.config.G_DUMMY_OUTPUT:
+        if self.config.G_ANT["STATUS"] and not settings.DUMMY_OUTPUT:
             for key in self.config.G_ANT["ID"].keys():
                 if self.config.G_ANT["USE"][key]:
                     antID = self.config.G_ANT["ID"][key]
@@ -88,7 +90,7 @@ class SensorANT(Sensor):
                 self.config.G_ANT["TYPE"][key] = 0
 
         # for dummy output
-        if not self.config.G_ANT["STATUS"] and self.config.G_DUMMY_OUTPUT:
+        if not self.config.G_ANT["STATUS"] and settings.DUMMY_OUTPUT:
             # need to set dummy ANT+ device id 0
             self.config.G_ANT["USE"] = {
                 "HR": True,
@@ -126,38 +128,36 @@ class SensorANT(Sensor):
             await asyncio.get_running_loop().run_in_executor(None, self.node.start)
 
     def update(self):
-        if self.config.G_ANT["STATUS"] or not self.config.G_DUMMY_OUTPUT:
-            return
+        if settings.DUMMY_OUTPUT:
+            hr_value = random.randint(70, 150)
+            speed_value = random.randint(5, 30) / 3.6  # 5 - 30km/h [unit:m/s]
+            cad_value = random.randint(60, 100)
+            power_value = random.randint(0, 250)
+            timestamp = datetime.datetime.now()
 
-        hr_value = random.randint(70, 150)
-        speed_value = random.randint(5, 30) / 3.6  # 5 - 30km/h [unit:m/s]
-        cad_value = random.randint(60, 100)
-        power_value = random.randint(0, 250)
-        timestamp = datetime.datetime.now()
+            ac = self.config.G_ANT["ID_TYPE"]
+            self.values[ac["HR"]]["heart_rate"] = hr_value
+            self.values[ac["SPD"]]["speed"] = speed_value
+            self.values[ac["CDC"]]["cadence"] = cad_value
+            self.values[ac["PWR"]][0x10]["power"] = power_value
 
-        ac = self.config.G_ANT["ID_TYPE"]
-        self.values[ac["HR"]]["heart_rate"] = hr_value
-        self.values[ac["SPD"]]["speed"] = speed_value
-        self.values[ac["CDC"]]["cadence"] = cad_value
-        self.values[ac["PWR"]][0x10]["power"] = power_value
+            # TIMESTAMP
+            self.values[ac["HR"]]["timestamp"] = timestamp
+            self.values[ac["SPD"]]["timestamp"] = timestamp
+            self.values[ac["PWR"]][0x10]["timestamp"] = timestamp
 
-        # TIMESTAMP
-        self.values[ac["HR"]]["timestamp"] = timestamp
-        self.values[ac["SPD"]]["timestamp"] = timestamp
-        self.values[ac["PWR"]][0x10]["timestamp"] = timestamp
-        # DISTANCE, TOTAL_WORK
-        if self.config.G_MANUAL_STATUS == "START":
-            # DISTANCE: unit: m
-            if not np.isnan(self.values[ac["SPD"]]["speed"]):
-                self.values[ac["SPD"]]["distance"] += (
-                    self.values[ac["SPD"]]["speed"] * self.config.G_SENSOR_INTERVAL
-                )
-            # TOTAL_WORK: unit: j
-            if not np.isnan(self.values[ac["PWR"]][0x10]["power"]):
-                self.values[ac["PWR"]][0x10]["accumulated_power"] += (
-                    self.values[ac["PWR"]][0x10]["power"]
-                    * self.config.G_SENSOR_INTERVAL
-                )
+            # DISTANCE, TOTAL_WORK
+            if self.config.G_MANUAL_STATUS == "START":
+                # DISTANCE: unit: m
+                if not np.isnan(self.values[ac["SPD"]]["speed"]):
+                    self.values[ac["SPD"]]["distance"] += (
+                        self.values[ac["SPD"]]["speed"] * settings.SENSOR_INTERVAL
+                    )
+                # TOTAL_WORK: unit: j
+                if not np.isnan(self.values[ac["PWR"]][0x10]["power"]):
+                    self.values[ac["PWR"]][0x10]["accumulated_power"] += (
+                        self.values[ac["PWR"]][0x10]["power"] * settings.SENSOR_INTERVAL
+                    )
 
     def reset(self):
         for dv in self.device.values():
@@ -166,6 +166,7 @@ class SensorANT(Sensor):
     def quit(self):
         if not self.config.G_ANT["STATUS"]:
             return
+
         self.searcher.set_wait_quick_mode()
         # stop scanner and searcher
         if not self.scanner.stop():
@@ -178,10 +179,13 @@ class SensorANT(Sensor):
     def connect_ant_sensor(self, antName, antID, antType, connectStatus):
         if not self.config.G_ANT["STATUS"]:
             return
+
+        antIDType = struct.pack("<HB", antID, antType)
+
         self.config.G_ANT["ID"][antName] = antID
         self.config.G_ANT["TYPE"][antName] = antType
-        self.config.G_ANT["ID_TYPE"][antName] = struct.pack("<HB", antID, antType)
-        antIDType = self.config.G_ANT["ID_TYPE"][antName]
+        self.config.G_ANT["ID_TYPE"][antName] = antIDType
+
         self.searcher.stop_search(resetWait=False)
 
         self.config.G_ANT["USE"][antName] = True
@@ -203,6 +207,7 @@ class SensorANT(Sensor):
 
         # newly connect
         self.values[antIDType] = {}
+
         if antType == 0x78:
             self.device[antIDType] = ant_device_heartrate.ANT_Device_HeartRate(
                 self.node, self.config, self.values[antIDType], antName
@@ -238,14 +243,16 @@ class SensorANT(Sensor):
         self.device[antIDType].ant_state = "connect_ant_sensor"
         self.device[antIDType].init_after_connect()
 
-    def disconnect_ant_sensor(self, antName):
-        antIDType = self.config.G_ANT["ID_TYPE"][antName]
-        antNames = []
+    def disconnect_ant_sensor(self, ant_name):
+        ant_id_type = self.config.G_ANT["ID_TYPE"][ant_name]
+        ant_names = []
+
         for k, v in self.config.G_ANT["USE"].items():
             if v and k in self.config.G_ANT["ID_TYPE"]:
-                if self.config.G_ANT["ID_TYPE"][k] == antIDType:
-                    antNames.append(k)
-        for k in antNames:
+                if self.config.G_ANT["ID_TYPE"][k] == ant_id_type:
+                    ant_names.append(k)
+
+        for k in ant_names:
             # USE: True -> False
             self.device[
                 self.config.G_ANT["ID_TYPE"][k]
@@ -261,10 +268,12 @@ class SensorANT(Sensor):
     def continuous_scan(self):
         if not self.config.G_ANT["STATUS"]:
             return
+
         self.scanner.set_wait_quick_mode()
         for dv in self.device.values():
             dv.ant_state = "continuous_scan"
             dv.disconnect(isCheck=True, isChange=False, wait=0.5)  # USE: True -> True
+
         time.sleep(0.5)
         self.scanner.set_wait_scan_mode()
         self.scanner.scan()
@@ -272,19 +281,23 @@ class SensorANT(Sensor):
     def stop_continuous_scan(self):
         self.scanner.set_wait_quick_mode()
         self.scanner.stop_scan()
-        antIDTypes = []
+        ant_id_types = []
+
         for k, v in self.config.G_ANT["USE"].items():
-            if v and not self.config.G_ANT["ID_TYPE"][k] in antIDTypes:
-                antIDTypes.append(self.config.G_ANT["ID_TYPE"][k])
-        for antIDType in antIDTypes:
-            self.device[antIDType].connect(
+            if v and not self.config.G_ANT["ID_TYPE"][k] in ant_id_types:
+                ant_id_types.append(self.config.G_ANT["ID_TYPE"][k])
+
+        for ant_id_type in ant_id_types:
+            self.device[ant_id_type].connect(
                 isCheck=True, isChange=False
             )  # USE: True -> True
+
         self.scanner.set_wait_normal_mode()
 
     def set_light_mode(self, mode, auto=False):
         if "LGT" not in self.config.G_ANT["USE"] or not self.config.G_ANT["USE"]["LGT"]:
             return
+
         if mode == "OFF":
             self.device[
                 self.config.G_ANT["ID_TYPE"]["LGT"]

@@ -1,13 +1,13 @@
-import os
 import sqlite3
 import shutil
 
+from modules.settings import settings
 from modules.utils.cmd import exec_cmd
-from .logger import Logger
 
 
-class LoggerCsv(Logger):
-    def write_log(self, filename):
+class LoggerCsv:
+    @staticmethod
+    def write_log(filename):
         r = (
             "lap,timer,timestamp,total_timer_time,elapsed_time,heart_rate,speed,cadence,power,distance,"
             "accumulated_power,position_long,position_lat,raw_long,raw_lat,altitude,gps_altitude,course_altitude,"
@@ -22,7 +22,7 @@ class LoggerCsv(Logger):
         if shutil.which("sh") is not None and shutil.which("sqlite3"):
             sql_cmd = (
                 "sqlite3 -header -csv "
-                + self.config.G_LOG_DB
+                + settings.LOG_DB
                 + " 'SELECT "
                 + r
                 + " FROM BIKECOMPUTER_LOG;' > "
@@ -32,7 +32,7 @@ class LoggerCsv(Logger):
             exec_cmd(sqlite3_cmd)
         else:
             con = sqlite3.connect(
-                self.config.G_LOG_DB,
+                settings.LOG_DB,
                 detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
             )
             sqlite3.dbapi2.converters["DATETIME"] = sqlite3.dbapi2.converters[

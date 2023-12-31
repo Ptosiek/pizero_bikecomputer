@@ -4,6 +4,7 @@ import asyncio
 import numpy as np
 
 from logger import app_logger
+from modules.settings import settings
 from .display_core import Display
 
 _SENSOR_DISPLAY = False
@@ -47,7 +48,7 @@ class MipSharpDisplay(Display):
         self.init_buffer()
 
         self.pi = pigpio.pi()
-        self.spi = self.pi.spi_open(0, config.G_DISPLAY_PARAM["SPI_CLOCK"], 0)
+        self.spi = self.pi.spi_open(0, settings.DISPLAY_PARAM_SPI_CLOCK, 0)
 
         self.pi.set_mode(GPIO_DISP, pigpio.OUTPUT)
         self.pi.set_mode(GPIO_SCS, pigpio.OUTPUT)
@@ -119,7 +120,6 @@ class MipSharpDisplay(Display):
             self.draw_queue.task_done()
 
     def update(self, im_array, direct_update):
-        # self.config.check_time("mip_sharp_update start")
         self.img_buff_rgb8[:, 2:] = ~im_array
 
         # differential update
@@ -133,7 +133,6 @@ class MipSharpDisplay(Display):
             return
 
         self.pre_img[diff_lines] = self.img_buff_rgb8[diff_lines]
-        # self.config.check_time("diff_lines")
 
         if direct_update:
             self.pi.write(GPIO_SCS, 1)

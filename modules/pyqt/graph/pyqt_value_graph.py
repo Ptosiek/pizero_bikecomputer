@@ -2,6 +2,7 @@ import numpy as np
 
 from modules._pyqt import pg, qasync
 from modules.pyqt.pyqt_screen_widget import ScreenWidget
+from modules.settings import settings
 
 
 class PerformanceGraphWidget(ScreenWidget):
@@ -23,26 +24,26 @@ class PerformanceGraphWidget(ScreenWidget):
     pen2 = pg.mkPen(color=(255, 0, 0), width=2)
 
     def __init__(self, parent, config):
-        self.display_item = config.G_GUI_PERFORMANCE_GRAPH_DISPLAY_ITEM
+        self.display_item = settings.GUI_PERFORMANCE_GRAPH_DISPLAY_ITEM
         self.item = {
             "POWER": {
                 "name": "POWER",
                 "graph_key": "power_graph",
-                "yrange": [config.G_GUI_MIN_POWER, config.G_GUI_MAX_POWER],
+                "yrange": [settings.GUI_MIN_POWER, settings.GUI_MAX_POWER],
             },
             "HR": {
                 "name": "HR",
                 "graph_key": "hr_graph",
-                "yrange": [config.G_GUI_MIN_HR, config.G_GUI_MAX_HR],
+                "yrange": [settings.GUI_MIN_HR, settings.GUI_MAX_HR],
             },
             "W_BAL": {
                 "name": "W_BAL",
                 "graph_key": "w_bal_graph",
-                "yrange": [config.G_GUI_MIN_W_BAL, config.G_GUI_MAX_W_BAL],
+                "yrange": [settings.GUI_MIN_W_BAL, settings.GUI_MAX_W_BAL],
             },
         }
         self.plot_data_x1 = []
-        for i in range(config.G_GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE + 1):
+        for i in range(settings.GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE + 1):
             self.plot_data_x1.append(i)
 
         super().__init__(parent, config)
@@ -60,7 +61,7 @@ class PerformanceGraphWidget(ScreenWidget):
         self.p1.getAxis("right").linkToView(self.p2)
         self.p2.setXLink(self.p1)
 
-        plot.setXRange(0, self.config.G_GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE)
+        plot.setXRange(0, settings.GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE)
         self.p1.setYRange(*self.item[self.display_item[0]]["yrange"])
         self.p2.setYRange(*self.item[self.display_item[1]]["yrange"])
         plot.setMouseEnabled(x=False, y=False)
@@ -171,13 +172,13 @@ class AccelerationGraphWidget(ScreenWidget):
         self.p1.scene().addItem(self.p3)
         self.p3.setXLink(self.p1)
 
-        plot.setXRange(0, self.config.G_GUI_ACC_TIME_RANGE)
+        plot.setXRange(0, settings.GUI_ACC_TIME_RANGE)
         plot.setMouseEnabled(x=False, y=False)
 
         self.layout.addWidget(plot, 1, 0, 2, 4)
 
     def start(self):
-        self.timer.start(self.config.G_REALTIME_GRAPH_INTERVAL)
+        self.timer.start(settings.REALTIME_GRAPH_INTERVAL)
 
     def set_font_size(self, length):
         self.font_size = int(length / 7)
@@ -249,7 +250,7 @@ class AltitudeGraphWidget(ScreenWidget):
     # def __init__(self, parent, config):
     #     super().__init__(parent, config)
     #     self.plot_data_x1 = []
-    #     for i in range(self.config.G_GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE):
+    #     for i in range(settings.GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE):
     #       self.plot_data_x1.append(i)
 
     def setup_ui_extra(self):
@@ -262,7 +263,7 @@ class AltitudeGraphWidget(ScreenWidget):
         self.p1.scene().addItem(self.p2)
         self.p2.setXLink(self.p1)
 
-        plot.setXRange(0, self.config.G_GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE)
+        plot.setXRange(0, settings.GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE)
         plot.setMouseEnabled(x=False, y=False)
 
         self.y_range = 15

@@ -3,13 +3,13 @@ import numpy as np
 from modules._pyqt import QtCore, pg, qasync
 from modules.pyqt.pyqt_screen_widget import ScreenWidget
 from .pyqt_map_button import (
-    ZoomInButton,
-    ZoomOutButton,
-    LockButton,
     ArrowNorthButton,
     ArrowSouthButton,
     ArrowWestButton,
     ArrowEastButton,
+    LockButton,
+    ZoomInButton,
+    ZoomOutButton,
 )
 
 
@@ -87,6 +87,7 @@ class BaseMapWidget(ScreenWidget):
         self.buttons["right"] = ArrowEastButton()
         self.buttons["up"] = ArrowNorthButton()
         self.buttons["down"] = ArrowSouthButton()
+
         self.buttons["lock"].clicked.connect(self.switch_lock)
         self.buttons["right"].clicked.connect(self.move_x_plus)
         self.buttons["left"].clicked.connect(self.move_x_minus)

@@ -2,6 +2,20 @@ import math
 import os
 import shutil
 
+from modules.settings import settings
+
+
+def check_map_dir():
+    os.makedirs(os.path.join("maptile", settings.HEATMAP_OVERLAY_MAP), exist_ok=True)
+    os.makedirs(os.path.join("maptile", settings.RAIN_OVERLAY_MAP), exist_ok=True)
+    os.makedirs(os.path.join("maptile", settings.WIND_OVERLAY_MAP), exist_ok=True)
+
+    if not settings.CURRENT_MAP.get("use_mbtiles"):
+        os.makedirs(os.path.join("maptile", settings.MAP), exist_ok=True)
+
+    if settings.LOG_ALTITUDE_FROM_DATA_SOURCE:
+        os.makedirs(os.path.join("maptile", settings.DEM_MAP), exist_ok=True)
+
 
 def get_maptile_filename(map_name, z, x, y):
     return f"maptile/{map_name}/{z}/{x}/{y}.png"

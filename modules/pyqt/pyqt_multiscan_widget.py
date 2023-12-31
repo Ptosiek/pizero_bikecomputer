@@ -1,6 +1,7 @@
-import datetime
 import struct
+from datetime import datetime
 
+from modules.settings import settings
 from .pyqt_screen_widget import ScreenWidget
 
 #################################
@@ -45,7 +46,7 @@ class MultiScanWidget(ScreenWidget):
     def start(self):
         if not self.sensor.sensor_ant.scanner.isUse:
             self.sensor.sensor_ant.continuous_scan()
-        self.timer.start(self.config.G_DRAW_INTERVAL)
+        self.timer.start(settings.DRAW_INTERVAL)
 
     # call from on_change_main_page in gui_pyqt.py
     def stop(self):
@@ -55,9 +56,10 @@ class MultiScanWidget(ScreenWidget):
 
     def update_display(self):
         # update multi device value
-        now_time = datetime.datetime.now()
+        now_time = datetime.now()
         self.reset_values()
         count = {"HR": 0, "PWR": 0}
+
         for ant_id_type, values in self.sensor.sensor_ant.scanner.values.items():
             (ant_id, ant_type) = self.struct_pattern["ID"].unpack(ant_id_type)
             # only HR and PWR
@@ -95,7 +97,6 @@ class MultiScanWidget(ScreenWidget):
                 i = int(item.name[-1:]) - 1
                 ant_id_type = self.values[key + "_ID"][i]
                 if ant_id_type != 0:
-                    (ant_id, ant_type) = self.struct_pattern["ID"].unpack(ant_id_type)
                     item.update_value(self.values[key][i])
                     if (
                         key == "PWR"

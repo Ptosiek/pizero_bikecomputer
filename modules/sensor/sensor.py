@@ -42,9 +42,7 @@ class Sensor:
         await asyncio.sleep(self.wait_time)
         self.start_time = time.perf_counter()
 
-    def get_sleep_time(self, interval=None):
-        if not interval:
-            interval = self.config.G_GPS_INTERVAL
+    def get_sleep_time(self, interval):
         loop_time = time.perf_counter() - self.start_time
         d1, d2 = divmod(loop_time, interval)
         if d1 > interval * 10:  # [s]

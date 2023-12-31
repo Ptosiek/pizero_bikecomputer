@@ -3,8 +3,8 @@ import struct
 from datetime import datetime, timezone
 
 from logger import app_logger
+from modules.settings import settings
 from modules.utils.date import datetime_myparser
-from .logger import Logger
 
 # cython
 MODE = "Python"
@@ -13,25 +13,16 @@ try:
     import pyximport
 
     pyximport.install()
-    from .cython.logger_fit import (
-        set_config,
-        write_log_cython,
-    )
+    from .cython.logger_fit import write_log_cython
 
     MODE = "Cython"
 except ImportError:
     pass
 
 
-class config_local:
-    G_LOG_DB = "log/log.db"
-    G_LOG_DIR = "log"
-    G_UNIT_ID_HEX = 0x12345678
-
-
-class LoggerFit(Logger):
-    mode = None
+class LoggerFit:
     epoch_datetime = datetime(1989, 12, 31, 0, 0, 0, 0)
+    mode = MODE
     profile = {
         0: {
             "name": "file_id",
@@ -173,12 +164,8 @@ class LoggerFit(Logger):
         },
     }
 
-    def __init__(self, config):
-        self.config = config
+    def __init__(self):
         self.reset()
-        self.mode = MODE
-        if MODE == "Cython":
-            set_config(config)
 
     def reset(self):
         self.fit_data = []
@@ -231,13 +218,12 @@ class LoggerFit(Logger):
 
     def write_log_cython(self, filename, start_date, end_date):
         res = write_log_cython(
-            self.config.G_LOG_DB,
+            settings.LOG_DB,
             filename,
             start_date.strftime("%Y-%m-%d_%H-%M-%S"),
             end_date.strftime("%Y-%m-%d_%H-%M-%S"),
+            settings.UNIT_ID,
         )
-        if res:
-            self.config.G_UPLOAD_FILE = filename
         return res
 
     def write_log_python(self, filename, start_date, end_date):
@@ -245,7 +231,7 @@ class LoggerFit(Logger):
         from .cython.crc16_p import crc16
 
         con = sqlite3.connect(
-            self.config.G_LOG_DB,
+            settings.LOG_DB,
             detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
         )
         sqlite3.dbapi2.converters["DATETIME"] = sqlite3.dbapi2.converters["TIMESTAMP"]
@@ -260,7 +246,7 @@ class LoggerFit(Logger):
         self.write(
             struct.pack(
                 struct_def,
-                self.config.G_UNIT_ID_HEX,  # serial_number: XXXXXXXXXX
+                settings.UNIT_ID,  # serial_number: XXXXXXXXXX
                 self.get_epoch_time(start_date),  # timestamp
                 255,  # manufacturer (255: development)
                 # 2530,       #garmin product (Edge 820)
@@ -430,7 +416,6 @@ class LoggerFit(Logger):
 
         # success
         self.reset()
-        self.config.G_UPLOAD_FILE = filename
         return True
 
     def write_definition(self, local_message_num):
@@ -580,9 +565,8 @@ class LoggerFit(Logger):
 
 if __name__ == "__main__":
     # from line_profiler import LineProfiler
-    c = config_local()
-    d = LoggerFit(c)
-    d.write_log()
+    d = LoggerFit()
+    # d.write_log()
 
     # prf = LineProfiler()
     # prf.add_function(l.convertValue)

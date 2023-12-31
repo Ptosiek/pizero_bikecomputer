@@ -8,6 +8,7 @@ from modules._pyqt import (
     QtWidgets,
     qasync,
 )
+from modules.settings import settings
 from modules.utils.network import detect_network
 from .pyqt_menu_widget import MenuWidget, ListWidget
 
@@ -47,7 +48,7 @@ class NetworkMenuWidget(MenuWidget):
         wifi_bt_button_func_wifi = None
         wifi_bt_button_func_bt = None
 
-        if self.config.G_IS_RASPI:
+        if settings.IS_RASPI:
             wifi_bt_button_func_wifi = lambda: self.onoff_wifi_bt(True, "Wifi")
             wifi_bt_button_func_bt = lambda: self.onoff_wifi_bt(True, "Bluetooth")
 
@@ -73,7 +74,7 @@ class NetworkMenuWidget(MenuWidget):
 
     def preprocess(self):
         # initialize toggle button status
-        if self.config.G_IS_RASPI:
+        if settings.IS_RASPI:
             self.onoff_wifi_bt(change=False, key="Wifi")
             self.onoff_wifi_bt(change=False, key="Bluetooth")
         if self.config.ble_uart:
@@ -210,7 +211,7 @@ class DebugLogViewerWidget(MenuWidget):
 
     def preprocess(self):
         try:
-            with open(self.config.G_LOG_DEBUG_FILE) as f:
+            with open(settings.LOG_DEBUG_FILE) as f:
                 self.debug_log_screen.setText(f.read())
         except FileNotFoundError:
             self.debug_log_screen.setText("No logs found")

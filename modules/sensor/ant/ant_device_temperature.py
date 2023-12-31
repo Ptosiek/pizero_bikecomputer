@@ -1,10 +1,10 @@
 import struct
-import datetime
+from datetime import datetime
 
-from . import ant_device
+from .ant_device import ANT_Device
 
 
-class ANT_Device_Temperature(ant_device.ANT_Device):
+class ANT_Device_Temperature(ANT_Device):
     ant_config = {
         "interval": (8192, 65535, 65535),
         "type": 0x19,
@@ -23,4 +23,4 @@ class ANT_Device_Temperature(ant_device.ANT_Device):
             self.values["temperature"] = round(
                 self.structPattern[self.name].unpack(data[0:8])[0] / 100, 1
             )
-            self.values["timestamp"] = datetime.datetime.now()
+            self.values["timestamp"] = datetime.now()

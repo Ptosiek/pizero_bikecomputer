@@ -17,13 +17,12 @@ from logger import app_logger
 
 app_logger.info("detected sensor modules:")
 
+from modules.settings import settings
 from modules.utils.timer import Timer, log_timers
 from .sensor.gps import SensorGPS
 from .sensor.sensor_ant import SensorANT
 from .sensor.sensor_gpio import SensorGPIO
 from .sensor.sensor_i2c import SensorI2C
-
-# Todo: BLE
 
 
 class SensorCore:
@@ -32,7 +31,6 @@ class SensorCore:
     sensor_ant = None
     sensor_i2c = None
     sensor_gpio = None
-    values = {}
     integrated_value_keys = [
         "heart_rate",
         "speed",
@@ -83,11 +81,7 @@ class SensorCore:
 
     def __init__(self, config):
         self.config = config
-        self.values["GPS"] = {}
-        self.values["ANT+"] = {}
-        self.values["BLE"] = {}
-        self.values["I2C"] = {}
-        self.values["integrated"] = {}
+        self.values = {"GPS": {}, "ANT+": {}, "I2C": {}, "integrated": {}}
 
         # reset
         for key in self.integrated_value_keys:
@@ -97,7 +91,7 @@ class SensorCore:
         for g in self.graph_keys:
             self.values["integrated"][g] = [
                 np.nan
-            ] * self.config.G_GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE
+            ] * settings.GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE
         for d in self.diff_keys:
             self.values["integrated"][d] = [np.nan] * self.grade_range
         self.values["integrated"]["CPU_MEM"] = ""
@@ -145,29 +139,29 @@ class SensorCore:
         pre_ttlwork = {"ANT+": 0}
         pre_alt = {"ANT+": np.nan, "GPS": np.nan}
         pre_alt_spd = {"ANT+": np.nan}
-        pre_grade = pre_grade_spd = pre_glide = self.config.G_ANT_NULLVALUE
+        pre_grade = pre_grade_spd = pre_glide = settings.ANT_NULLVALUE
         diff_sum = {"alt_diff": 0, "dst_diff": 0, "alt_diff_spd": 0, "dst_diff_spd": 0}
 
         # for w_prime_balance
         pwr_mean_under_cp = 0
-        tau = 546 * np.exp(-0.01 * (self.config.G_POWER_CP - pwr_mean_under_cp)) + 316
+        tau = 546 * np.exp(-0.01 * (settings.POWER_CP - pwr_mean_under_cp)) + 316
+
         # alias for self.values
         v = {"GPS": self.values["GPS"], "I2C": self.values["I2C"]}
         # loop control
-        self.wait_time = self.config.G_SENSOR_INTERVAL
-        self.actual_loop_interval = self.config.G_SENSOR_INTERVAL
+        self.wait_time = settings.SENSOR_INTERVAL
+        self.actual_loop_interval = settings.SENSOR_INTERVAL
 
         try:
             while True:
                 await asyncio.sleep(self.wait_time)
                 start_time = datetime.now()
-                # print(start_time, self.wait_time)
-
                 time_profile = [
                     start_time,
                 ]
-                hr = spd = cdc = pwr = temperature = self.config.G_ANT_NULLVALUE
-                grade = grade_spd = glide = self.config.G_ANT_NULLVALUE
+
+                hr = spd = cdc = pwr = temperature = settings.ANT_NULLVALUE
+                grade = grade_spd = glide = settings.ANT_NULLVALUE
                 ttlwork_diff = 0
                 dst_diff = {"ANT+": 0, "GPS": 0, "USE": 0}
                 alt_diff = {"ANT+": 0, "GPS": 0, "USE": 0}
@@ -362,7 +356,7 @@ class SensorCore:
                             alt_diff_spd["ANT+"] = alt - pre_alt_spd["ANT+"]
                         pre_alt_spd["ANT+"] = alt
                 # dem_altitude
-                if self.config.G_LOG_ALTITUDE_FROM_DATA_SOURCE:
+                if settings.LOG_ALTITUDE_FROM_DATA_SOURCE:
                     self.values["integrated"][
                         "dem_altitude"
                     ] = await self.config.get_altitude_from_tile(
@@ -381,9 +375,9 @@ class SensorCore:
                             self.values["integrated"][key][-self.grade_window_size :]
                         )
                     # set grade
-                    gl = self.config.G_ANT_NULLVALUE
-                    gr = self.config.G_ANT_NULLVALUE
-                    x = self.config.G_ANT_NULLVALUE
+                    gl = settings.ANT_NULLVALUE
+                    gr = settings.ANT_NULLVALUE
+                    x = settings.ANT_NULLVALUE
                     y = diff_sum["alt_diff"]
                     if grade_use["ANT+"]:
                         x = math.sqrt(
@@ -418,7 +412,7 @@ class SensorCore:
                     # set grade
                     x = diff_sum["dst_diff_spd"] ** 2 - diff_sum["alt_diff_spd"] ** 2
                     y = diff_sum["alt_diff_spd"]
-                    gr = self.config.G_ANT_NULLVALUE
+                    gr = settings.ANT_NULLVALUE
                     if x > 0:
                         x = math.sqrt(x)
                         gr = self.conv_grade(100 * y / x)
@@ -464,9 +458,9 @@ class SensorCore:
                     # https://medium.com/critical-powers/comparison-of-wbalance-algorithms-8838173e2c15
 
                     # Waterworth algorighm
-                    if self.config.G_POWER_W_PRIME_ALGORITHM == "WATERWORTH":
-                        pwr_cp_diff = pwr - self.config.G_POWER_CP
-                        if self.config.G_POWER_CP < 0:
+                    if settings.POWER_W_PRIME_ALGORITHM == "WATERWORTH":
+                        pwr_cp_diff = pwr - settings.POWER_CP
+                        if settings.POWER_CP < 0:
                             self.values["integrated"]["w_prime_power_sum"] = (
                                 self.values["integrated"]["w_prime_power_sum"] + pwr
                             )
@@ -480,7 +474,7 @@ class SensorCore:
                             tau = (
                                 546
                                 * np.exp(
-                                    -0.01 * (self.config.G_POWER_CP - pwr_mean_under_cp)
+                                    -0.01 * (settings.POWER_CP - pwr_mean_under_cp)
                                 )
                                 + 316
                             )
@@ -491,19 +485,19 @@ class SensorCore:
                         )
                         self.values["integrated"][
                             "w_prime_balance"
-                        ] = self.config.G_POWER_W_PRIME - self.values["integrated"][
+                        ] = settings.POWER_W_PRIME - self.values["integrated"][
                             "w_prime_sum"
                         ] * np.exp(
                             -1 * self.values["integrated"]["w_prime_t"] / tau
                         )
                         self.values["integrated"]["w_prime_t"] = (
                             self.values["integrated"]["w_prime_t"]
-                            + self.config.G_SENSOR_INTERVAL
+                            + settings.SENSOR_INTERVAL
                         )
 
                     # Differential algorithm
-                    elif self.config.G_POWER_W_PRIME_ALGORITHM == "DIFFERENTIAL":
-                        cp_pwr_diff = self.config.G_POWER_CP - pwr
+                    elif settings.POWER_W_PRIME_ALGORITHM == "DIFFERENTIAL":
+                        cp_pwr_diff = settings.POWER_CP - pwr
                         w_bal_t = self.values["integrated"]["w_prime_balance"]
                         if cp_pwr_diff < 0:
                             # consume
@@ -515,13 +509,13 @@ class SensorCore:
                             self.values["integrated"]["w_prime_balance"] = (
                                 w_bal_t
                                 + cp_pwr_diff
-                                * (self.config.G_POWER_W_PRIME - w_bal_t)
-                                / self.config.G_POWER_W_PRIME
+                                * (settings.POWER_W_PRIME - w_bal_t)
+                                / settings.POWER_W_PRIME
                             )
 
                     self.values["integrated"]["w_prime_balance_normalized"] = int(
                         self.values["integrated"]["w_prime_balance"]
-                        / self.config.G_POWER_W_PRIME
+                        / settings.POWER_W_PRIME
                         * 100
                     )
 
@@ -532,7 +526,7 @@ class SensorCore:
                 if not np.isnan(spd) and self.config.G_MANUAL_STATUS == "START":
                     # speed from ANT+ or GPS
                     flag_spd = False
-                    if spd >= self.config.G_AUTOSTOP_CUTOFF:
+                    if spd >= settings.AUTOSTOP_CUTOFF:
                         flag_spd = True
 
                     # use moving status of accelerometer because of excluding erroneous speed values when stopping
@@ -546,7 +540,7 @@ class SensorCore:
                     if (
                         np.isnan(v["I2C"]["m_stat"])
                         or self.config.G_ANT["USE"]["SPD"]
-                        or self.config.G_DUMMY_OUTPUT
+                        or settings.DUMMY_OUTPUT
                     ):
                         flag_moving = True
 
@@ -579,7 +573,7 @@ class SensorCore:
                 if self.config.display.auto_brightness and not np.isnan(
                     v["I2C"]["light"]
                 ):
-                    if v["I2C"]["light"] <= self.config.G_AUTO_BACKLIGHT_CUTOFF:
+                    if v["I2C"]["light"] <= settings.AUTO_BACKLIGHT_CUTOFF:
                         self.config.display.set_brightness(3)
 
                         if self.config.G_MANUAL_STATUS == "START":
@@ -610,32 +604,34 @@ class SensorCore:
                 # adjust loop time
                 time_profile.append(datetime.now())
                 sec_diff = []
-                time_progile_sec = 0
+                time_profile_sec = 0
+
                 for i in range(len(time_profile)):
                     if i == 0:
                         continue
+
                     sec_diff.append(
                         "{0:.6f}".format(
                             (time_profile[i] - time_profile[i - 1]).total_seconds()
                         )
                     )
-                    time_progile_sec += (
+                    time_profile_sec += (
                         time_profile[i] - time_profile[i - 1]
                     ).total_seconds()
-                if time_progile_sec > 1.5 * self.config.G_SENSOR_INTERVAL:
+                if time_profile_sec > 1.5 * settings.SENSOR_INTERVAL:
                     app_logger.warning(
                         f"too long loop time: {datetime.now().strftime('%Y%m%d %H:%M:%S')}, sec_diff: {sec_diff}"
                     )
 
                 loop_time = (datetime.now() - start_time).total_seconds()
-                d1, d2 = divmod(loop_time, self.config.G_SENSOR_INTERVAL)
-                if d1 > self.config.G_SENSOR_INTERVAL * 10:  # [s]
+                d1, d2 = divmod(loop_time, settings.SENSOR_INTERVAL)
+                if d1 > settings.SENSOR_INTERVAL * 10:  # [s]
                     app_logger.warning(
-                        f"too long loop_time({self.__class__.__name__}):{loop_time:.2f}, interval:{self.config.G_SENSOR_INTERVAL:.1f}"
+                        f"too long loop_time({self.__class__.__name__}):{loop_time:.2f}, interval:{settings.SENSOR_INTERVAL:.1f}"
                     )
                     d1 = d2 = 0
-                self.wait_time = self.config.G_SENSOR_INTERVAL - d2
-                self.actual_loop_interval = (d1 + 1) * self.config.G_SENSOR_INTERVAL
+                self.wait_time = settings.SENSOR_INTERVAL - d2
+                self.actual_loop_interval = (d1 + 1) * settings.SENSOR_INTERVAL
         except asyncio.CancelledError:
             pass
 
@@ -676,7 +672,7 @@ class SensorCore:
     def reset_internal(self):
         self.values["integrated"]["distance"] = 0
         self.values["integrated"]["accumulated_power"] = 0
-        self.values["integrated"]["w_prime_balance"] = self.config.G_POWER_W_PRIME
+        self.values["integrated"]["w_prime_balance"] = settings.POWER_W_PRIME
         self.values["integrated"]["w_prime_power_sum"] = 0
         self.values["integrated"]["w_prime_power_count"] = 0
         self.values["integrated"]["w_prime_t"] = 0

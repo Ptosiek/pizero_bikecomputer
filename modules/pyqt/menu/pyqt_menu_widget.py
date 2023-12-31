@@ -9,6 +9,7 @@ from modules._pyqt import (
     qasync,
 )
 from modules.pyqt.components import icons, topbar
+from modules.settings import settings
 
 from .pyqt_menu_button import MenuButton
 
@@ -403,7 +404,7 @@ class LiveTrackMenuWidget(MenuWidget):
             self.config.api.thingsboard_check()
             and self.config.G_THINGSBOARD_API["HAVE_API_TOKEN"]
         ):
-            if not self.config.G_IS_RASPI:
+            if not settings.IS_RASPI:
                 self.buttons["Auto upload via BT"].disable()
         else:
             self.buttons["Live Track"].disable()

@@ -2,15 +2,16 @@ import os
 import traceback
 import random
 import time
-import datetime
 import socket
 import urllib.parse
 import asyncio
 import aiofiles
+from datetime import datetime
 
 import numpy as np
 
-from modules.utils.network import detect_network
+from modules.settings import settings
+from modules.utils.network import detect_network, get_json, post
 from logger import app_logger
 
 _IMPORT_GARMINCONNECT = False
@@ -43,7 +44,7 @@ except ImportError:
     pass
 
 
-class api:
+class Api:
     config = None
     thingsboard_client = None
 
@@ -68,7 +69,7 @@ class api:
 
         origin = f"origin={y1},{x1}"
         destination = f"destination={y2},{x2}"
-        language = f"language={self.config.G_LANG}"
+        language = f"language={settings.LANG}"
         url = "{}&{}&key={}&{}&{}&{}".format(
             self.config.G_GOOGLE_DIRECTION_API["URL"],
             self.config.G_GOOGLE_DIRECTION_API["API_MODE"][
@@ -79,17 +80,16 @@ class api:
             destination,
             language,
         )
-        # print(url)
-        response = await self.config.network.get_json(url)
-        # print(response)
+
+        response = await get_json(url)
         return response
 
     async def get_google_route_from_mapstogpx(self, url):
-        response = await self.config.network.get_json(
+        response = await get_json(
             self.config.G_MAPSTOGPX["URL"]
             + "&lang={}&dtstr={}&gdata={}".format(
-                self.config.G_LANG.lower(),
-                datetime.datetime.now().strftime("%Y%m%d_%H%M%S"),
+                settings.LANG.lower(),
+                datetime.now().strftime("%Y%m%d_%H%M%S"),
                 urllib.parse.quote(url, safe=""),
             ),
             headers=self.config.G_MAPSTOGPX["HEADER"],
@@ -98,28 +98,12 @@ class api:
 
         return response
 
-    async def get_openweathermap_data(self, x, y):
-        if not detect_network() or self.config.G_OPENWEATHERMAP_API["TOKEN"] == "":
-            return None
-        if np.any(np.isnan([x, y])):
-            return None
-
-        url = "{}?lat={}&lon={}&appid={}".format(
-            self.config.G_OPENWEATHERMAP_API["URL"],
-            y,
-            x,
-            self.config.G_OPENWEATHERMAP_API["TOKEN"],
-        )
-        response = await self.config.network.get_json(url)
-        return response
-
     async def get_ridewithgps_route(self, add=False, reset=False):
         if (
             not detect_network()
             or self.config.G_RIDEWITHGPS_API["APIKEY"] == ""
             or self.config.G_RIDEWITHGPS_API["TOKEN"] == ""
         ):
-            print("return")
             return None
 
         if reset:
@@ -127,7 +111,7 @@ class api:
 
         # get user id
         if self.config.G_RIDEWITHGPS_API["USER_ID"] == "":
-            response = await self.config.network.get_json(
+            response = await get_json(
                 self.config.G_RIDEWITHGPS_API["URL_USER_DETAIL"],
                 params=self.config.G_RIDEWITHGPS_API["PARAMS"],
             )
@@ -139,7 +123,7 @@ class api:
 
         # get user route (total_num)
         if self.config.G_RIDEWITHGPS_API["USER_ROUTES_NUM"] is None:
-            response = await self.config.network.get_json(
+            response = await get_json(
                 self.config.G_RIDEWITHGPS_API["URL_USER_ROUTES"].format(
                     user=self.config.G_RIDEWITHGPS_API["USER_ID"], offset=0, limit=0
                 ),
@@ -171,7 +155,7 @@ class api:
             ] = self.config.G_RIDEWITHGPS_API["USER_ROUTES_NUM"]
 
         # get user route
-        response = await self.config.network.get_json(
+        response = await get_json(
             self.config.G_RIDEWITHGPS_API["URL_USER_ROUTES"].format(
                 user=self.config.G_RIDEWITHGPS_API["USER_ID"],
                 offset=offset,
@@ -312,7 +296,7 @@ class api:
         if not self.upload_check(blank_check, blank_msg):
             return False
 
-        # reflesh access token
+        # refresh access token
         data = {
             "client_id": self.config.G_STRAVA_API["CLIENT_ID"],
             "client_secret": self.config.G_STRAVA_API["CLIENT_SECRET"],
@@ -320,9 +304,7 @@ class api:
             "grant_type": "refresh_token",
             "refresh_token": self.config.G_STRAVA_API["REFRESH_TOKEN"],
         }
-        tokens = await self.config.network.post(
-            self.config.G_STRAVA_API_URL["OAUTH"], data=data
-        )
+        tokens = await post(self.config.G_STRAVA_API_URL["OAUTH"], data=data)
 
         if (
             "access_token" in tokens
@@ -343,7 +325,7 @@ class api:
         data = {"data_type": "fit"}
         async with aiofiles.open(self.config.G_UPLOAD_FILE, "rb"):
             data["file"] = open(self.config.G_UPLOAD_FILE, "rb")
-            upload_result = await self.config.network.post(
+            upload_result = await post(
                 self.config.G_STRAVA_API_URL["UPLOAD"], headers=headers, data=data
             )
             if "status" in upload_result:
@@ -430,7 +412,7 @@ class api:
         }
 
         async with aiofiles.open(self.config.G_UPLOAD_FILE, "rb") as file:
-            response = await self.config.network.post(
+            response = await post(
                 self.config.G_RIDEWITHGPS_API["URL_UPLOAD"],
                 params=params,
                 data={"file": file},
@@ -455,9 +437,7 @@ class api:
             )
 
         try:
-            response = await self.config.network.get_json(
-                url, headers={"referer": wind_config["referer"]}
-            )
+            response = await get_json(url, headers={"referer": wind_config["referer"]})
         except:
             response = None
         return response
@@ -492,17 +472,10 @@ class api:
             traceback.print_exc()
 
     def thingsboard_check(self):
-        if self.thingsboard_client is not None:
-            return True
-        else:
-            return False
+        return self.thingsboard_client is not None
 
     def send_livetrack_data(self, quick_send=False):
         if not self.check_livetrack():
-            return
-
-        if self.config.G_THINGSBOARD_API["AUTO_UPLOAD_VIA_BT"] and self.bt_cmd_lock:
-            # print("[BT] {} locked, network status:{}, quick_send:{}".format(datetime.datetime.now().strftime("%H:%M:%S"), detect_network(), quick_send))
             return
 
         asyncio.create_task(self.send_livetrack_data_internal(quick_send))
@@ -531,15 +504,14 @@ class api:
             return
         self.send_time = t
 
-        timestamp_str = datetime.datetime.fromtimestamp(t).strftime("%H:%M:%S")
+        timestamp_str = datetime.fromtimestamp(t).strftime("%H:%M:%S")
         timestamp_str_log = ""
-        if not self.config.G_DUMMY_OUTPUT:
-            timestamp_str_log = datetime.datetime.fromtimestamp(t).strftime(
-                "%m/%d %H:%M"
-            )
-        # print("[BT] {} start, network status:{}".format(timestamp_str, detect_network()))
+        if not settings.DUMMY_OUTPUT:
+            timestamp_str_log = datetime.fromtimestamp(t).strftime("%m/%d %H:%M")
+        # app_logger.info(f"[TB] start, network: {bool(detect_network())}")
 
         # open connection
+        v = self.config.logger.sensor.values
         if self.config.G_THINGSBOARD_API["AUTO_UPLOAD_VIA_BT"]:
             self.bt_cmd_lock = True
             bt_pan_status = await self.config.bluetooth_tethering()
@@ -565,17 +537,17 @@ class api:
                     f"[BT] {timestamp_str} connect error, network status: {bool(detect_network())}"
                 )
                 self.config.logger.sensor.values["integrated"]["send_time"] = (
-                    datetime.datetime.now().strftime("%H:%M") + "CE"
+                    datetime.now().strftime("%H:%M") + "CE"
                 )
                 return
             # print(f"[BT] {timestamp_str} connect, network status:{bool(detect_network())} {count}")
 
         await asyncio.sleep(5)
 
-        speed = self.config.logger.sensor.values["integrated"]["speed"]
+        speed = v["integrated"]["speed"]
         if not np.isnan(speed):
             speed = int(speed * 3.6)
-        distance = self.config.logger.sensor.values["integrated"]["distance"]
+        distance = v["integrated"]["distance"]
         if not np.isnan(distance):
             distance = round(distance / 1000, 1)
 
@@ -585,23 +557,14 @@ class api:
                 "timestamp": timestamp_str_log,
                 "speed": speed,
                 "distance": distance,
-                "heartrate": self.config.logger.sensor.values["integrated"][
-                    "ave_heart_rate_60s"
-                ],
-                "power": self.config.logger.sensor.values["integrated"][
-                    "ave_power_60s"
-                ],
-                "work": int(
-                    self.config.logger.sensor.values["integrated"]["accumulated_power"]
-                    / 1000
-                ),
-                # 'w_prime_balance': self.config.logger.sensor.values['integrated']['w_prime_balance_normalized'],
-                "temperature": self.config.logger.sensor.values["integrated"][
-                    "temperature"
-                ],
-                # 'altitude': self.config.logger.sensor.values['I2C']['altitude'],
-                "latitude": self.config.logger.sensor.values["GPS"]["lat"],
-                "longitude": self.config.logger.sensor.values["GPS"]["lon"],
+                "heartrate": v["integrated"]["ave_heart_rate_60s"],
+                "power": v["integrated"]["ave_power_60s"],
+                "work": int(v["integrated"]["accumulated_power"] / 1000),
+                # 'w_prime_balance': v["integrated"]["w_prime_balance_normalized"],
+                "temperature": v["integrated"]["temperature"],
+                # 'altitude': v["I2C"]["altitude"],
+                "latitude": v["GPS"]["lat"],
+                "longitude": v["GPS"]["lon"],
             },
         }
 
@@ -611,9 +574,7 @@ class api:
             if res != TBPublishInfo.TB_ERR_SUCCESS:
                 app_logger.error(f"[BT] thingsboard upload error: {res}")
             else:
-                self.config.logger.sensor.values["integrated"][
-                    "send_time"
-                ] = datetime.datetime.now().strftime("%H:%M")
+                v["integrated"]["send_time"] = datetime.now().strftime("%H:%M")
         except socket.timeout as e:
             app_logger.error(f"[BT] socket timeout: {e}")
         except socket.error as e:
@@ -634,9 +595,7 @@ class api:
             network_status = detect_network()
             # print("[BT] {} disconnect, network status:{}".format(timestamp_str, network_status))
             if network_status:
-                self.config.logger.sensor.values["integrated"]["send_time"] = (
-                    datetime.datetime.now().strftime("%H:%M") + "DE"
-                )
+                v["integrated"]["send_time"] = datetime.now().strftime("%H:%M") + "CE"
             await asyncio.sleep(5)
 
     def send_livetrack_course(self, reset=False):

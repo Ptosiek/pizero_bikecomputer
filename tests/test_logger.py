@@ -2,20 +2,19 @@ import os
 import tempfile
 import unittest
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 from modules.logger.logger_csv import LoggerCsv
 from modules.logger.logger_fit import LoggerFit
 
 
-class LocalConfig:
-    G_LOG_DB = "tests/data/log.db-Heart_of_St._Johns_Peninsula_Ride"
-    G_UNIT_ID_HEX = 0x12345678
-
-
 class TestLoggerCsv(unittest.TestCase):
+    @patch(
+        "modules.settings.settings.LOG_DB",
+        "tests/data/log.db-Heart_of_St._Johns_Peninsula_Ride",
+    )
     def test_write_log(self):
-        config = LocalConfig()
-        logger = LoggerCsv(config)
+        logger = LoggerCsv()
         _, path = tempfile.mkstemp()
 
         try:
@@ -27,9 +26,12 @@ class TestLoggerCsv(unittest.TestCase):
 
 
 class TestLoggerFit(unittest.TestCase):
+    @patch(
+        "modules.settings.settings.LOG_DB",
+        "tests/data/log.db-Heart_of_St._Johns_Peninsula_Ride",
+    )
     def test_write_logs(self):
-        config = LocalConfig()
-        logger = LoggerFit(config)
+        logger = LoggerFit()
 
         start = datetime(2023, 9, 28, 20, 39, 13, tzinfo=timezone.utc)
         end = datetime(2023, 9, 28, 21, 10, 53, tzinfo=timezone.utc)

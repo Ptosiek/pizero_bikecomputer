@@ -1,12 +1,12 @@
 import struct
-import datetime
 import time
+from datetime import datetime
 
-from . import ant_device
-from . import ant_device_power
+from .ant_device import ANT_Device
+from .ant_device_power import ANT_Device_Power
 
 
-class ANT_Device_MultiScan(ant_device.ANT_Device):
+class ANT_Device_MultiScan(ANT_Device):
     name = "SCAN"
     ant_config = {
         "interval": (),  # Not use
@@ -26,7 +26,7 @@ class ANT_Device_MultiScan(ant_device.ANT_Device):
         self.reset_value()
         self.make_channel(self.ant_config["channel_type"])
         self.ready_scan()
-        self.dummyPowerDevice = ant_device_power.ANT_Device_Power(
+        self.dummyPowerDevice = ANT_Device_Power(
             node=None, config=config, values={}, name="PWR"
         )
 
@@ -84,7 +84,6 @@ class ANT_Device_MultiScan(ant_device.ANT_Device):
 
     def on_data(self, data):
         # get type and ID
-        antType = antID = antIDType = 0
         if len(data) == 13:
             (antID, antType) = self.structPattern["ID"].unpack(data[9:12])
             antIDType = struct.pack("<HB", antID, antType)
@@ -98,7 +97,7 @@ class ANT_Device_MultiScan(ant_device.ANT_Device):
             else:
                 if antIDType not in self.values:
                     self.values[antIDType] = {}
-                self.values[antIDType]["timestamp"] = datetime.datetime.now()
+                self.values[antIDType]["timestamp"] = datetime.now()
                 self.values[antIDType]["heart_rate"] = data[7]
         # Power
         elif antType in self.config.G_ANT["TYPES"]["PWR"]:
@@ -136,7 +135,7 @@ class ANT_Device_MultiScan(ant_device.ANT_Device):
                         0x11: [-1, -1, -1, -1],
                         0x12: [-1, -1, -1, -1],
                     }
-                self.values[antIDType]["timestamp"] = datetime.datetime.now()
+                self.values[antIDType]["timestamp"] = datetime.now()
                 if data[0] == 0x10:
                     self.dummyPowerDevice.on_data_power_0x10(
                         data,

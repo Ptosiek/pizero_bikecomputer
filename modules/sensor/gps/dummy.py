@@ -3,6 +3,7 @@ from datetime import datetime
 
 import numpy as np
 
+from modules.settings import settings
 from modules.utils.geo import calc_azimuth
 from .base import AbstractSensorGPS
 
@@ -51,7 +52,7 @@ class Dummy_GPS(AbstractSensorGPS):
         )
 
     async def update(self):
-        if self.config.G_DUMMY_OUTPUT:
+        if settings.DUMMY_OUTPUT:
             course_i = pre_course_i = 0
 
             try:
@@ -108,13 +109,10 @@ class Dummy_GPS(AbstractSensorGPS):
                         self.values["lat"],
                         self.values["lon"],
                         self.values["track"],
-                        self.config.G_GPS_SEARCH_RANGE,
-                        self.config.G_GPS_ON_ROUTE_CUTOFF,
-                        self.azimuth_cutoff,
                     )
 
                     self.values["timestamp"] = datetime.now()
-                    self.get_sleep_time(self.config.G_GPS_INTERVAL)
+                    self.get_sleep_time()
 
             except asyncio.CancelledError:
                 pass

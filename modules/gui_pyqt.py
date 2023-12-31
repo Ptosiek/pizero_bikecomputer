@@ -28,6 +28,7 @@ from modules._pyqt import (
     QtGui,
     qasync,
 )
+from modules.settings import settings
 from modules.utils.timer import Timer, log_timers
 
 
@@ -133,7 +134,7 @@ class GUI_PyQt(QtCore.QObject):
         self.config = config
         self.config.gui = self
 
-        self.gui_config = GUI_Config(config.G_LAYOUT_FILE)
+        self.gui_config = GUI_Config(settings.LAYOUT_FILE)
 
         try:
             signal.signal(signal.SIGTERM, self.quit_by_ctrl_c)
@@ -151,9 +152,7 @@ class GUI_PyQt(QtCore.QObject):
         self.config.loop.set_debug(True)
         self.config.init_loop(call_from_gui=True)
 
-        self.main_window = MainWindow(
-            self.config.G_PRODUCT, self.config.display.resolution
-        )
+        self.main_window = MainWindow(settings.PRODUCT, self.config.display.resolution)
         self.main_window.set_gui(self)
         self.main_window.show()
 
@@ -181,7 +180,7 @@ class GUI_PyQt(QtCore.QObject):
     async def set_boot_status(self, text):
         self.signal_boot_status.emit(text)
         self.draw_display(direct_update=True)
-        if not self.config.G_IS_RASPI:
+        if not settings.IS_RASPI:
             await asyncio.sleep(0.01)  # need for changing QLabel in the event loop
 
     def delay_init(self):
@@ -244,7 +243,7 @@ class GUI_PyQt(QtCore.QObject):
                 CoursesMenuWidget,
                 CourseListWidget,
                 CourseDetailWidget,
-            )  # , GoogleDirectionsAPISettingMenuWidget
+            )
             from modules.pyqt.menu.pyqt_map_menu_widget import (
                 MapMenuWidget,
                 MapListWidget,
@@ -305,7 +304,6 @@ class GUI_PyQt(QtCore.QObject):
                 ("Map Overlay", MapOverlayMenuWidget),
                 ("Select Map", MapListWidget),
                 ("Map", MapMenuWidget),
-                # ("Google Directions API mode", GoogleDirectionsAPISettingMenuWidget),
                 ("Course Detail", CourseDetailWidget),
                 ("Courses List", CourseListWidget),
                 ("Courses", CoursesMenuWidget),
@@ -372,8 +370,8 @@ class GUI_PyQt(QtCore.QObject):
                         self.main_page.addWidget(self.performance_graph_widget)
                     elif (
                         k == "COURSE_PROFILE_GRAPH"
-                        and os.path.exists(self.config.G_COURSE_FILE_PATH)
-                        and self.config.G_COURSE_INDEXING
+                        and os.path.exists(settings.COURSE_FILE_PATH)
+                        and settings.COURSE_INDEXING
                     ):
                         self.course_profile_graph_widget = (
                             pyqt_course_profile.CourseProfileGraphWidget(
@@ -389,8 +387,8 @@ class GUI_PyQt(QtCore.QObject):
                     elif (
                         k == "CUESHEET"
                         and self.config.logger.course.course_points.is_set
-                        and self.config.G_COURSE_INDEXING
-                        and self.config.G_CUESHEET_DISPLAY_NUM
+                        and settings.COURSE_INDEXING
+                        and settings.CUESHEET_DISPLAY_NUM
                     ):
                         self.cuesheet_widget = CueSheetWidget(
                             self.main_page, self.config
@@ -406,8 +404,7 @@ class GUI_PyQt(QtCore.QObject):
                 self.button_box_widget = ButtonBoxWidget(main_widget, self.config)
                 main_layout.addWidget(self.button_box_widget)
 
-            # fullscreen
-            if self.config.G_FULLSCREEN:
+            if settings.FULLSCREEN:
                 self.main_window.showFullScreen()
 
             self.on_change_main_page(self.main_page_index)
@@ -445,13 +442,11 @@ class GUI_PyQt(QtCore.QObject):
         if not self.bufsize:
             return
 
-        # self.config.check_time("draw_display start")
         p = self.stack_widget.grab().toImage().convertToFormat(self.image_format)
 
         if self.screen_image is not None and p == self.screen_image:
             return
 
-        # self.config.check_time("grab")
         ptr = p.constBits()
 
         if ptr is None:
@@ -470,7 +465,6 @@ class GUI_PyQt(QtCore.QObject):
             buf = np.frombuffer(ptr, dtype=np.uint8).reshape(self.screen_shape)
 
         self.config.display.update(buf, direct_update)
-        # self.config.check_time("draw_display end")
 
     def exec(self):
         with self.config.loop:
@@ -480,10 +474,10 @@ class GUI_PyQt(QtCore.QObject):
 
     def add_font(self):
         # Additional font from setting.conf
-        if self.config.G_FONT_FILE:
+        if settings.FONT_FILE:
             # use full path as macOS is not allowing relative paths
             res = QtGui.QFontDatabase.addApplicationFont(
-                os.path.join(os.getcwd(), "fonts", self.config.G_FONT_FILE)
+                os.path.join(os.getcwd(), "fonts", settings.FONT_FILE)
             )
             if res != -1:
                 font_name = QtGui.QFontDatabase.applicationFontFamilies(res)[0]
@@ -607,34 +601,17 @@ class GUI_PyQt(QtCore.QObject):
 
     def init_course(self):
         self.map_widget.init_course()
+
         if self.course_profile_graph_widget is not None:
             self.course_profile_graph_widget.init_course()
 
     def change_color_low(self):
-        if (
-            self.config.G_DITHERING_CUTOFF_LOW_INDEX
-            == len(self.config.G_DITHERING_CUTOFF["LOW"]) - 1
-        ):
-            self.config.G_DITHERING_CUTOFF_LOW_INDEX = 0
-        else:
-            self.config.G_DITHERING_CUTOFF_LOW_INDEX += 1
+        self.config.display.change_color_low()
         self.signal_draw_display.emit()
-        app_logger.info(
-            f"LOW: {self.config.G_DITHERING_CUTOFF['LOW'][self.config.G_DITHERING_CUTOFF_LOW_INDEX]}"
-        )
 
     def change_color_high(self):
-        if (
-            self.config.G_DITHERING_CUTOFF_HIGH_INDEX
-            == len(self.config.G_DITHERING_CUTOFF["HIGH"]) - 1
-        ):
-            self.config.G_DITHERING_CUTOFF_HIGH_INDEX = 0
-        else:
-            self.config.G_DITHERING_CUTOFF_HIGH_INDEX += 1
+        self.config.display.change_color_high()
         self.signal_draw_display.emit()
-        app_logger.info(
-            f"HIGH: {self.config.G_DITHERING_CUTOFF['HIGH'][self.config.G_DITHERING_CUTOFF_HIGH_INDEX]}"
-        )
 
     def scroll(self, delta):
         mod_index = (
@@ -651,7 +628,7 @@ class GUI_PyQt(QtCore.QObject):
         filename = date.strftime("%Y-%m-%d_%H-%M-%S.png")
         app_logger.info(f"screenshot: {filename}")
         p = self.stack_widget.grab()
-        p.save(os.path.join(self.config.G_SCREENSHOT_DIR, filename), "png")
+        p.save(os.path.join(settings.SCREENSHOT_DIR, filename), "png")
 
     def change_start_stop_button(self, status):
         if self.button_box_widget is not None:

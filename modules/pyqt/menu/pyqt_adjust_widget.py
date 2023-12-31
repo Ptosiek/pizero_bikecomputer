@@ -6,6 +6,7 @@ from modules._pyqt import (
     QtWidgets,
     qasync,
 )
+from modules.settings import settings
 from .pyqt_menu_widget import MenuWidget
 
 ##################################
@@ -148,15 +149,12 @@ class AdjustWheelCircumferenceWidget(AdjustWidget):
         self.display.setMaxLength(4)
 
     async def set_value_extra(self, value):
-        pre_v = self.config.G_WHEEL_CIRCUMFERENCE
-        v = value / 1000
-        self.config.G_WHEEL_CIRCUMFERENCE = v
-        app_logger.info(
-            f"set G_WHEEL_CIRCUMFERENCE from {pre_v} to {self.config.G_WHEEL_CIRCUMFERENCE}"
-        )
+        pre_v = settings.WHEEL_CIRCUMFERENCE
+        settings.update_setting("WHEEL_CIRCUMFERENCE", value)
+        app_logger.info(f"set WHEEL_CIRCUMFERENCE from {pre_v} to {value}")
 
     def preprocess(self):
-        self.display.setText(str(int(self.config.G_WHEEL_CIRCUMFERENCE * 1000)))
+        self.display.setText(str(int(settings.WHEEL_CIRCUMFERENCE)))
 
 
 class AdjustCPWidget(AdjustWidget):
@@ -166,10 +164,10 @@ class AdjustCPWidget(AdjustWidget):
         self.display.setMaxLength(4)
 
     async def set_value_extra(self, value):
-        self.config.G_POWER_CP = value
+        settings.update_setting("POWER_CP", int(value))
 
     def preprocess(self):
-        self.display.setText(str(int(self.config.G_POWER_CP)))
+        self.display.setText(str(settings.POWER_CP))
 
 
 class AdjustWPrimeBalanceWidget(AdjustWidget):

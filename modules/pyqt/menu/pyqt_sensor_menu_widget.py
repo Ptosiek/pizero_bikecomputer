@@ -1,5 +1,8 @@
+from functools import partial
+
 from logger import app_logger
 from modules._pyqt import QtCore, QtWidgets, QtGui
+from modules.settings import ant, settings
 import modules.pyqt.pyqt_multiscan_widget as pyqt_multiscan
 from .pyqt_menu_widget import MenuWidget, ListWidget, ListItemWidget
 
@@ -36,55 +39,34 @@ class SensorMenuWidget(MenuWidget):
 
 
 class ANTMenuWidget(MenuWidget):
+    ORDER = ["HR", "SPD", "CDC", "PWR", "LGT", "CTRL", "TEMP"]
+
     def setup_menu(self):
         button_conf = []
 
-        for antName in self.config.G_ANT["ORDER"]:
+        for antName in self.ORDER:
             # Name(page_name), button_attribute, connected functions, layout
-            button_conf.append(
-                (antName, "submenu", eval("self.setting_ant_" + antName))
-            )
+            button_conf.append((antName, "submenu", partial(self.setting_ant, antName)))
         self.add_buttons(button_conf)
 
         # modify label from antName to self.get_button_state()
-        for antName in self.config.G_ANT["ORDER"]:
+        for antName in self.ORDER:
             self.buttons[antName].setText(self.get_button_state(antName))
 
         if not self.config.display.has_touch:
-            self.focus_widget = self.buttons[self.config.G_ANT["ORDER"][0]]
+            self.focus_widget = self.buttons[self.ORDER[0]]
 
-    def get_button_state(self, antName):
+    def get_button_state(self, ant_name):
         status = "OFF"
-        if antName in self.config.G_ANT["USE"] and self.config.G_ANT["USE"][antName]:
-            status = "{0:05d}".format(self.config.G_ANT["ID"][antName])
-        return self.config.G_ANT["NAME"][antName] + ": " + status
-
-    def setting_ant_HR(self):
-        self.setting_ant("HR")
-
-    def setting_ant_SPD(self):
-        self.setting_ant("SPD")
-
-    def setting_ant_CDC(self):
-        self.setting_ant("CDC")
-
-    def setting_ant_PWR(self):
-        self.setting_ant("PWR")
-
-    def setting_ant_LGT(self):
-        self.setting_ant("LGT")
-
-    def setting_ant_CTRL(self):
-        self.setting_ant("CTRL")
-
-    def setting_ant_TEMP(self):
-        self.setting_ant("TEMP")
+        if ant_name in self.config.G_ANT["USE"] and self.config.G_ANT["USE"][ant_name]:
+            status = "{0:05d}".format(self.config.G_ANT["ID"][ant_name])
+        return self.config.G_ANT["NAME"][ant_name] + ": " + status
 
     def setting_ant(self, ant_name):
         if self.config.G_ANT["USE"][ant_name]:
             # disable ANT+ sensor
             self.config.logger.sensor.sensor_ant.disconnect_ant_sensor(ant_name)
-            self.config.setting.write_config()
+            self.config.conf_parser.write_config()
         else:
             # search ANT+ sensor
             self.change_page(
@@ -124,7 +106,7 @@ class ANTListWidget(ListWidget):
             self.ant_sensor_types[ant_id][0],  # id_type
             self.ant_sensor_types[ant_id][1],  # connection status
         )
-        self.config.setting.write_config()
+        self.config.conf_parser.write_config()
 
     def on_back_menu(self):
         self.timer.stop()
@@ -136,7 +118,7 @@ class ANTListWidget(ListWidget):
     def preprocess_extra(self):
         self.ant_sensor_types.clear()
         self.config.logger.sensor.sensor_ant.searcher.search(self.list_type)
-        self.timer.start(self.config.G_DRAW_INTERVAL)
+        self.timer.start(settings.DRAW_INTERVAL)
 
     def update_display(self):
         detected_sensors = self.config.logger.sensor.sensor_ant.searcher.getSearchList()
@@ -144,11 +126,12 @@ class ANTListWidget(ListWidget):
         for ant_id, ant_type_array in detected_sensors.items():
             ant_id_str = f"{ant_id:05d}"
             add = ant_id not in self.ant_sensor_types
+
             if add:
                 self.ant_sensor_types[ant_id] = ant_type_array
                 status = ant_type_array[1]
                 status_str = " (connected)" if status else ""
-                sensor_type = self.config.G_ANT["TYPE_NAME"][ant_type_array[0]]
+                sensor_type = ant.TYPE_NAME_MAP[ant_type_array[0]]
                 title = f"{sensor_type} {status_str}".strip()
                 ant_item = ANTListItemWidget(self, ant_id_str, title)
 

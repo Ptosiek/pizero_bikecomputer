@@ -18,24 +18,21 @@ def main():
     ]
 
     with timers[0]:
-        from modules import config
+        from modules.config import Config
 
     with timers[1]:
-        config = config.Config()
+        config = Config()
 
     # display
     with timers[2]:
         from modules.display.display_core import init_display
 
     with timers[3]:
-        config.set_display(init_display(config))
+        config.set_display(*init_display(config))
 
     # minimal gui
     with timers[4]:
-        if config.G_GUI_MODE == "PyQt":
-            from modules import gui_pyqt
-        else:
-            raise ValueError(f"{config.G_GUI_MODE} mode not supported")
+        config.import_gui()
 
     with timers[5]:
         from modules import logger_core
@@ -48,8 +45,7 @@ def main():
     app_logger.info("########## INITIALIZE END ##########")
     config.boot_time += total_time
 
-    if config.G_GUI_MODE == "PyQt":
-        gui_pyqt.GUI_PyQt(config)
+    config.start_gui()
 
 
 if __name__ == "__main__":

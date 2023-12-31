@@ -10,6 +10,7 @@ from modules._pyqt import (
     qasync,
 )
 from modules.pyqt.components import icons, topbar
+from modules.settings import settings
 from modules.utils.network import detect_network
 from .pyqt_menu_widget import (
     MenuWidget,
@@ -33,7 +34,6 @@ class CoursesMenuWidget(MenuWidget):
                 ),
             ),
             ("Android Google Maps", None, self.receive_route),
-            # ('Google Directions API mode', 'submenu', self.google_directions_api_setting_menu),
             (
                 "Cancel Course",
                 "dialog",
@@ -44,10 +44,7 @@ class CoursesMenuWidget(MenuWidget):
         )
         self.add_buttons(button_conf)
 
-        # if not self.config.G_GOOGLE_DIRECTION_API["HAVE_API_TOKEN"]:
-        #  self.buttons['Google Directions API mode'].disable()
-
-        if not self.config.G_IS_RASPI or not os.path.isfile(self.config.G_OBEXD_CMD):
+        if not settings.IS_RASPI or not os.path.isfile(settings.OBEXD_CMD):
             self.buttons["Android Google Maps"].disable()
 
     def preprocess(self):
@@ -67,9 +64,6 @@ class CoursesMenuWidget(MenuWidget):
         )
         await widget.list_ride_with_gps(reset=True)
 
-    def google_directions_api_setting_menu(self):
-        self.change_page("Google Directions API mode", preprocess=True)
-
     def onoff_course_cancel_button(self):
         status = self.config.logger.course.is_set
         self.buttons["Cancel Course"].onoff_button(status)
@@ -87,11 +81,11 @@ class CoursesMenuWidget(MenuWidget):
         self.status_receive = False
 
         self.proc_receive_route = await asyncio.create_subprocess_exec(
-            self.config.G_OBEXD_CMD,
+            settings.OBEXD_CMD,
             "-d",
             "-n",
             "-r",
-            os.path.abspath(self.config.G_COURSE_DIR),
+            os.path.abspath(settings.COURSE_DIR),
             "-l",
             "-a",
             stdout=asyncio.subprocess.PIPE,
@@ -133,16 +127,14 @@ class CoursesMenuWidget(MenuWidget):
 
     async def load_file(self, filename):
         # HTML from GoogleMap App
-        if filename == self.config.G_RECEIVE_COURSE_FILE:
+        if filename == settings.RECEIVE_COURSE_FILE:
             if not detect_network():
                 self.config.gui.change_dialog(
                     title="Requires network connection.", button_label="Return"
                 )
             else:
                 await self.load_html_route(
-                    os.path.join(
-                        self.config.G_COURSE_DIR, self.config.G_RECEIVE_COURSE_FILE
-                    )
+                    os.path.join(settings.COURSE_DIR, settings.RECEIVE_COURSE_FILE)
                 )
                 self.onoff_course_cancel_button()
         # tcx file
@@ -171,9 +163,9 @@ class CoursesMenuWidget(MenuWidget):
     async def load_tcx_route(self, filename):
         self.cancel_course()
         course_file = os.path.join(
-            self.config.G_COURSE_DIR, filename[: filename.lower().find(".tcx") + 4]
+            settings.COURSE_DIR, filename[: filename.lower().find(".tcx") + 4]
         )
-        shutil.move(os.path.join(self.config.G_COURSE_DIR, filename), course_file)
+        shutil.move(os.path.join(settings.COURSE_DIR, filename), course_file)
         self.set_new_course(course_file)
         self.config.gui.show_forced_message("Loading succeeded!")
 
@@ -208,6 +200,7 @@ class CourseListWidget(ListWidget):
     async def change_course_detail_page(self):
         if self.selected_item is None:
             return
+
         widget = self.change_page(
             "Course Detail",
             preprocess=True,
@@ -379,7 +372,7 @@ class CourseDetailWidget(MenuWidget):
 
         self.list_id = course_info["id"]
 
-        self.timer.start(self.config.G_DRAW_INTERVAL)
+        self.timer.start(settings.DRAW_INTERVAL)
 
     async def load_images(self):
         if self.check_all_image_and_draw():
@@ -490,22 +483,7 @@ class CourseDetailWidget(MenuWidget):
         h = self.size().height()
         q = self.distance_label.font()
         q.setPixelSize(int(h / 12))
-        for l in [self.distance_label, self.elevation_label, self.locality_label]:
-            l.setFont(q)
+        for label in [self.distance_label, self.elevation_label, self.locality_label]:
+            label.setFont(q)
 
         return super().resizeEvent(event)
-
-
-class GoogleDirectionsAPISettingMenuWidget(ListWidget):
-    def __init__(self, parent, page_name, config):
-        # keys are used for item label
-        self.settings = config.G_GOOGLE_DIRECTION_API["API_MODE"]
-        super().__init__(parent=parent, page_name=page_name, config=config)
-
-    def get_default_value(self):
-        return self.config.G_GOOGLE_DIRECTION_API["API_MODE_SETTING"]
-
-    async def button_func_extra(self):
-        self.config.G_GOOGLE_DIRECTION_API[
-            "API_MODE_SETTING"
-        ] = self.selected_item.title_label.text()

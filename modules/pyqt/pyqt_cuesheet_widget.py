@@ -1,6 +1,7 @@
 import qasync
 
 from modules._pyqt import QtCore, QtWidgets, QtGui
+from modules.settings import settings
 
 from .pyqt_screen_widget import ScreenWidget
 
@@ -33,13 +34,13 @@ class MarqueeLabel(QtWidgets.QLabel):
     def setText(self, text):
         super().setText(text)
         self.textLength = self.fontMetrics().horizontalAdvance(text)
-        if self.textLength > self.width() and self.config.G_CUESHEET_SCROLL:
+        if self.textLength > self.width() and settings.CUESHEET_SCROLL:
             self.timer.start(self.timer_interval)
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
         self.py = int(self.height() * 0.9)
-        if self.textLength <= self.width() or not self.config.G_CUESHEET_SCROLL:
+        if self.textLength <= self.width() or not settings.CUESHEET_SCROLL:
             painter.drawText(self.px + 5, self.py, self.text())
             return
 
@@ -114,7 +115,7 @@ class CueSheetWidget(ScreenWidget):
         self.cuesheet = []
         self.setStyleSheet(self.STYLES)
 
-        for i in range(self.config.G_CUESHEET_DISPLAY_NUM):
+        for i in range(settings.CUESHEET_DISPLAY_NUM):
             cuesheet_point_layout = CueSheetItem(self, self.config)
             self.cuesheet.append(cuesheet_point_layout)
             self.layout.addLayout(cuesheet_point_layout)
@@ -131,7 +132,7 @@ class CueSheetWidget(ScreenWidget):
 
     @qasync.asyncSlot()
     async def update_display(self):
-        if not self.course_points.is_set or not self.config.G_CUESHEET_DISPLAY_NUM:
+        if not self.course_points.is_set or not settings.CUESHEET_DISPLAY_NUM:
             return
 
         cp_i = self.course.index.course_points_index

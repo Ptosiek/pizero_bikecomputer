@@ -5,7 +5,7 @@ from .adafruit_uart import _SENSOR_GPS_ADAFRUIT_UART, Adafruit_GPS
 from .gpsd import _SENSOR_GPS_GPSD, GPSD
 from .i2c import _SENSOR_GPS_I2C, GPS_I2C
 
-# we always have a non-null GPS sensor, but it won't generate data unless told to do so with G_DUMMY_OUTPUT
+# we always have a non-null GPS sensor, but it won't generate data unless told to do so with DUMMY_OUTPUT
 from .dummy import Dummy_GPS
 
 if _SENSOR_GPS_GPSD:
