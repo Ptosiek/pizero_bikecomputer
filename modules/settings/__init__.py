@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import json
 import logging
 import os
@@ -132,8 +133,9 @@ class SettingsNamespace:
     # log several altitudes (from DEM and course file)
     LOG_ALTITUDE_FROM_DATA_SOURCE = False
 
-    # asyncio semaphore
+    # asyncio semaphore and queues
     COROUTINE_SEM = 100
+    DOWNLOAD_QUEUE = asyncio.Queue()
 
     # for map dummy center: Tokyo station in Japan
     DUMMY_POS_X = 139.764710814819
@@ -243,6 +245,14 @@ class SettingsNamespace:
     IMU_MAG_AXIS_CONVERSION_STATUS = False
     IMU_MAG_AXIS_CONVERSION_COEF = np.ones(3)  # X, Y, Z
     IMU_MAG_DECLINATION = 0
+
+    # LAST FILE GENERATED
+    UPLOAD_FILE = ""
+
+    # Ride with GPS
+    RWGPS_API_APIKEY = "pizero_bikercomputer"
+    RWGPS_API_TOKEN = ""
+    RWGS_ROUTE_DOWNLOAD_DIR = os.path.join(COURSE_DIR, "ridewithgps")
 
     @property
     def CURRENT_MAP(self):
@@ -438,6 +448,16 @@ class SettingsNamespace:
                 "EPV_CUTOFF": str(self.GPSD_PARAM_EPV_CUTOFF),
                 "SP1_EPV_CUTOFF": str(self.GPSD_PARAM_SP1_EPV_CUTOFF),
                 "SP1_USED_SATS_CUTOFF": str(self.GPSD_PARAM_SP1_EPV_CUTOFF),
+            }
+
+        if "RWGPS_API" in cf:
+            section = cf["RWGPS_API"]
+            self._set_config_value(section, "APIKEY")
+            self._set_config_value(section, "TOKEN")
+        else:
+            cf["RWGPS_API"] = {
+                "APIKEY": str(self.RWGPS_API_APIKEY),
+                "TOKEN": str(self.RWGPS_API_TOKEN),
             }
 
     def read_map_list(self):

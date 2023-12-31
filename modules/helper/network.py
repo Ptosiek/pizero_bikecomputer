@@ -15,25 +15,25 @@ class Network:
 
     def __init__(self, config):
         self.config = config
-
-        self.download_queue = asyncio.Queue()
         asyncio.create_task(self.download_worker())
 
-    async def quit(self):
-        await self.download_queue.put(None)
+    @staticmethod
+    async def quit():
+        await settings.DOWNLOAD_QUEUE.put(None)
 
-    async def download_worker(self):
+    @staticmethod
+    async def download_worker():
         failed = []
         # for urls, header, save_paths, params:
         while True:
-            q = await self.download_queue.get()
+            q = await settings.DOWNLOAD_QUEUE.get()
 
             if q is None:
                 break
 
             try:
                 res = await download_files(**q)
-                self.download_queue.task_done()
+                settings.DOWNLOAD_QUEUE.task_done()
             except concurrent.futures._base.CancelledError:
                 return
 
@@ -53,7 +53,7 @@ class Network:
                 if len(retry_urls):
                     q["urls"] = retry_urls
                     q["save_paths"] = retry_save_paths
-                    await self.download_queue.put(q)
+                    await settings.DOWNLOAD_QUEUE.put(q)
 
     # tiles functions
     async def download_maptile(
@@ -102,7 +102,7 @@ class Network:
             urls.append(url)
             save_paths.append(save_path)
 
-        await self.download_queue.put(
+        await settings.DOWNLOAD_QUEUE.put(
             {"urls": urls, "headers": request_header, "save_paths": save_paths}
         )
 
@@ -169,7 +169,7 @@ class Network:
                         )
 
             if additional_urls:
-                await self.download_queue.put(
+                await settings.DOWNLOAD_QUEUE.put(
                     {
                         "urls": additional_urls,
                         "headers": request_header,
@@ -179,7 +179,8 @@ class Network:
 
         return True
 
-    async def download_demtile(self, z, x, y):
+    @staticmethod
+    async def download_demtile(z, x, y):
         if not detect_network():
             return False
 
@@ -188,7 +189,7 @@ class Network:
                 f"maptile/{settings.DEM_MAP}/{z}/{x}/",
                 exist_ok=True,
             )
-            await self.download_queue.put(
+            await settings.DOWNLOAD_QUEUE.put(
                 {
                     "urls": [
                         settings.CURRENT_DEM_MAP["url"].format(z=z, x=x, y=y),

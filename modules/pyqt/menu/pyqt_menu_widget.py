@@ -379,4 +379,4 @@ class UploadActivityMenuWidget(MenuWidget):
 
     @qasync.asyncSlot()
     async def rwgps_upload(self):
-        await self.buttons["Ride with GPS"].run(self.config.api.rwgps_upload)
+        await self.buttons["Ride with GPS"].run(self.config.api.rwgps.upload)

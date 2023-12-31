@@ -472,7 +472,7 @@ class LoggerCore:
                     f"{filename}.fit", start_date, end_date
                 ):
                     return
-                self.config.G_UPLOAD_FILE = f"{filename}.fit"
+                settings.update_setting("UPLOAD_FILE", f"{filename}.fit")
 
         # backup and reset database
         with timers[2]:

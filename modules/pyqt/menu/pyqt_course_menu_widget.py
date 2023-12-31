@@ -1,4 +1,3 @@
-import asyncio
 import os
 import shutil
 
@@ -95,7 +94,7 @@ class CourseListWidget(ListWidget):
             self.list_type == "Ride with GPS"
             and value == self.vertical_scrollbar.maximum()
         ):
-            await self.list_ride_with_gps(add=True)
+            await self.list_ride_with_gps()
 
     @qasync.asyncSlot()
     async def button_func(self):
@@ -125,8 +124,8 @@ class CourseListWidget(ListWidget):
             course_item = CourseListItemWidget(self, self.list_type, c)
             self.add_list_item(course_item)
 
-    async def list_ride_with_gps(self, add=False, reset=False):
-        courses = await self.config.api.get_ridewithgps_route(add, reset)
+    async def list_ride_with_gps(self, reset=False):
+        courses = await self.config.api.rwgps.list_routes(reset)
 
         for c in reversed(courses or []):
             course_item = CourseListItemWidget(self, self.list_type, c)
@@ -199,8 +198,6 @@ class CourseListItemWidget(ListItemWidget):
 class CourseDetailWidget(MenuWidget):
     list_id = None
 
-    privacy_code = None
-    all_downloaded = False
     map_image_size = None
     profile_image_size = None
     next_button = None
@@ -265,8 +262,6 @@ class CourseDetailWidget(MenuWidget):
     def preprocess(self, course_info):
         # reset
         self.list_id = None
-        self.privacy_code = None
-        self.all_downloaded = False
 
         self.map_image.clear()
         self.profile_image.clear()
@@ -285,10 +280,9 @@ class CourseDetailWidget(MenuWidget):
     async def load_images(self):
         if self.check_all_image_and_draw():
             self.timer.stop()
-            return
         else:
             # 1st download
-            await self.config.api.get_ridewithgps_files(self.list_id)
+            await self.config.api.rwgps.get_route_files(self.list_id)
 
     def on_back_menu(self):
         self.timer.stop()
@@ -299,38 +293,23 @@ class CourseDetailWidget(MenuWidget):
             self.timer.stop()
             return
 
-        # sequentially draw with download
         # 1st download check
-        if self.privacy_code is None and self.config.api.check_ridewithgps_files(
-            self.list_id, "1st"
-        ):
+        if self.config.api.rwgps.check_files(self.list_id, True):
             self.draw_images(draw_map_image=True, draw_profile_image=False)
-            self.privacy_code = self.config.logger.course.get_ridewithgps_privacycode(
-                self.list_id
+            # download files with privacy code (2nd download)
+            await self.config.api.rwgps.get_route_files(
+                self.list_id, with_privacy_code=True
             )
-            if self.privacy_code is not None:
-                # download files with privacy code (2nd download)
-                await self.config.api.get_ridewithgps_files_with_privacy_code(
-                    self.list_id, self.privacy_code
-                )
-        # 2nd download with privacy_code check
-        elif self.privacy_code is not None and self.config.api.check_ridewithgps_files(
-            self.list_id, "2nd"
-        ):
-            self.draw_images(draw_map_image=False, draw_profile_image=True)
-            self.enable_next_button()
-            self.timer.stop()
 
     def check_all_image_and_draw(self):
         # if all files exists, reload images and buttons, stop timer and exit
-        if not self.all_downloaded and self.config.api is not None:
-            self.all_downloaded = self.config.api.check_ridewithgps_files(
-                self.list_id, "ALL"
-            )
-        if self.all_downloaded:
+        all_downloaded = self.config.api.rwgps.check_files(self.list_id)
+
+        if all_downloaded:
             res = self.draw_images()
             self.enable_next_button()
             return res
+
         # if no internet connection, stop timer and exit
         elif not detect_network():
             return True
@@ -339,10 +318,7 @@ class CourseDetailWidget(MenuWidget):
     def set_course(self):
         index = self.config.gui.gui_config.G_GUI_INDEX["Courses List"]
         self.parentWidget().widget(index).set_course(
-            (
-                self.config.G_RIDEWITHGPS_API["URL_ROUTE_DOWNLOAD_DIR"]
-                + "course-{route_id}.tcx"
-            ).format(route_id=self.list_id)
+            os.path.join(settings.RWGS_ROUTE_DOWNLOAD_DIR, f"course-{self.list_id}.tcx")
         )
 
     def draw_images(self, draw_map_image=True, draw_profile_image=True):
@@ -350,10 +326,9 @@ class CourseDetailWidget(MenuWidget):
             return False
 
         if draw_map_image:
-            filename = (
-                self.config.G_RIDEWITHGPS_API["URL_ROUTE_DOWNLOAD_DIR"]
-                + "preview-{route_id}.png"
-            ).format(route_id=self.list_id)
+            filename = os.path.join(
+                settings.RWGS_ROUTE_DOWNLOAD_DIR, f"preview-{self.list_id}.png"
+            )
             if self.map_image_size is None:
                 self.map_image_size = QtGui.QImage(filename).size()
             if self.map_image_size.width() == 0:
@@ -366,15 +341,15 @@ class CourseDetailWidget(MenuWidget):
             self.map_image.setPixmap(QtGui.QIcon(filename).pixmap(map_image_qsize))
 
         if draw_profile_image:
-            filename = (
-                self.config.G_RIDEWITHGPS_API["URL_ROUTE_DOWNLOAD_DIR"]
-                + "elevation_profile-{route_id}.jpg"
-            ).format(route_id=self.list_id)
+            filename = os.path.join(
+                settings.RWGS_ROUTE_DOWNLOAD_DIR,
+                f"elevation_profile-{self.list_id}.jpg",
+            )
             if self.profile_image_size is None:
-                # self.profile_image_size = Image.open(filename).size
                 self.profile_image_size = QtGui.QImage(filename).size()
             if self.profile_image_size.width() == 0:
                 return False
+
             scale = self.menu.width() / self.profile_image_size.width()
             profile_image_qsize = QtCore.QSize(
                 int(self.profile_image_size.width() * scale),
@@ -386,11 +361,10 @@ class CourseDetailWidget(MenuWidget):
         return True
 
     def resizeEvent(self, event):
-        self.check_all_image_and_draw()
-
         h = self.size().height()
         q = self.distance_label.font()
         q.setPixelSize(int(h / 12))
+
         for label in [self.distance_label, self.elevation_label, self.locality_label]:
             label.setFont(q)
 

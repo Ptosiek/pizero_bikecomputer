@@ -1,5 +1,4 @@
 import os
-import json
 import re
 import shutil
 
@@ -207,20 +206,6 @@ class Course:
 
         app_logger.info("[logger] Loading course:")
         log_timers(timers, text_total="total               : {0:.3f} sec")
-
-    def get_ridewithgps_privacycode(self, route_id):
-        privacy_code = None
-        filename = (
-            self.config.G_RIDEWITHGPS_API["URL_ROUTE_DOWNLOAD_DIR"]
-            + "course-{route_id}.json"
-        ).format(route_id=route_id)
-
-        with open(filename, "r") as json_file:
-            json_contents = json.load(json_file)
-            if "privacy_code" in json_contents["route"]:
-                privacy_code = json_contents["route"]["privacy_code"]
-
-        return privacy_code
 
     def downsample(self):
         len_lat = len(self.latitude)

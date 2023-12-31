@@ -501,7 +501,7 @@ Uploads the most recent activity record file(.fit) created by the reset operatio
 - Garmin
   - You need to set the Garmin setting in [GARMINCONNECT_API section](#garminconnect_api-section) of setting.conf.
 - Ride with GPS
-  - You need to set the Ride with GPS Token in [RIDEWITHGPS_API section](#ridewithgps_api-section) of setting.conf.
+  - You need to set the Ride with GPS Token in [RWGPS_API section](#ridewithgps_api-section) of setting.conf.
 
 ### Map
 
@@ -684,7 +684,7 @@ Set the `client_id`, `client_secret`, `code`, `access_token` and `refresh_token`
 
 If you want to use Strava HeatMap, set `email` and `password`.
 
-#### RIDEWITHGPS_API section
+#### RWGPS_API section
 
 If you want to use heatmap or upload activities to RidewithGPS, set your `token` of the Ride with GPS API.
 

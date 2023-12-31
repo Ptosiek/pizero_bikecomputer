@@ -92,16 +92,6 @@ class ConfParser:
                         "STRAVA_COOKIE"
                     ][k]
 
-        for token in ("RIDEWITHGPS",):
-            token_str = token + "_API"
-            config = eval("self.config.G_" + token + "_API")
-            if token_str in self.config_parser:
-                for k in config.keys():
-                    if k in self.config_parser[token_str]:
-                        config[k] = self.config_parser[token_str][k]
-                if config["TOKEN"] != "":
-                    config["HAVE_API_TOKEN"] = True
-
         if "GARMINCONNECT_API" in self.config_parser:
             for k in ["EMAIL", "PASSWORD"]:
                 if k in self.config_parser["GARMINCONNECT_API"]:
@@ -187,14 +177,6 @@ class ConfParser:
         self.config_parser["STRAVA_COOKIE"] = {}
         for k in self.config.G_STRAVA_COOKIE.keys():
             self.config_parser["STRAVA_COOKIE"][k] = self.config.G_STRAVA_COOKIE[k]
-
-        for token in ("RIDEWITHGPS", ):
-            token_str = token + "_API"
-            config = eval("self.config.G_" + token + "_API")
-            self.config_parser[token_str] = {}
-            self.config_parser[token_str]["TOKEN"] = config["TOKEN"]
-            if token == "RIDEWITHGPS":
-                self.config_parser[token_str]["APIKEY"] = config["APIKEY"]
 
         self.config_parser["GARMINCONNECT_API"] = {}
         for k in ["EMAIL", "PASSWORD"]:

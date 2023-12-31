@@ -39,8 +39,6 @@ class Config:
     G_MANUAL_STATUS = "INIT"
     G_STOPWATCH_STATUS = "INIT"  # with Auto Pause
 
-    G_UPLOAD_FILE = ""
-
     # ANT+ setting (overwritten with setting.conf)
     # [Todo] multiple pairing(2 or more riders), ANT+ ctrl(like edge remote)
     G_ANT = {
@@ -124,26 +122,6 @@ class Config:
         "SIGNATURE": "",
     }
 
-    G_RIDEWITHGPS_API = {
-        "APIKEY": "pizero_bikecomputer",
-        "TOKEN": "",
-        "HAVE_API_TOKEN": False,
-        "USER_ID": "",
-        "URL_USER_DETAIL": "https://ridewithgps.com/users/current.json",
-        "URL_USER_ROUTES": "https://ridewithgps.com/users/{user}/routes.json?offset={offset}&limit={limit}",
-        "USER_ROUTES_NUM": None,
-        "USER_ROUTES_START": 0,
-        "USER_ROUTES_OFFSET": 10,
-        "URL_ROUTE_BASE_URL": "https://ridewithgps.com/routes/{route_id}",
-        "URL_ROUTE_DOWNLOAD_DIR": "./courses/ridewithgps/",
-        "URL_UPLOAD": "https://ridewithgps.com/trips.json",
-        "PARAMS": {
-            "apikey": None,
-            "version": "2",
-            "auth_token": None,
-        },
-    }
-
     G_GARMINCONNECT_API = {
         "EMAIL": "",
         "PASSWORD": "",
@@ -203,9 +181,6 @@ class Config:
             settings.CURRENT_MAP["use_mbtiles"] = False
 
         check_map_dir()
-
-        self.G_RIDEWITHGPS_API["PARAMS"]["apikey"] = self.G_RIDEWITHGPS_API["APIKEY"]
-        self.G_RIDEWITHGPS_API["PARAMS"]["auth_token"] = self.G_RIDEWITHGPS_API["TOKEN"]
 
         # set ant interval. 0:4Hz(0.25s), 1:2Hz(0.5s), 2:1Hz(1.0s)
         if settings.ANT_INTERVAL == 0.25:

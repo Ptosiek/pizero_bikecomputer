@@ -34,6 +34,7 @@ async def download_file(session, url, save_path, headers, params):
         return False
     except Exception as e:
         app_logger.warning(f"Failed to download file: {e}")
+        print(url, save_path, headers, params)
         return False
 
 
