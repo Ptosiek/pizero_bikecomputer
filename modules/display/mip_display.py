@@ -248,27 +248,19 @@ class MipDisplay(Display):
         im_array_bin = np.zeros(im_array.shape).astype("bool")
         im_array_bin[0::2, 0::2, :][
             im_array[0::2, 0::2, :]
-            >= self.dithering_cutoff["LOW"][
-                self.dithering_cutoff_low_index
-            ]
+            >= self.dithering_cutoff["LOW"][self.dithering_cutoff_low_index]
         ] = 1
         im_array_bin[1::2, 1::2, :][
             im_array[1::2, 1::2, :]
-            >= self.dithering_cutoff["LOW"][
-                self.dithering_cutoff_low_index
-            ]
+            >= self.dithering_cutoff["LOW"][self.dithering_cutoff_low_index]
         ] = 1
         im_array_bin[0::2, 1::2, :][
             im_array[0::2, 1::2, :]
-            > self.dithering_cutoff["HIGH"][
-                self.dithering_cutoff_high_index
-            ]
+            > self.dithering_cutoff["HIGH"][self.dithering_cutoff_high_index]
         ] = 1
         im_array_bin[1::2, 0::2, :][
             im_array[1::2, 0::2, :]
-            > self.dithering_cutoff["HIGH"][
-                self.dithering_cutoff_high_index
-            ]
+            > self.dithering_cutoff["HIGH"][self.dithering_cutoff_high_index]
         ] = 1
 
         return np.packbits(im_array_bin.reshape(self.size[1], self.size[0] * 3), axis=1)

@@ -115,8 +115,7 @@ class Config:
         #    "url": "https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}.png?api_key=YOUR_API_KEY"
         #    "attribution": "Map tiles by Stamen Design, under CC BY 3.0.<br />Data by OpenStreetMap, under ODbL",
         #    "tile_size": 256,
-        #},
-
+        # },
         # basic map
         "wikimedia": {
             "url": "https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png",

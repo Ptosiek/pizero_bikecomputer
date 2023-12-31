@@ -80,7 +80,7 @@ class PerformanceGraphWidget(ScreenWidget):
     @qasync.asyncSlot()
     async def update_display(self):
         super().update_display()
-        
+
         # all_nan = {'hr_graph': True, 'power_graph': True}
         all_nan = {
             self.item[self.display_item[0]]["graph_key"]: True,

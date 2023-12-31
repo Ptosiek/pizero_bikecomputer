@@ -12,6 +12,7 @@ from modules.pyqt.components.icons import (
     MapLayersIcon,
 )
 
+
 class MapButton(QtWidgets.QPushButton):
     STYLES = """
       QPushButton {
@@ -49,7 +50,7 @@ class LockButton(MapButton):
         self.lock_icon = LockIcon(color="black")
         self.lock_open_icon = LockOpenIcon(color="black")
         super().__init__(self.lock_icon, "", *args)
-    
+
     def change_status(self, status):
         if status:
             self.setIcon(self.lock_icon)
