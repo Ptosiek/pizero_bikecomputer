@@ -40,43 +40,6 @@ class Api:
     def __init__(self, config):
         self.config = config
 
-    async def get_google_routes(self, x1, y1, x2, y2):
-        if not detect_network() or self.config.G_GOOGLE_DIRECTION_API["TOKEN"] == "":
-            return None
-        if np.any(np.isnan([x1, y1, x2, y2])):
-            return None
-
-        origin = f"origin={y1},{x1}"
-        destination = f"destination={y2},{x2}"
-        language = f"language={settings.LANG}"
-        url = "{}&{}&key={}&{}&{}&{}".format(
-            self.config.G_GOOGLE_DIRECTION_API["URL"],
-            self.config.G_GOOGLE_DIRECTION_API["API_MODE"][
-                self.config.G_GOOGLE_DIRECTION_API["API_MODE_SETTING"]
-            ],
-            self.config.G_GOOGLE_DIRECTION_API["TOKEN"],
-            origin,
-            destination,
-            language,
-        )
-
-        response = await get_json(url)
-        return response
-
-    async def get_google_route_from_mapstogpx(self, url):
-        response = await get_json(
-            self.config.G_MAPSTOGPX["URL"]
-            + "&lang={}&dtstr={}&gdata={}".format(
-                settings.LANG.lower(),
-                datetime.now().strftime("%Y%m%d_%H%M%S"),
-                urllib.parse.quote(url, safe=""),
-            ),
-            headers=self.config.G_MAPSTOGPX["HEADER"],
-            timeout=self.config.G_MAPSTOGPX["TIMEOUT"],
-        )
-
-        return response
-
     async def get_ridewithgps_route(self, add=False, reset=False):
         if (
             not detect_network()

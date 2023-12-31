@@ -157,8 +157,6 @@ class SettingsNamespace:
     COURSE_FILE_PATH = os.path.join(COURSE_DIR, ".current")
     CUESHEET_DISPLAY_NUM = 3  # max: 5
     CUESHEET_SCROLL = False
-    OBEXD_CMD = "/usr/libexec/bluetooth/obexd"
-    RECEIVE_COURSE_FILE = "bluetooth_content_share.html"
 
     # Graph color by slope
     CLIMB_DISTANCE_CUTOFF = 0.3  # [km]

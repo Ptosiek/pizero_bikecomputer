@@ -92,10 +92,7 @@ class ConfParser:
                         "STRAVA_COOKIE"
                     ][k]
 
-        for token in (
-            "GOOGLE_DIRECTION",
-            "RIDEWITHGPS",
-        ):
+        for token in ("RIDEWITHGPS",):
             token_str = token + "_API"
             config = eval("self.config.G_" + token + "_API")
             if token_str in self.config_parser:
@@ -191,10 +188,7 @@ class ConfParser:
         for k in self.config.G_STRAVA_COOKIE.keys():
             self.config_parser["STRAVA_COOKIE"][k] = self.config.G_STRAVA_COOKIE[k]
 
-        for token in (
-            "GOOGLE_DIRECTION",
-            "RIDEWITHGPS",
-        ):
+        for token in ("RIDEWITHGPS", ):
             token_str = token + "_API"
             config = eval("self.config.G_" + token + "_API")
             self.config_parser[token_str] = {}

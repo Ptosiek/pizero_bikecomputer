@@ -582,9 +582,6 @@ class GUI_PyQt(QtCore.QObject):
     def map_zoom_minus(self):
         self.map_method("zoom_minus")
 
-    def map_search_route(self):
-        self.map_method("search_route")
-
     def map_method(self, mode):
         w = self.main_page.widget(self.main_page.currentIndex())
         if w == self.map_widget:

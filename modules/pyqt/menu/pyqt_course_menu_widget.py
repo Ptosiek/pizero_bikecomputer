@@ -33,7 +33,6 @@ class CoursesMenuWidget(MenuWidget):
                     (icons.BASE_LOGO_SIZE * 4, icons.BASE_LOGO_SIZE),
                 ),
             ),
-            ("Android Google Maps", None, self.receive_route),
             (
                 "Cancel Course",
                 "dialog",
@@ -43,9 +42,6 @@ class CoursesMenuWidget(MenuWidget):
             ),
         )
         self.add_buttons(button_conf)
-
-        if not settings.IS_RASPI or not os.path.isfile(settings.OBEXD_CMD):
-            self.buttons["Android Google Maps"].disable()
 
     def preprocess(self):
         self.onoff_course_cancel_button()
@@ -71,94 +67,6 @@ class CoursesMenuWidget(MenuWidget):
     def cancel_course(self):
         self.config.logger.reset_course(delete_course_file=True)
         self.onoff_course_cancel_button()
-
-    @qasync.asyncSlot()
-    async def receive_route(self):
-        self.config.gui.show_dialog_cancel_only(
-            self.cancel_receive_route, "Share directions > Bluetooth..."
-        )
-        self.is_check_folder = True
-        self.status_receive = False
-
-        self.proc_receive_route = await asyncio.create_subprocess_exec(
-            settings.OBEXD_CMD,
-            "-d",
-            "-n",
-            "-r",
-            os.path.abspath(settings.COURSE_DIR),
-            "-l",
-            "-a",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-
-        filename_search_str = "parse_name() NAME: "
-        filename = None
-        while True:
-            if (
-                self.proc_receive_route.stdout.at_eof()
-                and self.proc_receive_route.stderr.at_eof()
-            ):
-                break
-
-            # obexd outputs logs to stderr
-            async for erdata in self.proc_receive_route.stderr:
-                if erdata:
-                    res_str = str(erdata.decode())
-                    if res_str.find("obex_session_start()") >= 0:
-                        self.status_receive = True
-                    elif res_str.find(filename_search_str) >= 0:
-                        num_start = res_str.find(filename_search_str) + len(
-                            filename_search_str
-                        )
-                        filename = res_str[num_start:].strip()
-                    elif res_str.find("obex_session_destroy()") >= 0:
-                        self.status_receive = False
-                        await self.load_file(filename)
-                        break
-
-        stdout, stderr = await self.proc_receive_route.communicate()
-
-    @qasync.asyncSlot()
-    async def cancel_receive_route(self):
-        self.is_check_folder = False
-        if self.proc_receive_route.returncode is None:
-            self.proc_receive_route.terminate()
-
-    async def load_file(self, filename):
-        # HTML from GoogleMap App
-        if filename == settings.RECEIVE_COURSE_FILE:
-            if not detect_network():
-                self.config.gui.change_dialog(
-                    title="Requires network connection.", button_label="Return"
-                )
-            else:
-                await self.load_html_route(
-                    os.path.join(settings.COURSE_DIR, settings.RECEIVE_COURSE_FILE)
-                )
-                self.onoff_course_cancel_button()
-        # tcx file
-        elif filename.lower().find(".tcx") >= 0:
-            await self.load_tcx_route(filename)
-        await self.cancel_receive_route()
-
-    async def load_html_route(self, html_file):
-        self.config.gui.change_dialog(title="Loading route...", button_label="Return")
-        msg = ""
-        try:
-            self.cancel_course()
-            await self.config.logger.course.load_google_map_route(
-                load_html=True, html_file=html_file
-            )
-            msg = "Loading succeeded!"
-        except asyncio.TimeoutError:
-            msg = "Loading failed."
-        except:
-            import traceback
-
-            traceback.print_exc()
-        finally:
-            self.config.gui.show_forced_message(msg)
 
     async def load_tcx_route(self, filename):
         self.cancel_course()

@@ -76,7 +76,7 @@ class Button_Config:
                 "B": ("map_move_y_minus", "map_zoom_minus"),
                 "C": ("change_mode", "map_change_move"),
                 "D": ("map_move_y_plus", "map_zoom_plus"),
-                "E": ("map_move_x_plus", "map_search_route"),
+                "E": ("map_move_x_plus", ""),
             },
             "MAP_2": {
                 "A": ("", ""),

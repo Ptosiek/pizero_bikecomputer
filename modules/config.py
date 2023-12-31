@@ -124,24 +124,6 @@ class Config:
         "SIGNATURE": "",
     }
 
-    G_GOOGLE_DIRECTION_API = {
-        "TOKEN": "",
-        "HAVE_API_TOKEN": False,
-        "URL": "https://maps.googleapis.com/maps/api/directions/json?units=metric",
-        "API_MODE": {
-            "bicycling": "mode=bicycling",
-            "driving": "mode=driving&avoid=tolls|highways",
-        },
-        "API_MODE_SETTING": "bicycling",
-    }
-
-    G_MAPSTOGPX = {
-        "URL": "https://mapstogpx.com/load.php?d=default&elev=off&tmode=off&pttype=fixed&o=json&cmt=off&desc=off&descasname=off&w=on",
-        "HEADER": {"Referer": "https://mapstogpx.com/index.php"},
-        "ROUTE_URL": "",
-        "TIMEOUT": 30,
-    }
-
     G_RIDEWITHGPS_API = {
         "APIKEY": "pizero_bikecomputer",
         "TOKEN": "",

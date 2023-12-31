@@ -76,9 +76,6 @@ class MapWidget(BaseMapWidget):
     use_rain_overlay_map = False
     use_wind_overlay_map = False
 
-    # signal for physical button
-    signal_search_route = QtCore.pyqtSignal()
-
     track_pen = pg.mkPen(color=(0, 170, 255), width=4)
     scale_pen = pg.mkPen(color=(0, 0, 0), width=3)
 
@@ -158,9 +155,6 @@ class MapWidget(BaseMapWidget):
         }
         self.center_point_location = []
 
-        # connect signal
-        self.signal_search_route.connect(self.search_route)
-
         self.reset_map()
 
         # self.load_course()
@@ -184,10 +178,6 @@ class MapWidget(BaseMapWidget):
             self.layout.addWidget(self.buttons["up"], 1, 2)
             self.layout.addWidget(self.buttons["down"], 2, 2)
             self.layout.addWidget(self.buttons["right"], 3, 2)
-
-            if self.config.G_GOOGLE_DIRECTION_API["HAVE_API_TOKEN"]:
-                self.layout.addWidget(self.buttons["go"], 3, 0)
-                self.buttons["go"].clicked.connect(self.search_route)
 
         # cue sheet and instruction
         self.init_cuesheet_and_instruction()
@@ -574,19 +564,6 @@ class MapWidget(BaseMapWidget):
         self.init_cuesheet_and_instruction()
         self.course_loaded = False
         self.resizeEvent(None)
-
-    @qasync.asyncSlot()
-    async def search_route(self):
-        if self.lock_status:
-            return
-
-        await self.course.search_route(
-            self.point["pos"][0],
-            self.point["pos"][1] / self.y_mod,
-            self.map_pos["x"],
-            self.map_pos["y"],
-        )
-        self.init_course()
 
     async def draw_map_tile(self, x_start, x_end, y_start, y_end):
         # get tile coordinates of display border points
