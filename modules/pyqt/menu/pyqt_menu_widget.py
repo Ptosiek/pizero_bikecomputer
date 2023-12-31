@@ -157,7 +157,6 @@ class TopMenuWidget(MenuWidget):
             # Name(page_name), button_attribute, connected functions, layout
             ("Sensors", "submenu", self.sensors_menu),
             ("Courses", "submenu", self.courses_menu),
-            ("Live Track", "submenu", self.livetrack_menu),
             ("Upload Activity", "submenu", self.cloud_services_menu),
             ("Map", "submenu", self.map_menu),
             ("Profile", "submenu", self.profile_menu),
@@ -173,9 +172,6 @@ class TopMenuWidget(MenuWidget):
 
     def courses_menu(self):
         self.change_page("Courses", preprocess=True)
-
-    def livetrack_menu(self):
-        self.change_page("Live Track", preprocess=True)
 
     def map_menu(self):
         self.change_page("Map")
@@ -384,67 +380,3 @@ class UploadActivityMenuWidget(MenuWidget):
     @qasync.asyncSlot()
     async def rwgps_upload(self):
         await self.buttons["Ride with GPS"].run(self.config.api.rwgps_upload)
-
-
-class LiveTrackMenuWidget(MenuWidget):
-    def setup_menu(self):
-        button_conf = (
-            # Name(page_name), button_attribute, connected functions, layout
-            ("Live Track", "toggle", lambda: self.onoff_live_track(True)),
-            (
-                "Auto upload via BT",
-                "toggle",
-                lambda: self.onoff_auto_upload_via_BT(True),
-            ),
-            ("Select BT device", "submenu", self.bt_tething),
-        )
-        self.add_buttons(button_conf)
-
-        if (
-            self.config.api.thingsboard_check()
-            and self.config.G_THINGSBOARD_API["HAVE_API_TOKEN"]
-        ):
-            if not settings.IS_RASPI:
-                self.buttons["Auto upload via BT"].disable()
-        else:
-            self.buttons["Live Track"].disable()
-            self.buttons["Auto upload via BT"].disable()
-
-        if not self.config.G_THINGSBOARD_API["AUTO_UPLOAD_VIA_BT"]:
-            self.buttons["Select BT device"].disable()
-
-    def preprocess(self):
-        # initialize toggle button status
-        self.onoff_live_track(change=False)
-
-    def onoff_live_track(self, change=True):
-        if change:
-            self.config.G_THINGSBOARD_API["STATUS"] = not self.config.G_THINGSBOARD_API[
-                "STATUS"
-            ]
-            self.config.state.set_value(
-                "G_THINGSBOARD_API_STATUS", self.config.G_THINGSBOARD_API["STATUS"]
-            )
-        self.buttons["Live Track"].change_toggle(
-            self.config.G_THINGSBOARD_API["STATUS"]
-        )
-
-    def onoff_auto_upload_via_BT(self, change=True):
-        if change:
-            self.config.G_THINGSBOARD_API[
-                "AUTO_UPLOAD_VIA_BT"
-            ] = not self.config.G_THINGSBOARD_API["AUTO_UPLOAD_VIA_BT"]
-            self.config.state.set_value(
-                "AUTO_UPLOAD_VIA_BT",
-                self.config.G_THINGSBOARD_API["AUTO_UPLOAD_VIA_BT"],
-            )
-        self.buttons["Auto upload via BT"].change_toggle(
-            self.config.G_THINGSBOARD_API["AUTO_UPLOAD_VIA_BT"]
-        )
-
-        self.buttons["Select BT device"].onoff_button(
-            self.config.G_THINGSBOARD_API["AUTO_UPLOAD_VIA_BT"]
-        )
-
-    def bt_tething(self):
-        self.change_page("BT Tethering", preprocess=True, run_bt_tethering=False)

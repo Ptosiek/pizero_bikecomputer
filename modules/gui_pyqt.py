@@ -222,7 +222,6 @@ class GUI_PyQt(QtCore.QObject):
 
             from modules.pyqt.menu.pyqt_menu_widget import (
                 TopMenuWidget,
-                LiveTrackMenuWidget,
                 UploadActivityMenuWidget,
             )
             from modules.pyqt.menu.pyqt_system_menu_widget import (
@@ -296,7 +295,6 @@ class GUI_PyQt(QtCore.QObject):
                 ("CP", AdjustCPWidget),
                 ("W Prime Balance", AdjustWPrimeBalanceWidget),
                 ("Profile", ProfileWidget),
-                ("Live Track", LiveTrackMenuWidget),
                 ("Upload Activity", UploadActivityMenuWidget),
                 ("Wind map List", WindmapListWidget),
                 ("Rain map List", RainmapListWidget),

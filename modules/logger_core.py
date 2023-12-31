@@ -345,10 +345,6 @@ class LoggerCore:
             "G_MANUAL_STATUS", self.config.G_MANUAL_STATUS, force_apply=True
         )
 
-        # send online
-        if self.config.G_THINGSBOARD_API["STATUS"]:
-            self.config.api.send_livetrack_data(quick_send=True)
-
         # show message
         self.config.gui.show_popup(self.config.G_MANUAL_STATUS + popup_extra)
 
@@ -523,9 +519,9 @@ class LoggerCore:
                 self.average[k1][k2]["count"] = 0
                 self.average[k1][k2]["sum"] = 0
 
-    def reset_course(self, delete_course_file=False, replace=False):
+    def reset_course(self, delete_course_file=False):
         self.config.gui.reset_course()
-        self.course.reset(delete_course_file=delete_course_file, replace=replace)
+        self.course.reset(delete_course_file=delete_course_file)
         self.course.index.reset()
 
     def set_new_course(self, course_file):
@@ -717,10 +713,6 @@ class LoggerCore:
             self.sensor.values["GPS"]["lon"],
             now_time,
         )
-
-        # send online
-        if self.config.G_THINGSBOARD_API["STATUS"]:
-            self.config.api.send_livetrack_data(quick_send=False)
 
     def calc_gross(self):
         # elapsed_time

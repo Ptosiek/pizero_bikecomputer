@@ -6,7 +6,7 @@ from modules.course import Course
 
 
 class Config:
-    G_THINGSBOARD_API = {"STATUS": False}
+    pass
 
 
 class TestCourse(unittest.TestCase):

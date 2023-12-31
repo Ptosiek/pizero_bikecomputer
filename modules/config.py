@@ -168,16 +168,6 @@ class Config:
         "URL_UPLOAD_DIFF": "proxy/upload-service/upload/.fit",  # https://connect.garmin.com/modern/proxy/upload-service/upload/.fit
     }
 
-    G_THINGSBOARD_API = {
-        "STATUS": False,
-        "HAVE_API_TOKEN": False,
-        "SERVER": "demo.thingsboard.io",
-        "TOKEN": "",
-        "INTERVAL_SEC": 120,
-        "TIMEOUT_SEC": 15,
-        "AUTO_UPLOAD_VIA_BT": False,
-    }
-
     # Bluetooth tethering
     G_BT_ADDRESSES = {}
     G_BT_USE_ADDRESS = ""
@@ -340,22 +330,13 @@ class Config:
         if settings.HEADLESS:
             asyncio.create_task(self.keyboard_check())
 
-        # resume BT / thingsboard
+        # resume BT
         if settings.IS_RASPI:
             self.G_BT_USE_ADDRESS = self.state.get_value(
                 "G_BT_USE_ADDRESS", self.G_BT_USE_ADDRESS
             )
-            self.G_THINGSBOARD_API["STATUS"] = self.state.get_value(
-                "G_THINGSBOARD_API_STATUS", self.G_THINGSBOARD_API["STATUS"]
-            )
-            self.G_THINGSBOARD_API["AUTO_UPLOAD_VIA_BT"] = self.state.get_value(
-                "AUTO_UPLOAD_VIA_BT", self.G_THINGSBOARD_API["AUTO_UPLOAD_VIA_BT"]
-            )
             # resume BT tethering
-            if (
-                self.G_BT_USE_ADDRESS
-                and not self.G_THINGSBOARD_API["AUTO_UPLOAD_VIA_BT"]
-            ):
+            if self.G_BT_USE_ADDRESS:
                 await self.bluetooth_tethering()
 
         delta = t.stop()

@@ -95,7 +95,6 @@ class ConfParser:
         for token in (
             "GOOGLE_DIRECTION",
             "RIDEWITHGPS",
-            "THINGSBOARD",
         ):
             token_str = token + "_API"
             config = eval("self.config.G_" + token + "_API")
@@ -195,7 +194,6 @@ class ConfParser:
         for token in (
             "GOOGLE_DIRECTION",
             "RIDEWITHGPS",
-            "THINGSBOARD",
         ):
             token_str = token + "_API"
             config = eval("self.config.G_" + token + "_API")

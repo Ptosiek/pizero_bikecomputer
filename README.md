@@ -10,7 +10,6 @@ https://github.com/hishizuka/pizero_bikecomputer
 - 2023/9/15 Add [receiving route from Android Google Maps](./doc/software_installation.md#courses) with Bluetooth File Transfer Protocol. So, install bluez-obexd and dbus-x11 package.
 - 2023/6/26 Replace hishizuka/pyqtgraph with original pyqtgraph. So uninstall and re-install pyqtgraph.
 - 2023/6/26 Add GadgetBridge documents in [software_installation.md](./doc/software_installation.md#network).
-- 2023/6/26 Add LiveTrack(ThingsBoard) documents in [software_installation.md](./doc/software_installation.md#live-track) and [thingsboard_setup.md](./doc/thingsboard_setup.md)
 
 ```
 2023/10/20 update
@@ -116,12 +115,6 @@ Some functions depend on your parts.
 | Resume | Yes | Recording continues even if the power is suddenly turned off and restored. |
 | Output .fit log file | Yes | The standard format used by famous services as Strava and Garmin Connect. Also .csv format output is supported. |
 | Upload | Yes | Strava, Garmin and Ride with GPS. |
-| Live Track | Yes | Track data is uploaded in real time to [ThingsBoard.io](http://thingsboard.io) dashboard service, so you can share your activity with friends and family. |
-
-### Dashboard(ThingsBoard) example
-
-<img alt="thingsboard-01" src="https://github.com/hishizuka/pizero_bikecomputer/assets/12926652/c3df419f-4392-4d83-96ab-1f15508b3605"> <img alt="thingsboard-02" src="https://github.com/hishizuka/pizero_bikecomputer/assets/12926652/a72ffb58-2fa8-4a87-b9d7-0ba67aa3cfde">
-
 
 ## Sensors
 

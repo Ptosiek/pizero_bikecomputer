@@ -68,8 +68,8 @@ class CoursesMenuWidget(MenuWidget):
         status = self.config.logger.course.is_set
         self.buttons["Cancel Course"].onoff_button(status)
 
-    def cancel_course(self, replace=False):
-        self.config.logger.reset_course(delete_course_file=True, replace=replace)
+    def cancel_course(self):
+        self.config.logger.reset_course(delete_course_file=True)
         self.onoff_course_cancel_button()
 
     @qasync.asyncSlot()
@@ -246,7 +246,7 @@ class CourseListWidget(ListWidget):
     def cancel_and_set_new_course(self):
         self.parentWidget().widget(
             self.config.gui.gui_config.G_GUI_INDEX[self.back_index_key]
-        ).cancel_course(replace=True)
+        ).cancel_course()
         self.set_new_course()
 
     def set_new_course(self):

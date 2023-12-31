@@ -125,7 +125,7 @@ class Course:
         # but we can load tcx file with no distance in it load (it gets populated as np.zeros in load)
         return bool(len(self.distance))
 
-    def reset(self, delete_course_file=False, replace=False):
+    def reset(self, delete_course_file=False):
         # for course
         self.info = {}
         # raw data
@@ -145,11 +145,8 @@ class Course:
         if self.course_points:
             self.course_points.reset()
 
-        if delete_course_file:
-            if os.path.exists(settings.COURSE_FILE_PATH):
-                os.remove(settings.COURSE_FILE_PATH)
-            if not replace and self.config.G_THINGSBOARD_API["STATUS"]:
-                self.config.api.send_livetrack_course_reset()
+        if delete_course_file and os.path.exists(settings.COURSE_FILE_PATH):
+            os.remove(settings.COURSE_FILE_PATH)
 
     def load(self, file=None):
         # if file is given, copy it to settings.COURSE_FILE_PATH firsthand, we are loading a new course
@@ -211,9 +208,6 @@ class Course:
         app_logger.info("[logger] Loading course:")
         log_timers(timers, text_total="total               : {0:.3f} sec")
 
-        if self.config.G_THINGSBOARD_API["STATUS"]:
-            self.config.api.send_livetrack_course_load()
-
     async def load_google_map_route(self, load_html=False, html_file=None):
         self.reset()
 
@@ -232,9 +226,6 @@ class Course:
         self.calc_slope_smoothing()
         self.modify_course_points()
 
-        if self.config.G_THINGSBOARD_API["STATUS"]:
-            self.config.api.send_livetrack_course_load()
-
         self.config.gui.init_course()
 
     async def search_route(self, x1, y1, x2, y2):
@@ -248,9 +239,6 @@ class Course:
         self.downsample()
         self.calc_slope_smoothing()
         self.modify_course_points()
-
-        if self.config.G_THINGSBOARD_API["STATUS"]:
-            self.config.api.send_livetrack_course_load()
 
     def get_ridewithgps_privacycode(self, route_id):
         privacy_code = None

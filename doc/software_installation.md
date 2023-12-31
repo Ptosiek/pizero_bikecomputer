@@ -22,7 +22,6 @@
   - [Menu screen](#menu-screen)
     - [Sensors](#sensors)
     - [Courses](#courses)
-    - [Live Track](#live-track)
     - [Upload Activity](#upload-activity)
     - [Map](#map)
     - [Profile](#profile)
@@ -43,7 +42,7 @@ Assume Python version 3 environment. Version 2 is not supported.
 
 ```
 $ git clone https://github.com/hishizuka/pizero_bikecomputer.git
-$ pip3 install PyQt5 numpy pyqtgraph cython oyaml pillow polyline aiohttp aiofiles qasync garminconnect stravacookies tb-mqtt-client
+$ pip3 install PyQt5 numpy pyqtgraph cython oyaml pillow polyline aiohttp aiofiles qasync garminconnect stravacookies
 $ pip3 install git+https://github.com/hishizuka/crdp.git
 
 # mac
@@ -74,7 +73,7 @@ Install in the home directory of default user "pi". Also, your Raspberry Pi is c
 $ cd
 $ git clone https://github.com/hishizuka/pizero_bikecomputer.git
 $ sudo apt-get install python3-pip cython3 cmake gawk python3-numpy python3-pyqt5 python3-pyqtgraph sqlite3 libsqlite3-dev libatlas-base-dev python3-aiohttp python3-aiofiles python3-smbus python3-rpi.gpio python3-psutil python3-pil bluez-obexd dbus-x11
-$ sudo pip3 install oyaml sip polyline garminconnect stravacookies qasync dbus-next bluez-peripheral tb-mqtt-client
+$ sudo pip3 install oyaml sip polyline garminconnect stravacookies qasync dbus-next bluez-peripheral
 $ sudo pip3 install git+https://github.com/hishizuka/crdp.git
 $ cd pizero_bikecomputer
 ```
@@ -487,7 +486,7 @@ Right side
 
 - Local Storage
   - Select course .tcx file in `courses` folder.
-- Ride sith GPS
+- Ride with GPS
   - If you [set token in setting.conf](#ridewithgps_api-section), select course from Ride with GPS. Internet access is required. Sample image are shown as belows.
   - <img width="400" alt="RidewithGPS-01" src="https://user-images.githubusercontent.com/12926652/206076210-9c50f789-bac3-4bd0-8209-9dea3a61a132.png">
   - <img width="400" alt="RidewithGPS-02" src="https://user-images.githubusercontent.com/12926652/206076212-8696ac34-c9e6-485f-b1ba-687c0d2a0061.png">
@@ -497,23 +496,6 @@ Right side
     - `eval 'dbus-launch --auto-syntax' /usr/libexec/bluetooth/obexd -d -n -r /home/pi -l -a`
   - If properly paired, Android Google Maps Directions route search results can be sent with 'Share Directions' > 'Bluetooth' > (your Raspberry Pi).
     - <img width="320" alt="mapstogpx-01" src="https://github.com/hishizuka/pizero_bikecomputer/assets/12926652/928a8ed5-82e7-4ba2-afc7-6b68150d9043"> <img width="320" alt="mapstogpx-02" src="https://github.com/hishizuka/pizero_bikecomputer/assets/12926652/d6fbfb22-5c93-47e5-920f-8ef4fc9c02de">
-
-
-### Live Track
- 
-<img width="400" alt="livetrack-01" src="https://github.com/hishizuka/pizero_bikecomputer/assets/12926652/9f9660fd-eca4-4b97-a60a-d2ff890bf3f0">
-
-- Live Track
-  - Enable real-time data upload to the [ThingsBoard](https://thingsboard.io) dashboard.
-  - `tb-mqtt-client` package, which can be installed with the `pip3` command, is required.
-  - Also, thingsboard device access token is required in [THINGSBOARD_API](#thingsboard_api-section) of setting.conf.
-  - You will also need to upload and set up a dashboard.　For more details of Thingboard setup, see [thingsboard_setup.md](./thingsboard_setup.md).
-- Auto upload via BT
-  - Upload to ThingsBoard via bluetooth tethering via a paired smartphone which are already paired using `bluetoothctl`.
-  - The following `Select BT device` must also be specified.
-  - Since it operates intermittently once every two minutes, the power consumption of the Raspberry Pi and smartphone is much lower than a constant connection via Wifi tethering.
-- Select BT device
-  - Specify the device to use for bluetooth tethering.
 
 
 ### Upload Activity
@@ -729,11 +711,6 @@ If you want to upload activities to Garmin Connect, set your `email` and `passwo
 #### GOOGLE_DIRECTION_API section
 
 If you want to search for a route on a map, set your `token` of the Google Directions API.
-
-#### THINGSBOARD_API section
-
-If you want to use ThingsBoard dashboard, set your `token` of the Thingboard device access token.
-
 
 ### state.pickle
 

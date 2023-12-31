@@ -1,8 +1,6 @@
 import os
 import traceback
-import random
 import time
-import socket
 import urllib.parse
 import asyncio
 import aiofiles
@@ -35,31 +33,12 @@ try:
 except ImportError:
     pass
 
-_IMPORT_THINGSBOARD = False
-try:
-    from tb_device_mqtt import TBDeviceMqttClient, TBPublishInfo
-
-    _IMPORT_THINGSBOARD = True
-except ImportError:
-    pass
-
 
 class Api:
     config = None
-    thingsboard_client = None
 
     def __init__(self, config):
         self.config = config
-
-        if _IMPORT_THINGSBOARD:
-            self.thingsboard_client = TBDeviceMqttClient(
-                self.config.G_THINGSBOARD_API["SERVER"],
-                1883,
-                self.config.G_THINGSBOARD_API["TOKEN"],
-            )
-            self.send_time = int(time.time())
-            self.course_send_status = "RESET"
-            self.bt_cmd_lock = False
 
     async def get_google_routes(self, x1, y1, x2, y2):
         if not detect_network() or self.config.G_GOOGLE_DIRECTION_API["TOKEN"] == "":
@@ -450,173 +429,3 @@ class Api:
             self.config.G_STRAVA_COOKIE["SIGNATURE"] = strava_cookie.signature
         except:
             traceback.print_exc()
-
-    def thingsboard_check(self):
-        return self.thingsboard_client is not None
-
-    def send_livetrack_data(self, quick_send=False):
-        if not self.check_livetrack():
-            return
-
-        asyncio.create_task(self.send_livetrack_data_internal(quick_send))
-
-    def check_livetrack(self):
-        # import check
-        if not _IMPORT_THINGSBOARD:
-            # print("Install tb-mqtt-client")
-            return False
-        # network check
-        if (
-            not detect_network()
-            and not self.config.G_THINGSBOARD_API["AUTO_UPLOAD_VIA_BT"]
-        ):
-            # print("No Internet connection")
-            return False
-        return True
-
-    async def send_livetrack_data_internal(self, quick_send=False):
-        t = int(time.time())
-
-        if (
-            not quick_send
-            and t - self.send_time < self.config.G_THINGSBOARD_API["INTERVAL_SEC"]
-        ):
-            return
-        self.send_time = t
-
-        timestamp_str = datetime.fromtimestamp(t).strftime("%H:%M:%S")
-        timestamp_str_log = ""
-        if not settings.DUMMY_OUTPUT:
-            timestamp_str_log = datetime.fromtimestamp(t).strftime("%m/%d %H:%M")
-        # app_logger.info(f"[TB] start, network: {bool(detect_network())}")
-
-        # open connection
-        v = self.config.logger.sensor.values
-        if self.config.G_THINGSBOARD_API["AUTO_UPLOAD_VIA_BT"]:
-            self.bt_cmd_lock = True
-            bt_pan_status = await self.config.bluetooth_tethering()
-            count = 0
-
-            while (
-                bt_pan_status
-                and not detect_network()
-                and count < self.config.G_THINGSBOARD_API["TIMEOUT_SEC"]
-            ):
-                await asyncio.sleep(1)
-                count += 1
-
-            if (
-                not bt_pan_status
-                or count == self.config.G_THINGSBOARD_API["TIMEOUT_SEC"]
-            ):
-                if bt_pan_status:
-                    await self.config.bluetooth_tethering(disconnect=True)
-                await asyncio.sleep(5)
-                self.bt_cmd_lock = False
-                app_logger.error(
-                    f"[BT] {timestamp_str} connect error, network status: {bool(detect_network())}"
-                )
-                self.config.logger.sensor.values["integrated"]["send_time"] = (
-                    datetime.now().strftime("%H:%M") + "CE"
-                )
-                return
-            # print(f"[BT] {timestamp_str} connect, network status:{bool(detect_network())} {count}")
-
-        await asyncio.sleep(5)
-
-        speed = v["integrated"]["speed"]
-        if not np.isnan(speed):
-            speed = int(speed * 3.6)
-        distance = v["integrated"]["distance"]
-        if not np.isnan(distance):
-            distance = round(distance / 1000, 1)
-
-        data = {
-            "ts": t * 1000,
-            "values": {
-                "timestamp": timestamp_str_log,
-                "speed": speed,
-                "distance": distance,
-                "heartrate": v["integrated"]["ave_heart_rate_60s"],
-                "power": v["integrated"]["ave_power_60s"],
-                "work": int(v["integrated"]["accumulated_power"] / 1000),
-                # 'w_prime_balance': v["integrated"]["w_prime_balance_normalized"],
-                "temperature": v["integrated"]["temperature"],
-                # 'altitude': v["I2C"]["altitude"],
-                "latitude": v["GPS"]["lat"],
-                "longitude": v["GPS"]["lon"],
-            },
-        }
-
-        try:
-            self.thingsboard_client.connect()
-            res = self.thingsboard_client.send_telemetry(data).get()
-            if res != TBPublishInfo.TB_ERR_SUCCESS:
-                app_logger.error(f"[BT] thingsboard upload error: {res}")
-            else:
-                v["integrated"]["send_time"] = datetime.now().strftime("%H:%M")
-        except socket.timeout as e:
-            app_logger.error(f"[BT] socket timeout: {e}")
-        except socket.error as e:
-            app_logger.error(f"[BT] socket error: {e}")
-        finally:
-            self.thingsboard_client.disconnect()
-        await asyncio.sleep(5)
-
-        if self.course_send_status == "LOAD":
-            self.send_livetrack_course()
-        elif self.course_send_status == "RESET":
-            self.send_livetrack_course(reset=True)
-
-        # close connection
-        if self.config.G_THINGSBOARD_API["AUTO_UPLOAD_VIA_BT"]:
-            bt_pan_status = await self.config.bluetooth_tethering(disconnect=True)
-            self.bt_cmd_lock = False
-            network_status = detect_network()
-            # print("[BT] {} disconnect, network status:{}".format(timestamp_str, network_status))
-            if network_status:
-                v["integrated"]["send_time"] = datetime.now().strftime("%H:%M") + "CE"
-            await asyncio.sleep(5)
-
-    def send_livetrack_course(self, reset=False):
-        if not reset and (
-            not len(self.config.logger.course.latitude)
-            or not len(self.config.logger.course.longitude)
-        ):
-            return
-
-        course = []
-        if not reset:
-            c = np.stack(
-                [
-                    self.config.logger.course.latitude,
-                    self.config.logger.course.longitude,
-                ],
-                axis=1,
-            ).tolist()
-            course = c + c[-2:0:-1]
-
-        # send as polygon sources
-        data = {"perimeter": course}
-        self.thingsboard_client.connect()
-        res = self.thingsboard_client.send_telemetry(data).get()
-        if res != TBPublishInfo.TB_ERR_SUCCESS:
-            app_logger.error(f"thingsboard upload error: {res}")
-        self.thingsboard_client.disconnect()
-        self.course_send_status = ""
-
-    def send_livetrack_course_load(self):
-        self.course_send_status = "LOAD"
-        if not self.check_livetrack():
-            return
-        asyncio.get_running_loop().run_in_executor(
-            None, self.send_livetrack_course, False
-        )
-
-    def send_livetrack_course_reset(self):
-        self.course_send_status = "RESET"
-        if not self.check_livetrack():
-            return
-        asyncio.get_running_loop().run_in_executor(
-            None, self.send_livetrack_course, True
-        )
