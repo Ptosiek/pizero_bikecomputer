@@ -85,12 +85,6 @@ class Network:
             additional_var["basetime"] = map_settings["basetime"]
             additional_var["validtime"] = map_settings["validtime"]
 
-            if map_name.startswith("jpn_scw"):
-                if map_settings["subdomain"] is None:
-                    return False
-
-                additional_var["subdomain"] = map_settings["subdomain"]
-
         # make header
         if map_settings.get("referer"):
             request_header["Referer"] = map_settings["referer"]

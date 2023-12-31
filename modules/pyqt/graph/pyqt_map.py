@@ -652,31 +652,11 @@ class MapWidget(BaseMapWidget):
         map_name = settings.WIND_OVERLAY_MAP
 
         if self.update_overlay_basetime(map_config, map_name):
-            # basetime update
-            if "jpn_scw" in map_name:
-                init_time_list = await self.config.api.get_scw_list(
-                    map_config[map_name], "inittime"
-                )
-                if init_time_list is not None:
-                    map_config[map_name]["basetime"] = init_time_list[0]["it"]
-
-                timeline = await self.config.api.get_scw_list(
-                    map_config[map_name], "fl"
-                )
-                if timeline is not None:
-                    map_config[map_name]["timeline"] = timeline
-                    time_str = map_config[map_name]["nowtime"].strftime("%H%M")
-                    for tl in map_config[map_name]["timeline"]:
-                        if tl["it"][0:4] == time_str:
-                            map_config[map_name]["validtime"] = tl["it"]
-                            map_config[map_name]["subdomain"] = tl["sd"]
-                            break
-            else:
-                basetime_str = map_config[map_name]["nowtime"].strftime(
-                    map_config[map_name]["time_format"]
-                )
-                map_config[map_name]["basetime"] = basetime_str
-                map_config[map_name]["validtime"] = map_config[map_name]["basetime"]
+            basetime_str = map_config[map_name]["nowtime"].strftime(
+                map_config[map_name]["time_format"]
+            )
+            map_config[map_name]["basetime"] = basetime_str
+            map_config[map_name]["validtime"] = map_config[map_name]["basetime"]
 
             # re-draw from settings.MAP
             return

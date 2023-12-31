@@ -422,26 +422,6 @@ class Api:
 
         return True
 
-    async def get_scw_list(self, wind_config, mode=None):
-        # network check
-        if not detect_network():
-            app_logger.warning("No Internet connection")
-            return None
-
-        url = None
-        if mode == "inittime":
-            url = wind_config["inittime"].format(rand=random.random())
-        elif mode == "fl":
-            url = wind_config["fl"].format(
-                basetime=wind_config["basetime"], rand=random.random()
-            )
-
-        try:
-            response = await get_json(url, headers={"referer": wind_config["referer"]})
-        except:
-            response = None
-        return response
-
     def get_strava_cookie(self):
         blank_check = [
             self.config.G_STRAVA_COOKIE["EMAIL"],
