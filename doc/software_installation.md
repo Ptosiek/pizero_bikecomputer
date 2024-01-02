@@ -42,7 +42,7 @@ Assume Python version 3 environment. Version 2 is not supported.
 
 ```
 $ git clone https://github.com/hishizuka/pizero_bikecomputer.git
-$ pip3 install PyQt5 numpy pyqtgraph cython oyaml pillow polyline aiohttp aiofiles qasync garminconnect stravacookies
+$ pip3 install PyQt5 numpy pyqtgraph cython oyaml pillow polyline aiohttp aiofiles qasync stravacookies
 $ pip3 install git+https://github.com/hishizuka/crdp.git
 
 # mac
@@ -73,7 +73,7 @@ Install in the home directory of default user "pi". Also, your Raspberry Pi is c
 $ cd
 $ git clone https://github.com/hishizuka/pizero_bikecomputer.git
 $ sudo apt-get install python3-pip cython3 cmake gawk python3-numpy python3-pyqt5 python3-pyqtgraph sqlite3 libsqlite3-dev libatlas-base-dev python3-aiohttp python3-aiofiles python3-smbus python3-rpi.gpio python3-psutil python3-pil
-$ sudo pip3 install oyaml sip polyline garminconnect stravacookies qasync dbus-next bluez-peripheral
+$ sudo pip3 install oyaml sip polyline stravacookies qasync dbus-next bluez-peripheral
 $ sudo pip3 install git+https://github.com/hishizuka/crdp.git
 $ cd pizero_bikecomputer
 ```
@@ -498,8 +498,6 @@ Uploads the most recent activity record file(.fit) created by the reset operatio
 
 - Strava
   - You need to set the Strava Token in [Strava API section](#strava_api-section) of setting.conf.
-- Garmin
-  - You need to set the Garmin setting in [GARMINCONNECT_API section](#garminconnect_api-section) of setting.conf.
 - Ride with GPS
   - You need to set the Ride with GPS Token in [RWGPS_API section](#ridewithgps_api-section) of setting.conf.
 
@@ -695,10 +693,6 @@ If you want to use heatmap or upload activities to RidewithGPS, set your `token`
   - If you entered a valid email/password, you will see the auth_token parameter was filled in below.
   - <img width="261" alt="rwgps_get_token" src="https://github.com/hishizuka/pizero_bikecomputer/assets/12926652/fcaf77a8-0531-4e87-a106-6cb3cc1f2c83">
 - Set your token.
-
-#### GARMINCONNECT_API section
-
-If you want to upload activities to Garmin Connect, set your `email` and `password`.
 
 ### state.pickle
 

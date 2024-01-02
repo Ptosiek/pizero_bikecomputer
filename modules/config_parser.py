@@ -92,13 +92,6 @@ class ConfParser:
                         "STRAVA_COOKIE"
                     ][k]
 
-        if "GARMINCONNECT_API" in self.config_parser:
-            for k in ["EMAIL", "PASSWORD"]:
-                if k in self.config_parser["GARMINCONNECT_API"]:
-                    self.config.G_GARMINCONNECT_API[k] = self.config_parser[
-                        "GARMINCONNECT_API"
-                    ][k]
-
     def write_config(self):
         self.config_parser["GENERAL"] = {}
         self.config_parser["GENERAL"]["DISPLAY"] = self.config.G_DISPLAY
@@ -177,12 +170,6 @@ class ConfParser:
         self.config_parser["STRAVA_COOKIE"] = {}
         for k in self.config.G_STRAVA_COOKIE.keys():
             self.config_parser["STRAVA_COOKIE"][k] = self.config.G_STRAVA_COOKIE[k]
-
-        self.config_parser["GARMINCONNECT_API"] = {}
-        for k in ["EMAIL", "PASSWORD"]:
-            self.config_parser["GARMINCONNECT_API"][
-                k
-            ] = self.config.G_GARMINCONNECT_API[k]
 
         with open(self.config_file, "w") as file:
             self.config_parser.write(file)

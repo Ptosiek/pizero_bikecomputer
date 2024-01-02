@@ -10,19 +10,6 @@ from logger import app_logger
 
 from .rwgps import RWGPS
 
-_IMPORT_GARMINCONNECT = False
-try:
-    from garminconnect import (
-        Garmin,
-        GarminConnectConnectionError,
-        GarminConnectTooManyRequestsError,
-        GarminConnectAuthenticationError,
-    )
-
-    _IMPORT_GARMINCONNECT = True
-except ImportError:
-    pass
-
 _IMPORT_STRAVA_COOKIE = False
 try:
     from stravacookies import StravaCookieFetcher
@@ -136,66 +123,3 @@ class Api:
                 app_logger.info(upload_result["status"])
 
         return True
-
-    def garmin_upload_internal(self):
-        blank_check = [
-            self.config.G_GARMINCONNECT_API["EMAIL"],
-            self.config.G_GARMINCONNECT_API["PASSWORD"],
-        ]
-        blank_msg = "set EMAIL or PASSWORD of Garmin Connect"
-        if not self.upload_check(blank_check, blank_msg):
-            return False
-
-        # import check
-        if not _IMPORT_GARMINCONNECT:
-            app_logger.warning("Install garminconnect")
-            return False
-
-        try:
-            saved_session = self.config.state.get_value("garmin_session", None)
-            garmin_api = Garmin(session_data=saved_session)
-            garmin_api.login()
-        except (FileNotFoundError, GarminConnectAuthenticationError):
-            try:
-                garmin_api = Garmin(
-                    self.config.G_GARMINCONNECT_API["EMAIL"],
-                    self.config.G_GARMINCONNECT_API["PASSWORD"],
-                )
-                garmin_api.login()
-                self.config.state.set_value(
-                    "garmin_session", garmin_api.session_data, force_apply=True
-                )
-            except (
-                GarminConnectConnectionError,
-                GarminConnectAuthenticationError,
-                GarminConnectTooManyRequestsError,
-            ) as err:
-                app_logger.error(err)
-                return False
-            else:
-                traceback.print_exc()
-                return False
-
-        end_status = False
-
-        for i in range(3):
-            try:
-                garmin_api.upload_activity(self.config.G_UPLOAD_FILE)
-                end_status = True
-                break
-            except (
-                GarminConnectConnectionError,
-                GarminConnectAuthenticationError,
-                GarminConnectTooManyRequestsError,
-            ) as err:
-                app_logger.error(err)
-            else:
-                traceback.print_exc()
-            time.sleep(1.0)
-
-        return end_status
-
-    async def garmin_upload(self):
-        return await asyncio.get_running_loop().run_in_executor(
-            None, self.garmin_upload_internal
-        )

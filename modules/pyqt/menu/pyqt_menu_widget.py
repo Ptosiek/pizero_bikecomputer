@@ -352,12 +352,6 @@ class UploadActivityMenuWidget(MenuWidget):
                 (icons.StravaIcon(), (icons.BASE_LOGO_SIZE * 4, icons.BASE_LOGO_SIZE)),
             ),
             (
-                "Garmin",
-                "cloud_upload",
-                self.garmin_upload,
-                (icons.GarminIcon(), (icons.BASE_LOGO_SIZE * 5, icons.BASE_LOGO_SIZE)),
-            ),
-            (
                 "Ride with GPS",
                 "cloud_upload",
                 self.rwgps_upload,
@@ -372,10 +366,6 @@ class UploadActivityMenuWidget(MenuWidget):
     @qasync.asyncSlot()
     async def strava_upload(self):
         await self.buttons["Strava"].run(self.config.api.strava_upload)
-
-    @qasync.asyncSlot()
-    async def garmin_upload(self):
-        await self.buttons["Garmin"].run(self.config.api.garmin_upload)
 
     @qasync.asyncSlot()
     async def rwgps_upload(self):

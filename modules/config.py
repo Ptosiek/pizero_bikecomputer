@@ -122,12 +122,6 @@ class Config:
         "SIGNATURE": "",
     }
 
-    G_GARMINCONNECT_API = {
-        "EMAIL": "",
-        "PASSWORD": "",
-        "URL_UPLOAD_DIFF": "proxy/upload-service/upload/.fit",  # https://connect.garmin.com/modern/proxy/upload-service/upload/.fit
-    }
-
     # Bluetooth tethering
     G_BT_ADDRESSES = {}
     G_BT_USE_ADDRESS = ""
