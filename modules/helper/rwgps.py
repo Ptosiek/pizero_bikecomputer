@@ -133,7 +133,6 @@ class RWGPS:
             )
             self.nb_routes = response["results_count"]
 
-        print()
         if self.nb_routes and self.current_offset < self.nb_routes:
             response = await get_json(
                 f"{BASE_URL}/users/{self.user_id}/routes.json",
