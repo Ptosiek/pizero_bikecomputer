@@ -250,8 +250,8 @@ class SettingsNamespace:
     UPLOAD_FILE = ""
 
     # Ride with GPS
-    RWGPS_API_APIKEY = "pizero_bikercomputer"
-    RWGPS_API_TOKEN = ""
+    RWGPS_APIKEY = "pizero_bikercomputer"
+    RWGPS_TOKEN = ""
     RWGS_ROUTE_DOWNLOAD_DIR = os.path.join(COURSE_DIR, "ridewithgps")
 
     @property
@@ -450,14 +450,14 @@ class SettingsNamespace:
                 "SP1_USED_SATS_CUTOFF": str(self.GPSD_PARAM_SP1_EPV_CUTOFF),
             }
 
-        if "RWGPS_API" in cf:
-            section = cf["RWGPS_API"]
+        if "RWGPS" in cf:
+            section = cf["RWGPS"]
             self._set_config_value(section, "APIKEY")
             self._set_config_value(section, "TOKEN")
         else:
-            cf["RWGPS_API"] = {
-                "APIKEY": str(self.RWGPS_API_APIKEY),
-                "TOKEN": str(self.RWGPS_API_TOKEN),
+            cf["RWGPS"] = {
+                "APIKEY": str(self.RWGPS_APIKEY),
+                "TOKEN": str(self.RWGPS_TOKEN),
             }
 
     def read_map_list(self):

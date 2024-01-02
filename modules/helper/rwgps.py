@@ -20,9 +20,9 @@ class RWGPS:
     @property
     def get_params(self):
         return {
-            "apikey": settings.RWGPS_API_APIKEY,
+            "apikey": settings.RWGPS_APIKEY,
             "version": "2",
-            "auth_token": settings.RWGPS_API_TOKEN,
+            "auth_token": settings.RWGPS_TOKEN,
         }
 
     @staticmethod
@@ -106,7 +106,7 @@ class RWGPS:
 
     async def list_routes(self, reset=False):
         results = []
-        if not detect_network() or not settings.RWGPS_API_TOKEN:
+        if not detect_network() or not settings.RWGPS_TOKEN:
             return None
 
         if reset:
@@ -149,7 +149,7 @@ class RWGPS:
 
     async def upload(self):
         file_path = settings.FILE_UPLOAD
-        if not settings.RWGPS_API_TOKEN or not settings.RWGPS_API_KEY:
+        if not settings.RWGPS_TOKEN or not settings.RWGPS_APIKEY:
             app_logger.info("set APIKEY or TOKEN of RWGPS")
             return False
         elif not file_path:
