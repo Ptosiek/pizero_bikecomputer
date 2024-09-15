@@ -12,7 +12,6 @@ class MapMenuWidget(MenuWidget):
             # Name(page_name), button_attribute, connected functions, layout
             ("Select Map", "submenu", self.select_map),
             ("Map Overlay", "submenu", self.map_overlay),
-            ("Course Calc", None, None),
         )
         self.add_buttons(button_conf)
 

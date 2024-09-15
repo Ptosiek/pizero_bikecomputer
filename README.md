@@ -194,13 +194,6 @@ In Japan, [気象庁降水ナウキャスト](https://www.jma.go.jp/bosai/nowc/)
 
 ## Experimental functions
 
-### ANT+ multiscan
-
-it displays three of the people around you in the order in which you caught sensors using ANT+ continuous scanning mode.
-
-- <img src="https://camo.qiitausercontent.com/97904ae429c191677e9ece3cd113e07dfe8eefb2/68747470733a2f2f71696974612d696d6167652d73746f72652e73332e61702d6e6f727468656173742d312e616d617a6f6e6177732e636f6d2f302f3130303734312f33383765663432332d346631642d623332352d666235642d6638623434646332396564362e6a706567" width=320 />
-
-
 # Comparison with other bike computers
 
 - 314km ride with GARMIN Edge Explore 2 and Pizero Bikecomputer ([strava activity](https://www.strava.com/activities/9618771273))

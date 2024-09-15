@@ -14,7 +14,6 @@ from .ant import ant_device_power
 from .ant import ant_device_light
 from .ant import ant_device_ctrl
 from .ant import ant_device_temperature
-from .ant import ant_device_multiscan
 from .ant import ant_device_search
 
 # ANT+
@@ -60,11 +59,9 @@ class SensorANT(Sensor):
         if _SENSOR_ANT:
             app_logger.info("detected ANT+ sensors")
 
-        self.scanner = ant_device_multiscan.ANT_Device_MultiScan(self.node, self.config)
         self.searcher = ant_device_search.ANT_Device_Search(
             self.node, self.config, self.values
         )
-        self.scanner.set_main_ant_device(self.device)
 
         # auto connect ANT+ sensor from setting.conf
         if self.config.G_ANT["STATUS"] and not settings.DUMMY_OUTPUT:
@@ -159,12 +156,11 @@ class SensorANT(Sensor):
             return
 
         self.searcher.set_wait_quick_mode()
-        # stop scanner and searcher
-        if not self.scanner.stop():
-            for dv in self.device.values():
-                dv.ant_state = "quit"
-                dv.disconnect(isCheck=True, isChange=False)  # USE: True -> True
-            self.searcher.stop_search(resetWait=False)
+
+        for dv in self.device.values():
+            dv.ant_state = "quit"
+            dv.disconnect(isCheck=True, isChange=False)  # USE: True -> True
+        self.searcher.stop_search(resetWait=False)
         self.node.stop()
 
     def connect_ant_sensor(self, antName, antID, antType, connectStatus):
@@ -255,33 +251,6 @@ class SensorANT(Sensor):
             self.config.G_ANT["ID"][k] = 0
             self.config.G_ANT["TYPE"][k] = 0
             self.config.G_ANT["USE"][k] = False
-
-    def continuous_scan(self):
-        if not self.config.G_ANT["STATUS"]:
-            return
-
-        self.scanner.set_wait_quick_mode()
-        for dv in self.device.values():
-            dv.ant_state = "continuous_scan"
-            dv.disconnect(isCheck=True, isChange=False)  # USE: True -> True
-
-        self.scanner.set_wait_scan_mode()
-        self.scanner.scan()
-
-    def stop_continuous_scan(self):
-        self.scanner.set_wait_quick_mode()
-        self.scanner.stop_scan()
-        ant_id_types = set()
-
-        for k, v in self.config.G_ANT["USE"].items():
-            ant_id_type = self.config.G_ANT["ID_TYPE"][k]
-            if v and not ant_id_type in ant_id_types:
-                ant_id_types.add(ant_id_type)
-                self.device[ant_id_type].connect(
-                    isCheck=True, isChange=False
-                )  # USE: True -> True
-
-        self.scanner.set_wait_normal_mode()
 
     def set_light_mode(self, mode, auto=False, auto_id=None):
         if "LGT" not in self.config.G_ANT["USE"] or not self.config.G_ANT["USE"]["LGT"]:

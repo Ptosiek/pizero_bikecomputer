@@ -475,7 +475,6 @@ Right side
   - Pairing with ANT+ sensors. 
   - You need to install the ANT+ library and to set [ANT section](#ant-section) of setting.conf with `status = True`.
   - The pairing setting is saved in setting.conf when a sensor is connected, so it will be automatically connected next time you start the program.
-- ANT+ MultiScan
 - Wheel Size
   - Enter the wheel circumference in mm when the ANT+ speed sensor is available.
   - It is used to calculate the distance.

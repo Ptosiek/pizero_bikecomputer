@@ -3,7 +3,6 @@ from functools import partial
 from logger import app_logger
 from modules._pyqt import QtCore, QtWidgets, QtGui
 from modules.settings import ant, settings
-import modules.pyqt.pyqt_multiscan_widget as pyqt_multiscan
 from .pyqt_menu_widget import MenuWidget, ListWidget, ListItemWidget
 
 
@@ -12,7 +11,6 @@ class SensorMenuWidget(MenuWidget):
         button_conf = (
             # Name(page_name), button_attribute, connected functions, layout
             ("ANT+ Sensors", "submenu", self.ant_sensors_menu),
-            ("ANT+ MultiScan", "submenu", self.ant_multiscan_menu),
             ("Wheel Size", "submenu", self.adjust_wheel_circumference),
             ("Auto Stop", None, None),
             ("Gross Ave Speed", None, None),
@@ -21,13 +19,7 @@ class SensorMenuWidget(MenuWidget):
         self.add_buttons(button_conf)
 
     def ant_sensors_menu(self):
-        if self.config.logger.sensor.sensor_ant.scanner.isUse:
-            # output message dialog "cannot go in multiscan mode"
-            return
         self.change_page("ANT+ Sensors")
-
-    def ant_multiscan_menu(self):
-        self.change_page("ANT+ MultiScan", preprocess=True)
 
     def adjust_wheel_circumference(self):
         self.change_page("Wheel Size", preprocess=True)
@@ -158,16 +150,3 @@ class ANTListItemWidget(ListItemWidget):
         # outer layout (custom)
         self.outer_layout.insertWidget(0, icon)
         self.enter_signal.connect(self.parentWidget().button_func)
-
-
-class ANTMultiScanScreenWidget(MenuWidget):
-    def setup_menu(self):
-        self.make_menu_layout(QtWidgets.QHBoxLayout)
-        self.multiscan_widget = pyqt_multiscan.MultiScanWidget(self, self.config)
-        self.menu_layout.addWidget(self.multiscan_widget)
-
-    def preprocess(self):
-        self.multiscan_widget.start()
-
-    def on_back_menu(self):
-        self.multiscan_widget.stop()

@@ -101,7 +101,6 @@ class GUI_PyQt(QtCore.QObject):
     course_profile_graph_widget = None
     map_widget = None
     cuesheet_widget = None
-    multi_scan_widget = None
 
     # signal
     signal_next_button = QtCore.pyqtSignal(int)
@@ -236,7 +235,6 @@ class GUI_PyQt(QtCore.QObject):
                 SensorMenuWidget,
                 ANTMenuWidget,
                 ANTListWidget,
-                ANTMultiScanScreenWidget,
             )
             from modules.pyqt.menu.pyqt_course_menu_widget import (
                 CoursesMenuWidget,
@@ -282,7 +280,6 @@ class GUI_PyQt(QtCore.QObject):
             # reverse order (make children widget first, then make parent widget)
             menus = [
                 ("ANT+ Detail", ANTListWidget),
-                ("ANT+ MultiScan", ANTMultiScanScreenWidget),
                 ("ANT+ Sensors", ANTMenuWidget),
                 ("Wheel Size", AdjustWheelCircumferenceWidget),
                 ("Adjust Altitude", AdjustAltitudeWidget),
