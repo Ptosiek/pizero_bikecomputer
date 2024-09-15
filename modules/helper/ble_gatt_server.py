@@ -178,7 +178,9 @@ class GadgetbridgeService(Service):
                     if "alt" in message:
                         alt = float(message["alt"])
                     if "speed" in message:
-                        speed = float(message["speed"])  # m/s
+                        speed = float(message["speed"])
+                        if speed != 0.0:
+                            speed = speed / 3.6  # km/h -> m/s
                     if "course" in message:
                         track = int(message["course"])
                     if "time" in message:

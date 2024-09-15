@@ -26,7 +26,7 @@ class Button_Config:
         },
         "Papirus": {
             "MAIN": {
-                16: ("scroll_prev", ""),            # SW1(left)
+                16: ("scroll_prev", ""),  # SW1(left)
                 26: ("count_laps", "reset_count"),  # SW2
                 20: ("start_and_stop_manual", ""),  # SW3
                 21: ("scroll_next", "enter_menu"),  # SW4
@@ -41,7 +41,7 @@ class Button_Config:
         "Pirate_Audio": {
             "MAIN": {
                 5: ("scroll_prev", "change_mode"),  # A
-                6: ("count_laps", "reset_count"),   # B
+                6: ("count_laps", "reset_count"),  # B
                 16: ("scroll_next", "enter_menu"),  # X
                 24: ("start_and_stop_manual", ""),  # Y
             },
@@ -73,7 +73,7 @@ class Button_Config:
         "Pirate_Audio_old": {
             "MAIN": {
                 5: ("scroll_prev", "change_mode"),  # A
-                6: ("count_laps", "reset_count"),   # B
+                6: ("count_laps", "reset_count"),  # B
                 16: ("scroll_next", "enter_menu"),  # X
                 20: ("start_and_stop_manual", ""),  # Y
             },
@@ -105,7 +105,7 @@ class Button_Config:
         "Display_HAT_Mini": {
             "MAIN": {
                 5: ("scroll_prev", "change_mode"),  # A
-                6: ("count_laps", "reset_count"),   # B
+                6: ("count_laps", "reset_count"),  # B
                 16: ("scroll_next", "enter_menu"),  # X
                 24: ("start_and_stop_manual", ""),  # Y
             },
