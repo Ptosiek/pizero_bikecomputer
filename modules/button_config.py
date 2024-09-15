@@ -26,7 +26,7 @@ class Button_Config:
         },
         "Papirus": {
             "MAIN": {
-                16: ("scroll_prev", ""),  # SW1(left)
+                16: ("scroll_prev", ""),            # SW1(left)
                 26: ("count_laps", "reset_count"),  # SW2
                 20: ("start_and_stop_manual", ""),  # SW3
                 21: ("scroll_next", "enter_menu"),  # SW4
@@ -36,6 +36,102 @@ class Button_Config:
                 26: ("press_space", ""),
                 20: ("press_shift_tab", ""),
                 21: ("press_tab", ""),
+            },
+        },
+        "Pirate_Audio": {
+            "MAIN": {
+                5: ("scroll_prev", "change_mode"),  # A
+                6: ("count_laps", "reset_count"),   # B
+                16: ("scroll_next", "enter_menu"),  # X
+                24: ("start_and_stop_manual", ""),  # Y
+            },
+            "MAIN_1": {
+                5: ("scroll_prev", "change_mode"),
+                6: ("count_laps", ""),
+                16: ("scroll_next", "enter_menu"),
+                24: ("brightness_control", ""),
+            },
+            "MENU": {
+                5: ("press_shift_tab", ""),
+                6: ("back_menu", ""),
+                16: ("press_tab", ""),
+                24: ("press_space", ""),
+            },
+            "MAP": {
+                5: ("scroll_prev", ""),
+                6: ("map_zoom_minus", ""),
+                16: ("scroll_next", "enter_menu"),
+                24: ("map_zoom_plus", "change_map_overlays"),
+            },
+            "COURSE_PROFILE": {
+                5: ("scroll_prev", ""),
+                6: ("map_zoom_minus", ""),
+                16: ("scroll_next", "enter_menu"),
+                24: ("map_zoom_plus", ""),
+            },
+        },
+        "Pirate_Audio_old": {
+            "MAIN": {
+                5: ("scroll_prev", "change_mode"),  # A
+                6: ("count_laps", "reset_count"),   # B
+                16: ("scroll_next", "enter_menu"),  # X
+                20: ("start_and_stop_manual", ""),  # Y
+            },
+            "MAIN_1": {
+                5: ("scroll_prev", "change_mode"),
+                6: ("count_laps", ""),
+                16: ("scroll_next", "enter_menu"),
+                20: ("brightness_control", ""),
+            },
+            "MENU": {
+                5: ("press_shift_tab", ""),
+                6: ("back_menu", ""),
+                16: ("press_tab", ""),
+                20: ("press_space", ""),
+            },
+            "MAP": {
+                5: ("scroll_prev", ""),
+                6: ("map_zoom_minus", ""),
+                16: ("scroll_next", "enter_menu"),
+                20: ("map_zoom_plus", "change_map_overlays"),
+            },
+            "COURSE_PROFILE": {
+                5: ("scroll_prev", ""),
+                6: ("map_zoom_minus", ""),
+                16: ("scroll_next", "enter_menu"),
+                20: ("map_zoom_plus", ""),
+            },
+        },
+        "Display_HAT_Mini": {
+            "MAIN": {
+                5: ("scroll_prev", "change_mode"),  # A
+                6: ("count_laps", "reset_count"),   # B
+                16: ("scroll_next", "enter_menu"),  # X
+                24: ("start_and_stop_manual", ""),  # Y
+            },
+            "MAIN_1": {
+                5: ("scroll_prev", "change_mode"),
+                6: ("count_laps", ""),
+                16: ("scroll_next", "enter_menu"),
+                24: ("brightness_control", ""),
+            },
+            "MENU": {
+                5: ("press_shift_tab", ""),
+                6: ("back_menu", ""),
+                16: ("press_tab", ""),
+                24: ("press_space", ""),
+            },
+            "MAP": {
+                5: ("scroll_prev", ""),
+                6: ("map_zoom_minus", ""),
+                16: ("scroll_next", "enter_menu"),
+                24: ("map_zoom_plus", "change_map_overlays"),
+            },
+            "COURSE_PROFILE": {
+                5: ("scroll_prev", ""),
+                6: ("map_zoom_minus", ""),
+                16: ("scroll_next", "enter_menu"),
+                24: ("map_zoom_plus", ""),
             },
         },
         "DFRobot_RPi_Display": {

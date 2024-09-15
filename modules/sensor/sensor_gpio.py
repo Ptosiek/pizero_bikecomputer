@@ -30,13 +30,22 @@ class SensorGPIO(Sensor):
             "PiTFT",
             "Papirus",
             "DFRobot_RPi_Display",
+            "Pirate_Audio_old",
+            "Pirate_Audio",
+            "Display_HAT_Mini",
         ]:
             for key in self.config.button_config.G_BUTTON_DEF[settings.DISPLAY][
                 "MAIN"
             ].keys():
                 self.buttonState[key] = False
                 self.oldButtonState[key] = True
-                if settings.DISPLAY in ("PiTFT", "DFRobot_RPi_Display"):
+                if settings.DISPLAY in (
+                    "PiTFT",
+                    "DFRobot_RPi_Display",
+                    "Pirate_Audio_old",
+                    "Pirate_Audio",
+                    "Display_HAT_Mini",
+                ):
                     GPIO.setup(key, GPIO.IN, pull_up_down=GPIO.PUD_UP)
                 elif settings.DISPLAY in ("Papirus",):
                     GPIO.setup(key, GPIO.IN)
@@ -67,6 +76,9 @@ class SensorGPIO(Sensor):
             "PiTFT",
             "Papirus",
             "DFRobot_RPi_Display",
+            "Pirate_Audio_old",
+            "Pirate_Audio",
+            "Display_HAT_Mini",
         ):
             for key in self.config.button_config.G_BUTTON_DEF[settings.DISPLAY][
                 "MAIN"
