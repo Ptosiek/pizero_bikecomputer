@@ -129,7 +129,7 @@ class ConfParser:
             self.config.G_IMU_AXIS_CONVERSION["STATUS"]
         )
         self.config_parser["SENSOR_IMU"]["AXIS_CONVERSION_COEF"] = str(
-            list(self.config.G_IMU_AXIS_CONVERSION["COEF"])
+            self.config.G_IMU_AXIS_CONVERSION["COEF"].tolist()
         )
         self.config_parser["SENSOR_IMU"]["MAG_AXIS_SWAP_XY_STATUS"] = str(
             self.config.G_IMU_MAG_AXIS_SWAP_XY["STATUS"]
@@ -138,7 +138,7 @@ class ConfParser:
             self.config.G_IMU_MAG_AXIS_CONVERSION["STATUS"]
         )
         self.config_parser["SENSOR_IMU"]["MAG_AXIS_CONVERSION_COEF"] = str(
-            list(self.config.G_IMU_MAG_AXIS_CONVERSION["COEF"])
+            self.config.G_IMU_MAG_AXIS_CONVERSION["COEF"].tolist()
         )
         self.config_parser["SENSOR_IMU"]["MAG_DECLINATION"] = str(
             int(self.config.G_IMU_MAG_DECLINATION)
