@@ -524,7 +524,7 @@ class SensorCore:
                 # time.sleep(1)
 
                 # auto backlight
-                if self.config.display.auto_brightness and not np.isnan(
+                if self.config.display.use_auto_backlight and not np.isnan(
                     v["I2C"]["light"]
                 ):
                     if v["I2C"]["light"] <= settings.AUTO_BACKLIGHT_CUTOFF:

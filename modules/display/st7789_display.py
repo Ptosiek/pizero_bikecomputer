@@ -25,8 +25,6 @@ class ST7789Display(Display):
     # backlight = None
     pi = None
 
-    has_auto_brightness = False
-    has_color = True
     has_touch = False
     send = True
 

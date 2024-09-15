@@ -146,7 +146,7 @@ class SettingsNamespace:
 
     # auto backlight
     USE_AUTO_BACKLIGHT = True
-    AUTO_BACKLIGHT_CUTOFF = 30
+    AUTO_BACKLIGHT_CUTOFF = 10
 
     # external input of maps
     MAP_LIST = "map.yaml"
