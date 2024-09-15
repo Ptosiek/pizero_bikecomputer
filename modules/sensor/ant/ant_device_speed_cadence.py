@@ -91,7 +91,7 @@ class ANT_Device_Speed_Cadence(ANT_Device):
             self.values["speed"] = 0
         else:
             app_logger.error(
-                f"ANT+ S&C(speed) err: {datetime.now().strftime('%Y%m%d %H:%M:%S')} {self.delta}",
+                f"ANT+ S&C(speed) err: {self.delta}",
             )
         # store raw speed
         self.config.state.set_value(self.pickle_key, self.sc_values[3])
@@ -108,7 +108,7 @@ class ANT_Device_Speed_Cadence(ANT_Device):
             self.values["cadence"] = 0
         else:
             app_logger.error(
-                f"ANT+ Power(16) err: {datetime.now().strftime('%Y%m%d %H:%M:%S')} {self.delta}",
+                f"ANT+ Power(16) err: {self.delta}",
             )
         self.pre_values = list(self.sc_values)
         # on_data timestamp
@@ -181,9 +181,7 @@ class ANT_Device_Cadence(ANT_Device):
             # if self.values['on_data_timestamp'] is not None and (t - self.values['on_data_timestamp']).total_seconds() >= self.stop_cutoff:
             self.values[self.elements[0]] = 0
         else:
-            app_logger.error(
-                f"ANT+ {self.elements[0]} err: {datetime.now().strftime('%Y%m%d %H:%M:%S')} {self.delta}",
-            )
+            app_logger.error(f"ANT+ {self.elements[0]} err: {self.delta}")
         self.pre_values = list(self.sc_values)
         # on_data timestamp
         self.values["on_data_timestamp"] = t
