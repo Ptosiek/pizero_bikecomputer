@@ -1,8 +1,6 @@
 import time
 import datetime
 import random
-import os
-import sys
 import struct
 import asyncio
 
@@ -23,9 +21,6 @@ from .ant import ant_device_search
 # ANT+
 _SENSOR_ANT = False
 
-_sys_stdout = sys.stdout
-f = open(os.devnull, "w")
-sys.stdout = f
 try:
     from ant.easy.node import Node
     from ant.base.driver import find_driver, DriverNotFound
@@ -38,8 +33,6 @@ except ImportError:
 except DriverNotFound:
     pass
 
-f.close()
-sys.stdout = _sys_stdout
 
 if _SENSOR_ANT:
     app_logger.info("ANT")
