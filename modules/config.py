@@ -102,26 +102,6 @@ class Config:
         },
     }
 
-    # STRAVA token (need to write setting.conf manually)
-    G_STRAVA_API_URL = {
-        "OAUTH": "https://www.strava.com/oauth/token",
-        "UPLOAD": "https://www.strava.com/api/v3/uploads",
-    }
-    G_STRAVA_API = {
-        "CLIENT_ID": "",
-        "CLIENT_SECRET": "",
-        "CODE": "",
-        "ACCESS_TOKEN": "",
-        "REFRESH_TOKEN": "",
-    }
-    G_STRAVA_COOKIE = {
-        "EMAIL": "",
-        "PASSWORD": "",
-        "KEY_PAIR_ID": "",
-        "POLICY": "",
-        "SIGNATURE": "",
-    }
-
     # Bluetooth tethering
     G_BT_ADDRESSES = {}
     G_BT_USE_ADDRESS = ""

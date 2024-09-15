@@ -80,18 +80,6 @@ class ConfParser:
                         self.config.G_ANT["TYPE"][key],
                     )
 
-        if "STRAVA_API" in self.config_parser:
-            for k in self.config.G_STRAVA_API.keys():
-                if k in self.config_parser["STRAVA_API"]:
-                    self.config.G_STRAVA_API[k] = self.config_parser["STRAVA_API"][k]
-
-        if "STRAVA_COOKIE" in self.config_parser:
-            for k in self.config.G_STRAVA_COOKIE.keys():
-                if k in self.config_parser["STRAVA_COOKIE"]:
-                    self.config.G_STRAVA_COOKIE[k] = self.config_parser[
-                        "STRAVA_COOKIE"
-                    ][k]
-
     def write_config(self):
         self.config_parser["GENERAL"] = {}
         self.config_parser["GENERAL"]["DISPLAY"] = self.config.G_DISPLAY
@@ -162,14 +150,6 @@ class ConfParser:
         self.config_parser["GPSD_PARAM"]["SP1_USED_SATS_CUTOFF"] = str(
             self.config.G_GPSD_PARAM["SP1_USED_SATS_CUTOFF"]
         )
-
-        self.config_parser["STRAVA_API"] = {}
-        for k in self.config.G_STRAVA_API.keys():
-            self.config_parser["STRAVA_API"][k] = self.config.G_STRAVA_API[k]
-
-        self.config_parser["STRAVA_COOKIE"] = {}
-        for k in self.config.G_STRAVA_COOKIE.keys():
-            self.config_parser["STRAVA_COOKIE"][k] = self.config.G_STRAVA_COOKIE[k]
 
         with open(self.config_file, "w") as file:
             self.config_parser.write(file)

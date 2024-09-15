@@ -346,12 +346,6 @@ class UploadActivityMenuWidget(MenuWidget):
         button_conf = (
             # Name(page_name), button_attribute, connected functions, icon
             (
-                "Strava",
-                "cloud_upload",
-                self.strava_upload,
-                (icons.StravaIcon(), (icons.BASE_LOGO_SIZE * 4, icons.BASE_LOGO_SIZE)),
-            ),
-            (
                 "Ride with GPS",
                 "cloud_upload",
                 self.rwgps_upload,
@@ -362,10 +356,6 @@ class UploadActivityMenuWidget(MenuWidget):
             ),
         )
         self.add_buttons(button_conf)
-
-    @qasync.asyncSlot()
-    async def strava_upload(self):
-        await self.buttons["Strava"].run(self.config.api.strava_upload)
 
     @qasync.asyncSlot()
     async def rwgps_upload(self):

@@ -109,7 +109,7 @@ Some functions depend on your parts.
 | Recording insterval | 1s |  Smart recording is not supported. |
 | Resume | Yes | Recording continues even if the power is suddenly turned off and restored. |
 | Output .fit log file | Yes | The standard format used by famous services as Strava and Garmin Connect. Also .csv format output is supported. |
-| Upload | Yes | Strava, Garmin and Ride with GPS. |
+| Upload | Yes | Ride with GPS. |
 
 ## Sensors
 
@@ -153,9 +153,7 @@ USB dongle is required if using ANT+ sensors.
 
 #### Heatmap overlay
 
-Strava heatmap.
-
-![map_overlay-strava](https://user-images.githubusercontent.com/12926652/205793586-0b754cde-d1e7-4e57-81d2-2bbd60fc8b11.png)
+RWGPS heatmap
 
 #### Weather map overlay
 

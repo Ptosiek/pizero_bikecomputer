@@ -87,12 +87,6 @@ class HeatmapListWidget(ListWidget):
         check_map_dir()
         self.config.gui.map_widget.reset_map()
 
-        # update strava cookie
-        if "strava_heatmap" in settings.HEATMAP_OVERLAY_MAP:
-            asyncio.get_running_loop().run_in_executor(
-                None, self.config.api.get_strava_cookie
-            )
-
 
 class RainmapListWidget(ListWidget):
     settings = settings.RAIN_OVERLAY_MAP_CONFIG

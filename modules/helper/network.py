@@ -68,14 +68,7 @@ class Network:
         request_header = {}
         additional_var = {}
 
-        if (
-            map_config == settings.HEATMAP_OVERLAY_MAP_CONFIG
-            and "strava_heatmap" in map_name
-        ):
-            additional_var["key_pair_id"] = self.config.G_STRAVA_COOKIE["KEY_PAIR_ID"]
-            additional_var["policy"] = self.config.G_STRAVA_COOKIE["POLICY"]
-            additional_var["signature"] = self.config.G_STRAVA_COOKIE["SIGNATURE"]
-        elif map_config in [
+        if map_config in [
             settings.RAIN_OVERLAY_MAP_CONFIG,
             settings.WIND_OVERLAY_MAP_CONFIG,
         ]:

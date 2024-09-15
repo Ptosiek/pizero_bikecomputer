@@ -42,7 +42,7 @@ Assume Python version 3 environment. Version 2 is not supported.
 
 ```
 $ git clone https://github.com/hishizuka/pizero_bikecomputer.git
-$ pip3 install PyQt5 numpy pyqtgraph cython oyaml pillow polyline aiohttp aiofiles qasync stravacookies
+$ pip3 install PyQt5 numpy pyqtgraph cython oyaml pillow polyline aiohttp aiofiles qasync
 $ pip3 install git+https://github.com/hishizuka/crdp.git
 
 # mac
@@ -73,7 +73,7 @@ Install in the home directory of default user "pi". Also, your Raspberry Pi is c
 $ cd
 $ git clone https://github.com/hishizuka/pizero_bikecomputer.git
 $ sudo apt install python3-pip cython3 cmake gawk python3-numpy python3-pyqt5 python3-pyqtgraph sqlite3 libsqlite3-dev libatlas-base-dev python3-aiohttp python3-aiofiles python3-smbus python3-rpi.gpio python3-psutil python3-pil
-$ sudo pip3 install oyaml sip polyline stravacookies qasync dbus-next bluez-peripheral
+$ sudo pip3 install oyaml sip polyline qasync dbus-next bluez-peripheral
 $ sudo pip3 install git+https://github.com/hishizuka/crdp.git
 $ cd pizero_bikecomputer
 ```
@@ -501,8 +501,6 @@ Uploads the most recent activity record file(.fit) created by the reset operatio
  
 <img width="400" alt="menu-04-upload_activity" src="https://user-images.githubusercontent.com/12926652/206076198-55803175-ef4c-4f9b-9408-b44dbe98b1b3.png">
 
-- Strava
-  - You need to set the Strava Token in [Strava API section](#strava_api-section) of setting.conf.
 - Ride with GPS
   - You need to set the Ride with GPS Token in [RWGPS section](#ridewithgps_api-section) of setting.conf.
 
@@ -518,9 +516,7 @@ Uploads the most recent activity record file(.fit) created by the reset operatio
 
 #### Heatmap
 
-Strava heatmap (bluered)
-
-![map_overlay-strava](https://user-images.githubusercontent.com/12926652/205793586-0b754cde-d1e7-4e57-81d2-2bbd60fc8b11.png)
+RWGPS heatmap
 
 #### Rain map
 
@@ -678,17 +674,6 @@ Axis conversion is performed with the following variables.
   - `MIP`: MIP color reflective LCD module 2.7 inch.
   - `MIP_Sharp`: SHARP Memory Display Breakout
 
-#### STRAVA_API section
-
-Set up for uploading your .fit file to Strava in the "Strava Upload" of the menu. The upload is limited to the most recently reset and exported .fit file.
-
-To get the Strava token, see "[Trying the Authorization Method (OAuth2) of the Strava V3 API (In Japanese)](https://hhhhhskw.hatenablog.com/entry/2018/11/06/014206)".
-Set the `client_id`, `client_secret`, `code`, `access_token` and `refresh_token` as described in the article. Once set, they will be updated automatically.
-
-#### STRAVA_COOKIE section
-
-If you want to use Strava HeatMap, set `email` and `password`.
-
 #### RWGPS section
 
 If you want to use heatmap or upload activities to RidewithGPS, set your `token` of the Ride with GPS API.
@@ -739,12 +724,11 @@ MAIN:
 ### map.yaml
 
 Register the map name, tile URL and copyright in this file.
-An example of Strava HeatMap is shown below.
 
 ```
-strava_heatmap_hot:
-  url: https://heatmap-external-b.strava.com/tiles-auth/ride/hot/{z}/{x}/{y}.png?px=256
-  attribution: strava
+openstreetmap:
+  url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+  attribution: © OpenStreetMap contributors
 ```
 
 - Line 1: Map name
