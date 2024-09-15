@@ -1,9 +1,9 @@
 import asyncio
-import datetime
 import json
 import logging
 import os
 import shutil
+from datetime import datetime
 from glob import glob
 
 import numpy as np
@@ -187,7 +187,7 @@ class Config:
         # coroutine loop
         self.init_loop()
 
-        self.log_time = datetime.datetime.now()
+        self.log_time = datetime.now()
 
         self.button_config = Button_Config(self)
 

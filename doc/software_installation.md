@@ -48,7 +48,7 @@ $ pip3 install git+https://github.com/hishizuka/crdp.git
 # mac
 $ brew install sqlite3
 # linux
-$ sudo apt-get install sqlite3 libsqlite3-dev
+$ sudo apt install sqlite3 libsqlite3-dev
 
 $ cd pizero_bikecomputer
 ```
@@ -66,13 +66,13 @@ Here is [my setup guide in Japanese](https://qiita.com/hishi/items/8bdfd9d72fa8f
 
 ### Common
 
-Install in the home directory of default user "pi". Also, your Raspberry Pi is connected to internet and updated with `apt-get update & apt-get upgrade`.
+Install in the home directory of default user "pi". Also, your Raspberry Pi is connected to internet and updated with `apt update & apt upgrade`.
 
 
 ```
 $ cd
 $ git clone https://github.com/hishizuka/pizero_bikecomputer.git
-$ sudo apt-get install python3-pip cython3 cmake gawk python3-numpy python3-pyqt5 python3-pyqtgraph sqlite3 libsqlite3-dev libatlas-base-dev python3-aiohttp python3-aiofiles python3-smbus python3-rpi.gpio python3-psutil python3-pil
+$ sudo apt install python3-pip cython3 cmake gawk python3-numpy python3-pyqt5 python3-pyqtgraph sqlite3 libsqlite3-dev libatlas-base-dev python3-aiohttp python3-aiofiles python3-smbus python3-rpi.gpio python3-psutil python3-pil
 $ sudo pip3 install oyaml sip polyline stravacookies qasync dbus-next bluez-peripheral
 $ sudo pip3 install git+https://github.com/hishizuka/crdp.git
 $ cd pizero_bikecomputer
@@ -85,7 +85,7 @@ $ cd pizero_bikecomputer
 Assume Serial interface is on and login shell is off in raspi-config and GPS device is connected as /dev/ttyS0. If GPS device is /dev/ttyAMA0, modify gpsd config file(/etc/default/gpsd).
 
 ```
-$ sudo apt-get install gpsd gpsd-clients
+$ sudo apt install gpsd gpsd-clients
 $ sudo pip3 install gps3 timezonefinder 
 $ sudo cp install/etc/default/gpsd /etc/default/gpsd
 $ sudo systemctl enable gpsd
@@ -107,7 +107,7 @@ Check with [pa1010d example program](https://github.com/pimoroni/pa1010d-python/
 ### ANT+ USB dongle
 
 ```
-$ sudo apt-get install libusb-1.0-0 python3-usb
+$ sudo apt install libusb-1.0-0 python3-usb
 $ sudo pip3 install git+https://github.com/hishizuka/openant.git
 ```
  
@@ -121,7 +121,7 @@ Assume SPI interface is on in raspi-config.
 You can use python3-pyqt5 package. Don't need building Qt.
 
 ```
-$ sudo apt-get install python3-pigpio
+$ sudo apt install python3-pigpio
 $ sudo systemctl enable pigpiod
 $ sudo systemctl start pigpiod
 ```
@@ -188,7 +188,7 @@ $ sudo pip3 install magnetic-field-calculator
 #### Button SHIM
 
 ```
-$ sudo apt-get install python3-buttonshim
+$ sudo apt install python3-buttonshim
 ```
 
 #### PiJuice HAT
@@ -617,9 +617,9 @@ Set the value before starting the program. If the value is set during running, i
 - `map`
   - Set the map.
   - The `G_MAP_CONFIG` in modules/config.py provides some preset definitions.
-  - `toner`: A map for monochrome colors. [http://maps.stamen.com/toner/](http://maps.stamen.com/toner/)
   - `wikimedia`: An example map of a full-color map. [https://maps.wikimedia.org/](https://maps.wikimedia.org/)
   - `jpn_kokudo_chiri_in`: A map from Japan GSI. [https://cyberjapandata.gsi.go.jp](https://cyberjapandata.gsi.go.jp)
+  - (obsolete) `toner`: A map for monochrome colors. [http://maps.stamen.com/toner/](http://maps.stamen.com/toner/)
   - You can add a map URL to map.yaml. Specify the URL in tile format (tile coordinates by [x, y] and zoom level by [z]). And The map name is set to this setting `map`.
   - Also, you can set raster mbtiles mapsets generated from [mb-util](https://github.com/mapbox/mbutil). It is sqlite3 db packed with raster maptile images. The definition in map.yaml is following with sample mbtile map named `sample_mbtile` placed at `maptile/sample_mbtile.mbtiles`.
 
