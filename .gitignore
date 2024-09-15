@@ -28,4 +28,4 @@ nohup.out
 !.gitkeep
 screenlog.*
 gmon.out
-
+.DS_Store

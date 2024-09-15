@@ -17,8 +17,11 @@ def check_map_dir():
         os.makedirs(os.path.join("maptile", settings.DEM_MAP), exist_ok=True)
 
 
-def get_maptile_filename(map_name, z, x, y):
-    return f"maptile/{map_name}/{z}/{x}/{y}.png"
+def get_maptile_filename(map_name, z, x, y, basetime=None, validtime=None):
+    if basetime and validtime:
+        return f"maptile/{map_name}/{basetime}/{validtime}/{z}/{x}/{y}.png"
+    else:
+        return f"maptile/{map_name}/{z}/{x}/{y}.png"
 
 
 def get_lon_lat_from_tile_xy(z, x, y):

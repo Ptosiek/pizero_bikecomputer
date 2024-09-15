@@ -341,9 +341,6 @@ class Config:
         self.display = display
         settings.update_setting("DISPLAY", display_name)
 
-    def press_button(self, button_hard, press_button, index):
-        self.button_config.press_button(button_hard, press_button, index)
-
     def change_mode(self):
         self.button_config.change_mode()
 
