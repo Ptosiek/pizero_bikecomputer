@@ -341,9 +341,6 @@ class Config:
         self.display = display
         settings.update_setting("DISPLAY", display_name)
 
-    def change_mode(self):
-        self.button_config.change_mode()
-
     async def kill_tasks(self):
         tasks = asyncio.all_tasks()
         current_task = asyncio.current_task()

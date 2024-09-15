@@ -559,7 +559,7 @@ class GUI_PyQt(QtCore.QObject):
         # check MAIN
         if self.stack_widget.currentIndex() != 1:
             return
-        self.config.change_mode()
+        self.config.button_config.change_mode()
 
     def map_move_x_plus(self):
         self.map_method("move_x_plus")
@@ -675,18 +675,19 @@ class GUI_PyQt(QtCore.QObject):
         if self.display_dialog:
             self.signal_menu_back_button.emit()
 
-    def show_popup(self, title):
+    def show_popup(self, title, timeout=None):
         asyncio.create_task(
             self.msg_queue.put(
                 {
                     "title": title,
                     "button_num": 0,
                     "position": QT_ALIGN_BOTTOM,
+                    "timeout": timeout,
                 }
             )
         )
 
-    def show_popup_multiline(self, title, message):
+    def show_popup_multiline(self, title, message, timeout=None):
         asyncio.create_task(
             self.msg_queue.put(
                 {
@@ -694,6 +695,7 @@ class GUI_PyQt(QtCore.QObject):
                     "message": message,
                     "position": QT_ALIGN_BOTTOM,
                     "text_align": QT_ALIGN_LEFT,
+                    "timeout": timeout,
                 }
             )
         )
@@ -758,10 +760,14 @@ class GUI_PyQt(QtCore.QObject):
         message = msg.get("message")
         button_num = msg.get("button_num", 0)  # 0: none, 1: OK, 2: OK+Cancel
         button_label = msg.get("button_label", None)  # button label for button_num = 1
-        timeout = msg.get("timeout", 5)
         position = msg.get("position", QT_ALIGN_CENTER)
         text_align = msg.get("text_align", QT_ALIGN_CENTER)
         fn = msg.get("fn")  # use with OK button(button_num=2)
+
+        default_timeout = 5
+        timeout = msg.get("timeout", default_timeout)
+        if timeout is None:
+            timeout = default_timeout
 
         self.display_dialog = True
 
