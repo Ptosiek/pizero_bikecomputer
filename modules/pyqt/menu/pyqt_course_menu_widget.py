@@ -66,7 +66,7 @@ class CoursesMenuWidget(MenuWidget):
     def cancel_course(self):
         self.config.logger.reset_course(delete_course_file=True)
         self.onoff_course_cancel_button()
-    
+
     def set_new_course(self, course_file):
         self.config.logger.set_new_course(course_file)
         self.config.gui.init_course()
