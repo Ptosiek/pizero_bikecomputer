@@ -18,7 +18,8 @@ try:
 except ImportError:
     pass
 
-app_logger.info(f"MIP DISPLAY: {_SENSOR_DISPLAY}")
+if _SENSOR_DISPLAY:
+    app_logger.info(f"MIP DISPLAY: {_SENSOR_DISPLAY}")
 
 
 class MipDisplayPigpio(MipDisplayBase):
