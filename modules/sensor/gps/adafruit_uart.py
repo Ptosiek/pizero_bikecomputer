@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 from .base import AbstractSensorGPS
 
@@ -38,17 +39,19 @@ class Adafruit_GPS(AbstractSensorGPS):
     # experimental code
     async def update(self):
         g = self.adafruit_gps
+        last_print = time.monotonic()
 
         try:
             while True:
-                await self.sleep()
+                g.update()
+                current = time.monotonic()
 
-                for i in range(10):
-                    if not g.update():
-                        break
-                    await asyncio.sleep(0.05)
+                if current - last_print < 1.0:
+                    await asyncio.sleep(0.1)
+                    continue
 
-                if g.has_fix:
+                last_print = current
+                if g.has_fix and g.timestamp_utc.tm_year >= 2000:
                     speed = (
                         g.speed_knots * 1.852 / 3.6
                         if not self.is_null_value(g.speed_knots)
@@ -65,9 +68,8 @@ class Adafruit_GPS(AbstractSensorGPS):
                         None,
                         [g.pdop, g.hdop, g.vdop],
                         (used, total),
-                        g.timestamp_utc,
+                        time.strftime("%Y-%m-%dT%H:%M:%S+00:00", g.timestamp_utc),
                     )
-                self.get_sleep_time()
         except asyncio.CancelledError:
             pass
 
