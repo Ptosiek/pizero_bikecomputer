@@ -1,5 +1,4 @@
 import struct
-import time
 from datetime import datetime
 
 from .ant_device import ANT_Device
@@ -12,7 +11,7 @@ class ANT_Device_MultiScan(ANT_Device):
         "interval": (),  # Not use
         "type": 0,  # ANY
         "transmission_type": 0x00,
-        "channel_type": 0x40,  # Channel.Type.UNIDIRECTIONAL_RECEIVE_ONLY,
+        "channel_type": 0x40,  # Channel.Type.UNIDIRECTIONAL_RECEIVE_ONLY. Or 0x00(Channel.Type.BIDIRECTIONAL_RECEIVE)
     }
     isUse = False
     mainAntDevice = None
@@ -56,12 +55,12 @@ class ANT_Device_MultiScan(ANT_Device):
                 pass
 
     def stop_scan(self):
-        self.disconnect(0.5)
+        self.disconnect()
 
     def stop(self):
-        return self.disconnect(0)
+        return self.disconnect()
 
-    def disconnect(self, wait):
+    def disconnect(self):
         if not self.config.G_ANT["STATUS"]:
             return False
         if not self.isUse:
@@ -71,7 +70,11 @@ class ANT_Device_MultiScan(ANT_Device):
             return True
         try:
             self.channel.close()
-            time.sleep(wait)
+            self.channel.wait_for_event(
+                [
+                    0x07,
+                ]
+            )  # EVENT_CHANNEL_CLOSED
             self.set_null_value()
             self.isUse = False
             self.channel.enable_extended_messages(0)
@@ -178,4 +181,7 @@ class ANT_Device_MultiScan(ANT_Device):
         # Cadence
         elif antType in self.config.G_ANT["TYPES"]["CDC"]:
             if antIDType == self.config.G_ANT["ID_TYPE"]["CDC"]:
+                self.mainAntDevice[antIDType].on_data(data)
+        elif antType in self.config.G_ANT["TYPES"]["TEMP"]:
+            if antIDType == self.config.G_ANT["ID_TYPE"]["TEMP"]:
                 self.mainAntDevice[antIDType].on_data(data)
