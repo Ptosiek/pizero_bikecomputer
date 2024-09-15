@@ -363,6 +363,7 @@ class SensorI2C(Sensor):
 
         # battery
         self.available_sensors["BATTERY"]["PIJUICE"] = self.detect_battery_pijuice()
+        self.available_sensors["BATTERY"]["PISUGAR3"] = self.detect_battery_pisugar3()
 
         # print
         if not _SENSOR_I2C:
@@ -445,6 +446,7 @@ class SensorI2C(Sensor):
         self.timestamp_array[0:-1] = self.timestamp_array[1:]
         self.timestamp_array[-1] = self.values["timestamp"]
 
+        # battery
         if self.available_sensors["BATTERY"]["PIJUICE"]:
             bv = self.sensor_pijuice.status.GetBatteryVoltage()
             bc = self.sensor_pijuice.status.GetBatteryCurrent()
@@ -461,6 +463,9 @@ class SensorI2C(Sensor):
                 self.values["current_out"] = ic["data"] / 1000
             if bl["error"] == "NO_ERROR":
                 self.values["battery_percentage"] = bl["data"]
+        elif self.available_sensors["BATTERY"]["PISUGAR3"]:
+            self.sensor_pisugar3.read()
+            self.values["battery_percentage"] = self.sensor_pisugar3.battery_level
 
         self.read_light()
 
@@ -1526,6 +1531,18 @@ class SensorI2C(Sensor):
             res = self.sensor_pijuice.status.GetStatus()
             if res["error"] == "COMMUNICATION_ERROR":
                 return False
+            return True
+        except:
+            return False
+
+    def detect_battery_pisugar3(self):
+        try:
+            from .i2c.PiSugar3 import PiSugar3
+
+            # device test
+            if not PiSugar3.test():
+                return False
+            self.sensor_pisugar3 = PiSugar3()
             return True
         except:
             return False
