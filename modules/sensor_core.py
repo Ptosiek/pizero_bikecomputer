@@ -671,6 +671,5 @@ class SensorCore:
                 )
 
         v["w_prime_balance_normalized"] = round(
-            v["w_prime_balance"] / settings.POWER_W_PRIME * 100,
-            1
+            v["w_prime_balance"] / settings.POWER_W_PRIME * 100, 1
         )
