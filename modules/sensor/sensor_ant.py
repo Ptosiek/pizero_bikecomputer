@@ -272,16 +272,15 @@ class SensorANT(Sensor):
     def stop_continuous_scan(self):
         self.scanner.set_wait_quick_mode()
         self.scanner.stop_scan()
-        ant_id_types = []
+        ant_id_types = set()
 
         for k, v in self.config.G_ANT["USE"].items():
-            if v and not self.config.G_ANT["ID_TYPE"][k] in ant_id_types:
-                ant_id_types.append(self.config.G_ANT["ID_TYPE"][k])
-
-        for ant_id_type in ant_id_types:
-            self.device[ant_id_type].connect(
-                isCheck=True, isChange=False
-            )  # USE: True -> True
+            ant_id_type = self.config.G_ANT["ID_TYPE"][k]
+            if v and not ant_id_type in ant_id_types:
+                ant_id_types.add(ant_id_type)
+                self.device[ant_id_type].connect(
+                    isCheck=True, isChange=False
+                )  # USE: True -> True
 
         self.scanner.set_wait_normal_mode()
 
