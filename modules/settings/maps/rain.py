@@ -19,6 +19,7 @@ RAIN_OVERLAY_MAP_CONFIG = {
         "nowtime": None,
         "nowtime_func": datetime.now,  # local?
         "basetime": None,
+        "validtime": None,
         "time_interval": 10,  # [minutes]
         "update_minutes": 1,  # typically int(time_interval/2) [minutes]
         "time_format": "unix_timestamp",
