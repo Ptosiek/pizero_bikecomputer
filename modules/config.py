@@ -142,8 +142,6 @@ class Config:
     gui_config = None
     boot_time = 0
 
-    loaded_dem = None
-
     def __init__(self):
         if settings.DEBUG:
             app_logger.setLevel(logging.DEBUG)
@@ -561,37 +559,6 @@ class Config:
                 self.G_BT_ADDRESSES[self.G_BT_USE_ADDRESS]
             )
         return bool(res)
-
-    async def get_altitude_from_tile(self, pos):
-        if np.isnan(pos[0]) or np.isnan(pos[1]):
-            return np.nan
-
-        z = settings.CURRENT_DEM_MAP["fix_zoomlevel"]
-        f_x, f_y, p_x, p_y = get_tilexy_and_xy_in_tile(z, pos[0], pos[1], 256)
-        filename = get_maptile_filename(settings.DEM_MAP, z, f_x, f_y)
-
-        if not os.path.exists(filename):
-            await self.network.download_demtile(z, f_x, f_y)
-            return np.nan
-
-        if os.path.getsize(filename) == 0:
-            return np.nan
-
-        if self.loaded_dem != (f_x, f_y):
-            self.dem_array = np.asarray(Image.open(filename))
-            self.loaded_dem = (f_x, f_y)
-
-        rgb_pos = self.dem_array[p_y, p_x]
-        altitude = rgb_pos[0] * (2**16) + rgb_pos[1] * (2**8) + rgb_pos[2]
-
-        if altitude < 2**23:
-            altitude = altitude * 0.01
-        elif altitude == 2**23:
-            altitude = np.nan
-        else:
-            altitude = (altitude - 2**24) * 0.01
-
-        return altitude
 
     @staticmethod
     def get_courses():

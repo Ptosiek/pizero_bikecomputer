@@ -178,28 +178,3 @@ class Network:
                 )
 
         return True
-
-    @staticmethod
-    async def download_demtile(z, x, y):
-        if not detect_network():
-            return False
-
-        try:
-            os.makedirs(
-                f"maptile/{settings.DEM_MAP}/{z}/{x}/",
-                exist_ok=True,
-            )
-            await settings.DOWNLOAD_QUEUE.put(
-                {
-                    "urls": [
-                        settings.CURRENT_DEM_MAP["url"].format(z=z, x=x, y=y),
-                    ],
-                    "save_paths": [
-                        get_maptile_filename(settings, z, x, y),
-                    ],
-                }
-            )
-            return True
-        except:
-            traceback.print_exc()
-            return False

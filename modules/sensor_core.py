@@ -46,7 +46,6 @@ class SensorCore:
         "grade",
         "grade_spd",
         "glide_ratio",
-        "dem_altitude",
         "temperature",
         "cpu_percent",
         "send_time",
@@ -374,13 +373,6 @@ class SensorCore:
                         if dst_diff["ANT+"] > 0:
                             alt_diff_spd["ANT+"] = alt - pre_alt_spd["ANT+"]
                         pre_alt_spd["ANT+"] = alt
-                # dem_altitude
-                if settings.LOG_ALTITUDE_FROM_DATA_SOURCE:
-                    self.values["integrated"][
-                        "dem_altitude"
-                    ] = await self.config.get_altitude_from_tile(
-                        [v["GPS"]["lon"], v["GPS"]["lat"]]
-                    )
 
                 # grade (distance base)
                 if dst_diff["USE"] > 0:

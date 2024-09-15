@@ -227,7 +227,6 @@ class LoggerCore:
       humidity INTEGER,
       altitude FLOAT,
       course_altitude FLOAT,
-      dem_altitude FLOAT,
       heading INTEGER,
       motion INTEGER,
       acc_x FLOAT,
@@ -308,8 +307,6 @@ class LoggerCore:
 
     def start_and_stop_manual(self):
         time_str = datetime.now().strftime("%Y%m%d %H:%M:%S")
-        popup_extra = ""
-        pre_status = self.config.G_MANUAL_STATUS
 
         if self.config.G_MANUAL_STATUS != "START":
             self.config.display.screen_flash_short()
@@ -320,18 +317,6 @@ class LoggerCore:
                 self.config.gui.change_start_stop_button(self.config.G_MANUAL_STATUS)
             if self.values["start_time"] is None:
                 self.values["start_time"] = int(datetime.utcnow().timestamp())
-
-            if pre_status == "INIT" and not np.isnan(
-                self.sensor.values["integrated"]["dem_altitude"]
-            ):
-                asyncio.create_task(
-                    self.sensor.sensor_i2c.update_sealevel_pa(
-                        self.sensor.values["integrated"]["dem_altitude"]
-                    )
-                )
-                popup_extra = "<br />altitude corrected: {}m".format(
-                    int(self.sensor.values["integrated"]["dem_altitude"])
-                )
 
         elif self.config.G_MANUAL_STATUS == "START":
             self.config.display.screen_flash_long()
@@ -346,7 +331,7 @@ class LoggerCore:
         )
 
         # show message
-        self.config.gui.show_popup(self.config.G_MANUAL_STATUS + popup_extra)
+        self.config.gui.show_popup(self.config.G_MANUAL_STATUS)
 
     def start_and_stop(self, status=None):
         if status is not None:
@@ -663,7 +648,6 @@ class LoggerCore:
                 self.sensor.values["I2C"]["humidity"],
                 self.sensor.values["I2C"]["altitude"],
                 self.course.index.altitude,
-                value["dem_altitude"],
                 self.sensor.values["I2C"]["heading"],
                 self.sensor.values["I2C"]["m_stat"],
                 # self.sensor.values['I2C']['acc'][0],

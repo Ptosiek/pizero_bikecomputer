@@ -264,16 +264,6 @@ class Course:
             if len(self.altitude) == len(modified_altitude):
                 self.altitude = modified_altitude
 
-            # experimental code
-            # np.savetxt('log/course_altitude.csv', self.altitude, fmt='%.3f')
-            # np.savetxt('log/course_distance.csv', self.distance, fmt='%.3f')
-
-            # output dem altitude
-            # alt_dem = np.zeros(len(self.altitude))
-            # for i in range(len(self.altitude)):
-            #  alt_dem[i] = self.config.get_altitude_from_tile([self.longitude[i], self.latitude[i]])
-            # np.savetxt('log/course_altitude_dem.csv', alt_dem, fmt='%.3f')
-
         diff_dist_max = int(np.max(dist_diff)) * 2 / 1000  # [m->km]
         if diff_dist_max > settings.GPS_SEARCH_RANGE:  # [km]
             app_logger.debug(

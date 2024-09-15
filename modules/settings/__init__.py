@@ -12,7 +12,6 @@ import numpy as np
 from logger import app_logger
 
 from .maps import (
-    DEM_MAP_CONFIG,
     MAP_CONFIG,
     HEATMAP_OVERLAY_MAP_CONFIG,
     RAIN_OVERLAY_MAP_CONFIG,
@@ -133,9 +132,6 @@ class SettingsNamespace:
     LOG_WRITE_CSV = True
     LOG_WRITE_FIT = True
 
-    # log several altitudes (from DEM and course file)
-    LOG_ALTITUDE_FROM_DATA_SOURCE = False
-
     # asyncio semaphore and queues
     COROUTINE_SEM = 100
     DOWNLOAD_QUEUE = asyncio.Queue()
@@ -224,14 +220,12 @@ class SettingsNamespace:
 
     # default maps
     MAP = "wikimedia"  # settings.conf
-    DEM_MAP = "jpn_kokudo_chiri_in_DEM5A"
     HEATMAP_OVERLAY_MAP = "rwg_heatmap"
     RAIN_OVERLAY_MAP = "rainviewer"
     WIND_OVERLAY_MAP = "openportguide"
 
     MAP_CONFIG = MAP_CONFIG
 
-    DEM_MAP_CONFIG = DEM_MAP_CONFIG
     HEATMAP_OVERLAY_MAP_CONFIG = HEATMAP_OVERLAY_MAP_CONFIG
     RAIN_OVERLAY_MAP_CONFIG = RAIN_OVERLAY_MAP_CONFIG
     WIND_OVERLAY_MAP_CONFIG = WIND_OVERLAY_MAP_CONFIG
@@ -260,10 +254,6 @@ class SettingsNamespace:
     @property
     def CURRENT_MAP(self):
         return self.MAP_CONFIG[self.MAP]
-
-    @property
-    def CURRENT_DEM_MAP(self):
-        return self.DEM_MAP_CONFIG[self.DEM_MAP]
 
     @property
     def WHEEL_CIRCUMFERENCE_M(self):

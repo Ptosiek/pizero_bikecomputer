@@ -13,9 +13,6 @@ def check_map_dir():
     if not settings.CURRENT_MAP.get("use_mbtiles"):
         os.makedirs(os.path.join("maptile", settings.MAP), exist_ok=True)
 
-    if settings.LOG_ALTITUDE_FROM_DATA_SOURCE:
-        os.makedirs(os.path.join("maptile", settings.DEM_MAP), exist_ok=True)
-
 
 def get_maptile_filename(map_name, z, x, y, basetime=None, validtime=None):
     if basetime and validtime:
