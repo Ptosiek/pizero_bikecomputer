@@ -1,4 +1,3 @@
-import time
 import datetime
 import random
 import struct
@@ -165,7 +164,7 @@ class SensorANT(Sensor):
         if not self.scanner.stop():
             for dv in self.device.values():
                 dv.ant_state = "quit"
-                dv.disconnect(isCheck=True, isChange=False, wait=0)  # USE: True -> True
+                dv.disconnect(isCheck=True, isChange=False)  # USE: True -> True
             self.searcher.stop_search(resetWait=False)
         self.node.stop()
 
@@ -265,9 +264,8 @@ class SensorANT(Sensor):
         self.scanner.set_wait_quick_mode()
         for dv in self.device.values():
             dv.ant_state = "continuous_scan"
-            dv.disconnect(isCheck=True, isChange=False, wait=0.5)  # USE: True -> True
+            dv.disconnect(isCheck=True, isChange=False)  # USE: True -> True
 
-        time.sleep(0.5)
         self.scanner.set_wait_scan_mode()
         self.scanner.scan()
 
@@ -287,31 +285,14 @@ class SensorANT(Sensor):
 
         self.scanner.set_wait_normal_mode()
 
-    def set_light_mode(self, mode, auto=False):
+    def set_light_mode(self, mode, auto=False, auto_id=None):
         if "LGT" not in self.config.G_ANT["USE"] or not self.config.G_ANT["USE"]["LGT"]:
             return
 
-        if mode == "OFF":
-            self.device[
-                self.config.G_ANT["ID_TYPE"]["LGT"]
-            ].send_light_setting_light_off(auto)
-        elif mode == "FLASH_LOW":
-            self.device[
-                self.config.G_ANT["ID_TYPE"]["LGT"]
-            ].send_light_setting_flash_low(auto)
-        elif mode == "FLASH_HIGH":
-            self.device[
-                self.config.G_ANT["ID_TYPE"]["LGT"]
-            ].send_light_setting_flash_high(auto)
-        elif mode == "STEADY_HIGH":
-            self.device[
-                self.config.G_ANT["ID_TYPE"]["LGT"]
-            ].send_light_setting_steady_high(auto)
-        elif mode == "STEADY_MID":
-            self.device[
-                self.config.G_ANT["ID_TYPE"]["LGT"]
-            ].send_light_setting_steady_mid(auto)
-        elif mode == "ON_OFF_FLASH_LOW":
-            self.device[
-                self.config.G_ANT["ID_TYPE"]["LGT"]
-            ].send_light_setting_light_off_flash_low(auto)
+        if auto and (
+            not settings.USE_AUTO_LIGHT or self.config.G_MANUAL_STATUS != "START"
+        ):
+            return
+        self.device[self.config.G_ANT["ID_TYPE"]["LGT"]].send_light_mode(
+            mode, auto, auto_id
+        )

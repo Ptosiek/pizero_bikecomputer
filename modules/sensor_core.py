@@ -63,6 +63,9 @@ class SensorCore:
     }  # valid period of sensor [sec]
     grade_range = 9
     grade_window_size = 5
+    brakelight_spd = []
+    brakelight_spd_range = 4
+    brakelight_spd_cutoff = 4  # 4*3.6 = 14.4 [km/h]
     graph_keys = [
         "hr_graph",
         "power_graph",
@@ -93,6 +96,7 @@ class SensorCore:
             ] * settings.GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE
         for d in self.diff_keys:
             self.values["integrated"][d] = [np.nan] * self.grade_range
+        self.brakelight_spd = [0] * self.brakelight_spd_range
         self.values["integrated"]["CPU_MEM"] = ""
 
         for s in self.average_secs:
@@ -525,15 +529,32 @@ class SensorCore:
                 ):
                     if v["I2C"]["light"] <= settings.AUTO_BACKLIGHT_CUTOFF:
                         self.config.display.set_brightness(3)
-
-                        if self.config.G_MANUAL_STATUS == "START":
-                            self.sensor_ant.set_light_mode("FLASH_LOW", auto=True)
-
+                        self.sensor_ant.set_light_mode(
+                            "FLASH_LOW", auto=True, auto_id="auto_backlight"
+                        )
                     else:
                         self.config.display.set_brightness(0)
+                        self.sensor_ant.set_light_mode(
+                            "OFF", auto=True, auto_id="auto_backlight"
+                        )
 
-                        if self.config.G_MANUAL_STATUS == "START":
-                            self.sensor_ant.set_light_mode("OFF", auto=True)
+                # break light
+                self.brakelight_spd[:-1] = self.brakelight_spd[1:]
+                self.brakelight_spd[-1] = self.values["integrated"]["speed"]
+                if all(
+                    (s < self.brakelight_spd_cutoff for s in self.brakelight_spd)
+                ) or (
+                    self.values["integrated"]["speed"] > self.brakelight_spd_cutoff
+                    and self.brakelight_spd[0] - self.brakelight_spd[-1]
+                    > self.brakelight_spd[0] * 0.1
+                ):
+                    self.sensor_ant.set_light_mode(
+                        "FLASH_LOW", auto=True, auto_id="break_light"
+                    )
+                else:
+                    self.sensor_ant.set_light_mode(
+                        "OFF", auto=True, auto_id="break_light"
+                    )
 
                 # cpu and memory
                 if _IMPORT_PSUTIL:

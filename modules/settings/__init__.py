@@ -105,6 +105,9 @@ class SettingsNamespace:
     # 700x23c: 2096, 700x25c: 2105, 700x28c: 2136
     WHEEL_CIRCUMFERENCE = 2105
 
+    # auto light: brightness sensor and brake(speed(ANT+/GPS))
+    USE_AUTO_LIGHT = False
+
     # W'bal
     POWER_CP = 150
     POWER_W_PRIME = 15000
@@ -205,7 +208,7 @@ class SettingsNamespace:
     # gross average speed (in setting.conf)
     GROSS_AVE_SPEED = 15  # [km/h]
 
-    # Auto Pause Cutoff [m/s] (in setting.conf)
+    # auto pause cutoff [m/s] (in setting.conf)
     AUTOSTOP_CUTOFF = 4.0 * 1000 / 3600
 
     # GPS speed cutoff (the distance in 1 seconds at 0.36km/h is 10cm)
