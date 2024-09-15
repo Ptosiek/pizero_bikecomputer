@@ -23,9 +23,6 @@ except Exception:  # noqa
     except:
         pass
 
-if _SENSOR_GPS_GPSD:
-    app_logger.info("GPS")
-
 
 class GPSD(AbstractSensorGPS):
     gps_thread = None

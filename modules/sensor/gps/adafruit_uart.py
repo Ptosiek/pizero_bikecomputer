@@ -1,6 +1,5 @@
 import asyncio
 
-from logger import app_logger
 from .base import AbstractSensorGPS
 
 
@@ -17,9 +16,6 @@ except:
         _uart.close()
     except:
         pass
-
-if _SENSOR_GPS_ADAFRUIT_UART:
-    app_logger.info("GPS_ADAFRUIT_UART")
 
 
 class Adafruit_GPS(AbstractSensorGPS):

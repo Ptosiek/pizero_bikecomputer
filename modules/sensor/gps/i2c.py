@@ -17,10 +17,6 @@ except Exception:  # noqa
     app_logger.exception("Failed to init GPS_I2C")
 
 
-if _SENSOR_GPS_I2C:
-    app_logger.info("GPS_I2C")
-
-
 class GPS_I2C(AbstractSensorGPS):
     NULL_VALUE = None
 
