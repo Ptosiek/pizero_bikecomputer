@@ -204,8 +204,9 @@ class Course:
         with timers[3]:
             self.modify_course_points()
 
-        app_logger.info("[logger] Loading course:")
-        log_timers(timers, text_total="total               : {0:.3f} sec")
+        if self.is_set:
+            app_logger.info("[logger] Loading course:")
+            log_timers(timers, text_total="total               : {0:.3f} sec")
 
     def downsample(self):
         len_lat = len(self.latitude)
