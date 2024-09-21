@@ -87,12 +87,6 @@ class Display:
     def set_brightness(self, b):
         pass
 
-    def change_color_low(self):
-        pass
-
-    def change_color_high(self):
-        pass
-
 
 def detect_display():
     hatdir = "/proc/device-tree/hat"

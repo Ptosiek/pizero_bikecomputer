@@ -111,7 +111,6 @@ class GUI_PyQt(QtCore.QObject):
     signal_start_and_stop_manual = QtCore.pyqtSignal()
     signal_count_laps = QtCore.pyqtSignal()
     signal_boot_status = QtCore.pyqtSignal(str)
-    signal_draw_display = QtCore.pyqtSignal()
 
     # for draw_display
     image_format = None
@@ -206,8 +205,6 @@ class GUI_PyQt(QtCore.QObject):
                 self.start_and_stop_manual_internal
             )
             self.signal_count_laps.connect(self.count_laps_internal)
-
-            self.signal_draw_display.connect(self.draw_display)
 
             self.msg_queue = asyncio.Queue()
             self.msg_event = asyncio.Event()
@@ -596,14 +593,6 @@ class GUI_PyQt(QtCore.QObject):
 
         if self.course_profile_graph_widget is not None:
             self.course_profile_graph_widget.init_course()
-
-    def change_color_low(self):
-        self.config.display.change_color_low()
-        self.signal_draw_display.emit()
-
-    def change_color_high(self):
-        self.config.display.change_color_high()
-        self.signal_draw_display.emit()
 
     def scroll(self, delta):
         mod_index = (
