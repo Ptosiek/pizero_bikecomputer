@@ -57,10 +57,7 @@ class MenuButton(QtWidgets.QPushButton):
         self.config = config
         self.button_type = button_type
 
-        self.setSizePolicy(
-            QT_EXPANDING,
-            QT_EXPANDING,
-        )
+        self.setSizePolicy(QT_EXPANDING, QT_EXPANDING)
         self.setStyleSheet(self.STYLES)
 
         if icon:
@@ -100,12 +97,13 @@ class MenuButton(QtWidgets.QPushButton):
         self.setProperty("style", None)
 
     def resizeEvent(self, event):
-        # w = self.size().width()
-        h = self.size().height()
-        psize = int(h / 2.5) if int(h / 2.5) > 0 else 1
+        short_side_length = min(self.size().height(), self.size().width())
+
+        if short_side_length < 3:
+            return
 
         q = self.font()
-        q.setPixelSize(psize)
+        q.setPixelSize(int(short_side_length / 2.5))
         self.setFont(q)
 
     def focusInEvent(self, event):

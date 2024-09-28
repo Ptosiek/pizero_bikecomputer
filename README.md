@@ -168,19 +168,19 @@ In Japan, [気象庁降水ナウキャスト](https://www.jma.go.jp/bosai/nowc/)
 
 ## GUI
 
-| Specs | Detail | Note |
-|:-|:-|:-|
-| Basic page(values only) | Yes |  |
+| Specs | Detail | Note                                               |
+|:-|:-|:---------------------------------------------------|
+| Basic page(values only) | Yes |                                                    |
 | Graph | Yes | Altitude and performance(HR, PWR, W prime balance) |
-| Customize data pages | Yes | With layout.yaml |
-| ANT+ pairing | Yes |  |
-| Select course | Yes | local .tcx file and Ride with GPS. |
-| Upload activity | Yes | Strava, Garmin and Ride with GPS. |
-| Select map | Yes | maps and overlays(heatmap and weather) |
-| Adjust parameter | Yes | wheel size, altitude, CP and W prime balance |
-| Network setting | Yes | Toggle wifi and BT, BT tethering. |
-| Language localization | Yes | Font and translation file of items are required. |
-| No GUI option | Yes | headless mode |
+| Customize data pages | Yes | With layout.yaml                         |
+| ANT+ pairing | Yes |                                                    |
+| Select course | Yes | local .tcx file and Ride with GPS.                 |
+| Upload activity | Yes | Strava, Garmin and Ride with GPS.                  |
+| Select map | Yes | maps and overlays(heatmap and weather)             |
+| Adjust parameter | Yes | wheel size, altitude, CP and W prime balance       |
+| Network setting | Yes | Toggle wifi and BT, BT tethering.                  |
+| Language localization | Yes | Font and translation file of items are required.   |
+| No GUI option | Yes | headless mode                                      |
 
 
 ### Performance graph

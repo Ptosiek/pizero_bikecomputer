@@ -1,6 +1,8 @@
 import os
 import shutil
 
+from PIL import Image, ImageEnhance, ImageQt
+
 from modules._pyqt import (
     QT_ALIGN_CENTER,
     QtCore,
@@ -230,19 +232,25 @@ class CourseDetailWidget(MenuWidget):
             bottom_flag=False,
         )
 
-        info_layout = QtWidgets.QVBoxLayout()
-        info_layout.setContentsMargins(0, 0, 0, 0)
-        info_layout.setSpacing(0)
-
         outer_layout = QtWidgets.QHBoxLayout()
         outer_layout.setContentsMargins(0, 0, 0, 0)
         outer_layout.setSpacing(0)
 
-        info_layout.addLayout(self.distance_item)
-        info_layout.addLayout(self.ascent_item)
+        if not self.is_vertical:
+            info_layout = QtWidgets.QVBoxLayout()
+            info_layout.setContentsMargins(0, 0, 0, 0)
+            info_layout.setSpacing(0)
 
-        outer_layout.addWidget(self.map_image)
-        outer_layout.addLayout(info_layout)
+            info_layout.addLayout(self.distance_item)
+            info_layout.addLayout(self.ascent_item)
+
+            outer_layout.addWidget(self.map_image)
+            outer_layout.addLayout(info_layout)
+
+        else:
+            self.menu_layout.addWidget(self.map_image)
+            outer_layout.addLayout(self.distance_item)
+            outer_layout.addLayout(self.ascent_item)
 
         self.menu_layout.addLayout(outer_layout)
         self.menu_layout.addWidget(self.profile_image)
@@ -333,35 +341,50 @@ class CourseDetailWidget(MenuWidget):
             filename = os.path.join(
                 settings.RWGS_ROUTE_DOWNLOAD_DIR, f"preview-{self.list_id}.png"
             )
+
+            if not os.path.exists(filename):
+                return
+
+            im = Image.open(filename).convert("RGBA")
+            im = ImageEnhance.Contrast(im).enhance(2.0)
+
             if self.map_image_size is None:
-                self.map_image_size = QtGui.QImage(filename).size()
-            if self.map_image_size.width() == 0:
+                self.map_image_size = Image.open(filename).size  # tuple (w, h)
+            if self.map_image_size[0] == 0 or self.map_image_size[1] == 0:
                 return False
-            scale = (self.menu.width() / 2) / self.map_image_size.width()
-            map_image_qsize = QtCore.QSize(
-                int(self.map_image_size.width() * scale),
-                int(self.map_image_size.height() * scale),
+
+            ratio = 1 if self.is_vertical else 0.5
+
+            scale = (self.size().width() * ratio) / self.map_image_size[0]
+            im = im.resize(
+                (
+                    int(self.map_image_size[0] * scale),
+                    int(self.map_image_size[1] * scale),
+                )
             )
-            self.map_image.setPixmap(QtGui.QIcon(filename).pixmap(map_image_qsize))
+            self.map_image.setPixmap(QtGui.QPixmap.fromImage(ImageQt.ImageQt(im)))
 
         if draw_profile_image:
             filename = os.path.join(
                 settings.RWGS_ROUTE_DOWNLOAD_DIR,
                 f"elevation_profile-{self.list_id}.jpg",
             )
+
+            im = Image.open(filename).convert("RGBA")
             if self.profile_image_size is None:
-                self.profile_image_size = QtGui.QImage(filename).size()
-            if self.profile_image_size.width() == 0:
+                self.profile_image_size = Image.open(filename).size  # tuple (w, h)
+            if self.profile_image_size[0] == 0 or self.profile_image_size[1] == 0:
                 return False
 
-            scale = self.menu.width() / self.profile_image_size.width()
-            profile_image_qsize = QtCore.QSize(
-                int(self.profile_image_size.width() * scale),
-                int(self.profile_image_size.height() * scale),
+            scale = self.size().width() / self.profile_image_size[0]
+            im = im.resize(
+                (
+                    int(self.profile_image_size[0] * scale),
+                    int(self.profile_image_size[1] * scale),
+                )
             )
-            self.profile_image.setPixmap(
-                QtGui.QIcon(filename).pixmap(profile_image_qsize)
-            )
+            self.profile_image.setPixmap(QtGui.QPixmap.fromImage(ImageQt.ImageQt(im)))
+
         return True
 
     def set_font_size(self, init=False):

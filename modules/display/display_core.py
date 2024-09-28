@@ -42,7 +42,16 @@ class Display:
 
     @property
     def resolution(self):
-        return getattr(self, "size", DEFAULT_RESOLUTION)
+        horizontal_resolution = getattr(self, "size", DEFAULT_RESOLUTION)
+        if settings.VERTICAL:
+            return horizontal_resolution[::-1]
+        else:
+            return horizontal_resolution
+
+    @property
+    def vertical(self):
+        r1, r2 = self.resolution
+        return r1 < r2
 
     def start_coroutine(self):
         pass

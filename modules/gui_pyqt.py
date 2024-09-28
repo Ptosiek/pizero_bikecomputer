@@ -380,7 +380,6 @@ class GUI_PyQt(QtCore.QObject):
                         k == "CUESHEET"
                         and self.config.logger.course.course_points.is_set
                         and settings.COURSE_INDEXING
-                        and settings.CUESHEET_DISPLAY_NUM
                     ):
                         self.cuesheet_widget = CueSheetWidget(
                             self.main_page, self.config

@@ -1,3 +1,4 @@
+from logger import app_logger
 from modules._pyqt import (
     QT_ALIGN_LEFT,
     QT_KEY_SPACE,
@@ -29,6 +30,10 @@ class MenuWidget(QtWidgets.QWidget):
 
     icon_x = 40
     icon_y = 32
+
+    @property
+    def is_vertical(self):
+        return self.parent().size().height() > self.parent().size().width()
 
     def __init__(self, parent, page_name, config):
         QtWidgets.QWidget.__init__(self, parent=parent)
@@ -76,11 +81,13 @@ class MenuWidget(QtWidgets.QWidget):
 
     def add_buttons(self, buttons):
         n = len(buttons)
+        vertical = self.is_vertical
 
-        if n <= 4:
+        if n <= 4 or vertical:
             layout_type = QtWidgets.QVBoxLayout
         else:
             layout_type = QtWidgets.QGridLayout
+
         self.make_menu_layout(layout_type)
 
         i = 0
@@ -106,8 +113,11 @@ class MenuWidget(QtWidgets.QWidget):
 
         # add dummy button
         # TODO we should remove this but that's for later
-        if n in (1, 2, 3):
+        if not vertical and n in (1, 2, 3):
             for j in range(4 - n):
+                self.menu_layout.addWidget(MenuButton("dummy", "", self.config))
+        elif vertical:
+            for j in range(self.menu_layout.count(), 8):
                 self.menu_layout.addWidget(MenuButton("dummy", "", self.config))
 
         # set first focus
@@ -118,12 +128,16 @@ class MenuWidget(QtWidgets.QWidget):
         pass
 
     def resizeEvent(self, event):
-        # w = self.size().width()
         h = self.size().height()
-        self.top_bar.setFixedHeight(int(h / 5))
+        w = self.size().width()
+
+        rows = 9 if h > w else 5
+        short_side_length = min(h, w)
+
+        self.top_bar.setFixedHeight(int(h / rows))
 
         q = self.page_name_label.font()
-        q.setPixelSize(int(h / 12))
+        q.setPixelSize(int(short_side_length / 12))
         self.page_name_label.setFont(q)
 
     def connect_buttons(self):
@@ -233,7 +247,8 @@ class ListWidget(MenuWidget):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        h = int((self.height() - self.top_bar.height()) / 4)
+        rows = 8 if self.is_vertical else 4
+        h = int((self.height() - self.top_bar.height()) / rows)
         self.size_hint = QtCore.QSize(self.top_bar.width(), h)
         for i in range(self.list.count()):
             self.list.item(i).setSizeHint(self.size_hint)
@@ -335,10 +350,11 @@ class ListItemWidget(QtWidgets.QWidget):
         label.setFont(q)
 
     def resizeEvent(self, event):
-        h = self.size().height()
-        self.resize_label(self.title_label, int(h * 0.45))
+        short_side_length = min(self.size().height(), self.size().width())
+        self.resize_label(self.title_label, int(short_side_length * 0.45))
+
         if self.detail:
-            self.resize_label(self.detail_label, int(h * 0.4))
+            self.resize_label(self.detail_label, int(short_side_length * 0.4))
 
 
 class UploadActivityMenuWidget(MenuWidget):

@@ -97,13 +97,8 @@ class CueSheetItem(QtWidgets.QVBoxLayout):
 
 
 class CueSheetWidget(ScreenWidget):
-    STYLES = """
-      border-color: #000000;
-      border-style: solid;
-      border-width: 0px 0px 0px 1px;
-    """
-
     cuesheet = None
+    display_num = None
     layout_class = QtWidgets.QVBoxLayout
 
     def set_font_size(self, length):
@@ -111,9 +106,10 @@ class CueSheetWidget(ScreenWidget):
 
     def setup_ui_extra(self):
         self.cuesheet = []
-        self.setStyleSheet(self.STYLES)
 
-        for i in range(settings.CUESHEET_DISPLAY_NUM):
+        self.display_num = 5 if settings.VERTICAL else 3
+
+        for i in range(self.display_num):
             cuesheet_point_layout = CueSheetItem(self, self.config)
             self.cuesheet.append(cuesheet_point_layout)
             self.layout.addLayout(cuesheet_point_layout)
@@ -123,14 +119,14 @@ class CueSheetWidget(ScreenWidget):
             elem.reset()
 
     def resizeEvent(self, event):
-        h = self.size().height()
-        self.set_font_size(h)
+        self.set_font_size(min(self.size().height(), self.size().width()))
+
         for i in self.cuesheet:
             i.update_font_size(int(self.font_size))  # for 3 rows
 
     @qasync.asyncSlot()
     async def update_display(self):
-        if not self.course_points.is_set or not settings.CUESHEET_DISPLAY_NUM:
+        if not self.course_points.is_set:
             return
 
         cp_i = self.course.index.course_points_index

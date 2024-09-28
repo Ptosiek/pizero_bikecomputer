@@ -202,7 +202,7 @@ class MapWidget(BaseMapWidget):
         # init cuesheet_widget
         if (
             self.config.logger.course.course_points.is_set
-            and settings.CUESHEET_DISPLAY_NUM
+            and settings.CUESHEET_DISPLAY_ON_MAP
             and settings.COURSE_INDEXING
         ):
             if self.cuesheet_widget is None:
@@ -223,7 +223,7 @@ class MapWidget(BaseMapWidget):
     def resizeEvent(self, event):
         if (
             not self.course_points.is_set
-            or not settings.CUESHEET_DISPLAY_NUM
+            or not settings.CUESHEET_DISPLAY_ON_MAP
             or not settings.COURSE_INDEXING
         ):
             self.map_cuesheet_ratio = 1.0
@@ -919,7 +919,7 @@ class MapWidget(BaseMapWidget):
     ):
         if (
             not self.course_points.is_set
-            or not settings.CUESHEET_DISPLAY_NUM
+            or not settings.CUESHEET_DISPLAY_ON_MAP
             or not settings.COURSE_INDEXING
         ):
             return

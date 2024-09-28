@@ -5,15 +5,26 @@ from modules.pyqt.pyqt_screen_widget import ScreenWidget
 from modules.settings import settings
 
 
-class PerformanceGraphWidget(ScreenWidget):
-    item_layout = {
-        "Power": (0, 0),
-        "HR": (0, 1),
-        "W'bal(Norm)": (0, 2),
-        "LapTime": (0, 3),
-    }
-    max_height = 1
-    max_width = 3
+class GraphWidget(ScreenWidget):
+    def __init__(self, parent, config):
+        self.item_layout = {}
+
+        cols = 2 if config.display.vertical else 4
+
+        for i, e in enumerate(self.elements):
+            self.item_layout[e] = (i // cols, i % cols)
+
+        max_height = len(self.elements) // cols
+
+        # self.item_layout[self.__class__.__name__] = (max_height, 0, -1, -1)
+        self.plot_x = 0
+        self.plot_y = max_height
+
+        ScreenWidget.__init__(self, parent, config, self.item_layout)
+
+
+class PerformanceGraphWidget(GraphWidget):
+    elements = ("Power", "HR", "W'bal(Norm)", "LapTime")
 
     # for Power
     # brush = pg.mkBrush(color=(0,160,255,64))
@@ -43,6 +54,7 @@ class PerformanceGraphWidget(ScreenWidget):
             },
         }
         self.plot_data_x1 = []
+
         for i in range(settings.GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE + 1):
             self.plot_data_x1.append(i)
 
@@ -72,7 +84,7 @@ class PerformanceGraphWidget(ScreenWidget):
         # p2 on p1
         self.p1.setZValue(-100)
 
-        self.layout.addWidget(plot, 1, 0, 2, 4)
+        self.layout.addWidget(plot, self.plot_y, self.plot_x, -1, -1)
 
     def set_font_size(self, length):
         self.font_size = int(length / 7)
@@ -141,15 +153,8 @@ class PerformanceGraphWidget(ScreenWidget):
             )
 
 
-class AccelerationGraphWidget(ScreenWidget):
-    item_layout = {
-        "ACC_X": (0, 0),
-        "ACC_Y": (0, 1),
-        "ACC_Z": (0, 2),
-        "M_Stat": (0, 3),
-    }
-    max_height = 1
-    max_width = 3
+class AccelerationGraphWidget(GraphWidget):
+    elements = ("ACC_X", "ACC_Y", "ACC_Z", "M_Stat")
 
     # for acc
     pen1 = pg.mkPen(color=(0, 0, 255), width=3)
@@ -233,25 +238,18 @@ class AccelerationGraphWidget(ScreenWidget):
             self.p3.addItem(p)
 
 
-class AltitudeGraphWidget(ScreenWidget):
-    item_layout = {
-        "Grade": (0, 0),
-        "Grade(spd)": (0, 1),
-        "Altitude": (0, 2),
-        "Alt.(GPS)": (0, 3),
-    }
-    max_height = 1
-    max_width = 3
+class AltitudeGraphWidget(GraphWidget):
+    elements = ("Grade", "Grade(spd)", "Altitude", "Alt.(GPS)")
 
     # for altitude_raw
     pen1 = pg.mkPen(color=(0, 0, 0), width=2)
     pen2 = pg.mkPen(color=(255, 0, 0), width=3)
 
-    # def __init__(self, parent, config):
-    #     super().__init__(parent, config)
-    #     self.plot_data_x1 = []
-    #     for i in range(settings.GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE):
-    #       self.plot_data_x1.append(i)
+    def __init__(self, parent, config):
+        super().__init__(parent, config)
+        self.plot_data_x1 = []
+        for i in range(settings.GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE):
+            self.plot_data_x1.append(i)
 
     def setup_ui_extra(self):
         plot = pg.PlotWidget()

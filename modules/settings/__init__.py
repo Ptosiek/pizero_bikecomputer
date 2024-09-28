@@ -74,6 +74,7 @@ class SettingsNamespace:
     FULLSCREEN = False
     HEADLESS = False
     LAYOUT_FILE = "layout.yaml"
+    VERTICAL = False
 
     #######################
     # configurable values #
@@ -156,7 +157,7 @@ class SettingsNamespace:
     # courses
     COURSE_DIR = "courses"
     COURSE_FILE_PATH = os.path.join(COURSE_DIR, ".current")
-    CUESHEET_DISPLAY_NUM = 3  # max: 5
+    CUESHEET_DISPLAY_ON_MAP = True
     CUESHEET_SCROLL = False
 
     # Graph color by slope
@@ -313,6 +314,7 @@ class SettingsNamespace:
         parser.add_argument("--headless", action="store_true", default=False)
         parser.add_argument("--layout")
         parser.add_argument("--version", action="version", version="%(prog)s 0.1")
+        parser.add_argument("--vertical", action="store_true", default=False)
 
         args = parser.parse_args()
 
@@ -326,6 +328,8 @@ class SettingsNamespace:
             self.update_setting("LAYOUT_FILE", args.layout)
         if args.headless:
             self.update_setting("HEADLESS", True)
+        if args.vertical:
+            self.update_setting("VERTICAL", True)
 
     def load_settings_from_file(self, filename):
         cf = self.config_parser

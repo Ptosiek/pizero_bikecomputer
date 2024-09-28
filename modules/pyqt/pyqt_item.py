@@ -2,6 +2,7 @@ import time
 
 import numpy as np
 
+from logger import app_logger
 from modules._pyqt import QT_ALIGN_CENTER, QtWidgets
 
 
@@ -55,6 +56,9 @@ class Item(QtWidgets.QVBoxLayout):
     value = None
     name = ""
 
+    font_size_unit = 0
+    font_size_unit_set = False
+
     def __init__(self, config, name, font_size, bottom_flag, right_flag, *args):
         super().__init__(*args)
         self.config = config
@@ -66,7 +70,7 @@ class Item(QtWidgets.QVBoxLayout):
         self.label = ItemLabel(right_flag, name)
         self.value = ItemValue(right_flag, bottom_flag)
 
-        self.itemformat = self.config.gui.gui_config.G_ITEM_DEF[name][0]
+        self.item_format = self.config.gui.gui_config.G_ITEM_DEF[name][0]
 
         self.addWidget(self.label)
         self.addWidget(self.value)
@@ -75,40 +79,25 @@ class Item(QtWidgets.QVBoxLayout):
         self.update_value(np.nan)
 
     def update_value(self, value):
-        if value is None:
-            self.value.setText("-")
-        elif isinstance(value, str):
-            self.value.setText(value)
-        elif np.isnan(value):
-            self.value.setText("-")
-        elif self.name.startswith("Speed"):
-            self.value.setText(self.itemformat.format(value * 3.6))  # m/s to km/h
-        elif "SPD" in self.name:
-            self.value.setText(self.itemformat.format(value * 3.6))  # m/s to km/h
-        elif "Dist" in self.name:
-            self.value.setText(self.itemformat.format(value / 1000))  # m to km
-        elif "DIST" in self.name:
-            self.value.setText(self.itemformat.format(value / 1000))  # m to km
-        elif "Work" in self.name:
-            self.value.setText(self.itemformat.format(value / 1000))  # j to kj
-        elif "WRK" in self.name:
-            self.value.setText(self.itemformat.format(value / 1000))  # j to kj
-        elif (
-            "Grade" in self.name or "Glide" in self.name
-        ) and self.config.G_STOPWATCH_STATUS != "START":
-            self.value.setText("-")
-        elif self.itemformat == "timer":
-            # fmt = '%H:%M:%S' #default (too long)
-            fmt = "%H:%M"
-            if value < 3600:
-                fmt = "%M:%S"
-            self.value.setText(time.strftime(fmt, time.gmtime(value)))
-        elif self.itemformat == "time":
-            self.value.setText(time.strftime("%H:%M"))
-        else:
-            self.value.setText(self.itemformat.format(value))
+        formatted_value = self.item_format.format_text(value)
+
+        if self.item_format.unit:
+            if self.font_size_unit_set:
+                formatted_unit = f"<span style='font-size: {self.font_size_unit}px;'> {self.item_format.unit}</span>"
+            else:
+                formatted_unit = f"<font size=small> {self.item_format.unit}</font>"
+
+            formatted_value = f"{formatted_value} {formatted_unit}"
+
+        self.value.setText(formatted_value)
 
     def update_font_size(self, font_size):
+        # wait one 'refresh cycle' before setting the font size for unit
+        if not self.font_size_unit_set and self.font_size_unit != 0:
+            self.font_size_unit_set = True
+
+        self.font_size_unit = int(font_size * 0.7)
+
         for text, fsize in zip(
             [self.label, self.value], [int(font_size * 0.66), font_size]
         ):

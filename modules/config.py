@@ -6,10 +6,6 @@ import shutil
 from datetime import datetime
 from glob import glob
 
-import numpy as np
-from PIL import Image
-
-
 from logger import CustomRotatingFileHandler, app_logger
 from modules.config_parser import ConfParser
 from modules.button_config import Button_Config
@@ -20,11 +16,7 @@ from modules.utils.cmd import (
     is_running_as_service,
 )
 from modules.settings import settings
-from modules.utils.map import (
-    check_map_dir,
-    get_maptile_filename,
-    get_tilexy_and_xy_in_tile,
-)
+from modules.utils.map import check_map_dir
 from modules.utils.timer import Timer
 
 BOOT_FILE = "/boot/config.txt"
