@@ -10,7 +10,6 @@
   - [SD card](#sd-card)
   - [Case](#case)
 - [Hardware Assembly](#hardware-assembly)
-  - [Displays with headers](#displays-with-headers-pitft-or-e-ink-displays)
   - [Displays with non headers](#displays-without-headers-mip-reflective-color-lcd-and-sharp-memory-display)
 - [Bicycle mounting](#bicycle-mounting)
 
@@ -56,14 +55,8 @@ Pros&Cons
 - (good) fast drawing
 - (bad) no backlight
 - (bad) 2 colors only
-- Recommend if you think costs. I think it's better than PiTFT and E-ink displays.
+- Recommend if you think costs.
 - <img src="https://user-images.githubusercontent.com/12926652/91795951-fe3ee280-ec59-11ea-8fc1-b5ae35a7306f.png" width=360 />
-
-### [Display HAT Mini](https://shop.pimoroni.com/products/display-hat-mini?variant=39496084717651)
-
-### [Pirate Audio](https://shop.pimoroni.com/collections/pirate-audio)
-
-### [PiTFT 2.4](https://www.adafruit.com/product/2455)  (OBSOLETE)
 
 Pros&Cons
 
@@ -204,23 +197,14 @@ get battery percent, etc.
 
 - make a nice case if you can use 3D printer.
 - [Topeak SMARTPHONE DRYBAG 5"](https://www.topeak.com/global/en/products/weatherproof-ridecase-series/1092-smartphone-drybag-5%22) is easy to use. It is waterproof.
-  - If you attach the PiTFT directly to the Raspberry Pi Zero, you can use Topeak SMARTPHONE DRYBAG for iPhone 5 which is smaller than Topeak SMARTPHONE DRYBAG 5".
-  - On the other hand, if you want to put some sensors in, Topeak SMARTPHONE DRYBAG 6" is better.
+- On the other hand, if you want to put some sensors in, Topeak SMATPHONE DRYBAG 6" is better.
 
 
 # Hardware Assembly
 
 Using many pHATs can be bulky, so it's best to use one pHat only. It's essential to make it compact.
 
-Here are two assembly examples.
-
-## Displays with pHAT headers (PiTFT or E-ink displays)
-
-see [hardware_installation_pitft.md](./hardware_installation_pitft.md) as PiTFT(obsolete) example.
-
 ## Displays without pHAT headers (MIP Reflective color LCD and SHARP Memory Display)
-
-It's quite difficult, but the hardware configuration is better than PiTFT.
 
 ### Adafruit SHARP Memory Display
 

@@ -14,9 +14,6 @@ SUPPORTED_DISPLAYS = {
     "MIP_Azumo_color_272x451": ((272, 451), 64),  # Azumo 14793-06
     "MIP_Sharp_mono_400x240": (DEFAULT_RESOLUTION, 2),  # Sharp LS027B7DH01
     "MIP_Sharp_mono_320x240": ((320, 240), 2),  # Sharp LS044Q7DH01
-    "PiTFT": None,
-    "Papirus": None,
-    "DFRobot_RPi_Display": None,
 }
 
 
@@ -120,25 +117,10 @@ def init_display(config):
         if auto_detect is not None:
             display_name = auto_detect
 
-        if display_name == "PiTFT":
-            from .pitft_28_r import _SENSOR_DISPLAY, PiTFT28r
-
-            if _SENSOR_DISPLAY:
-                display = PiTFT28r(config)
-        elif display_name.startswith("MIP_"):
+        if display_name.startswith("MIP_"):
             from .mip_display_pigpio import _SENSOR_DISPLAY, MipDisplayPigpio
 
             if _SENSOR_DISPLAY:
                 display = MipDisplayPigpio(config, SUPPORTED_DISPLAYS[display_name])
-        elif display_name == "Papirus":
-            from .papirus_display import _SENSOR_DISPLAY, PapirusDisplay
-
-            if _SENSOR_DISPLAY:
-                display = PapirusDisplay(config)
-        elif display_name == "DFRobot_RPi_Display":
-            from .dfrobot_rpi_display import _SENSOR_DISPLAY, DFRobotRPiDisplay
-
-            if _SENSOR_DISPLAY:
-                display = DFRobotRPiDisplay(config)
 
     return display, display_name

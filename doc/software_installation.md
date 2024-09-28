@@ -126,29 +126,6 @@ $ sudo systemctl enable pigpiod
 $ sudo systemctl start pigpiod
 ```
 
-#### Display HAT Mini, Pirate Audio
-
-```
-$ sudo pip3 install st7789
-```
-
-#### PiTFT 2.4
-
-see [hardware_installation_pitft.md](./hardware_installation_pitft.md#display)
-
-#### E-ink Displays
-
-You can use python3-pyqt5 package too.
-
-##### PaPiRus ePaper / eInk Screen HAT for Raspberry Pi
-
-Follow [official setup guide](https://github.com/PiSupply/PaPiRus)
-
-##### DFRobot e-ink Display Module for Raspberry Pi 4B/3B+/Zero W
-
-Follow [official setup guide](https://wiki.dfrobot.com/Raspberry_Pi_e-ink_Display_Module_SKU%3A_DFR0591) and install manually.
-
-
 ### I2C sensors
 
 Assume I2C interface is on in raspi-config.
@@ -216,10 +193,6 @@ $ python3 pizero_bikecomputer.py
 
 If you use MIP Reflective color LCD module, SHARP Memory Display or E-Ink displays, run with [`QT_QPA_PLATFORM=offscreen`](#mip-reflective-color-lcd-module-sharp-memory-display-or-e-ink-displays)
 
-### PiTFT
-
-see [hardware_installation_pitft.md](./hardware_installation_pitft.md#run-on-x-window)
-
 ## Run on console
 
 ### Manual execution
@@ -231,11 +204,6 @@ Before run the program, add the following environment variable.
 ```
 $ QT_QPA_PLATFORM=offscreen python3 pizero_bikecomputer.py
 ```
-
-#### PiTFT
-
-see [hardware_installation_pitft.md](./hardware_installation_pitft.md#run-on-console)
-
 
 ### Run as a service
 
@@ -268,7 +236,6 @@ The output of the log file will be in "/home/pi/pizero_bikecomputer/log/debug.tx
 $ sudo systemctl start pizero_bikecomputer.service
 ```
 
-
 # Usage
 
 ## Button
@@ -291,10 +258,6 @@ The buttons at the bottom of the screen are assigned the following functions fro
 
 The hardware buttons are designed to roughly match the software screen.
 You can change both short and long presses in "modules/config.py".
-
-#### PiTFT 2.4
-
-see [hardware_installation_pitft.md](./hardware_installation_pitft.md#hardware-button)
 
 ### Button shim
 
@@ -592,13 +555,8 @@ Set the value before starting the program. If the value is set during running, i
   - Set the type of display.
   - There are definitions in `modules/config.py` for the resolution and availability of the touchscreen.
   - `None`: default (no hardware control)
-  - `PiTFT`: PiTFT2.4 (or a PiTFT2.8 with the same resolution)
   - `MIP`: MIP color reflective LCD module 2.7 inch.
   - `MIP_Sharp`: SHARP Memory Display Breakout
-  - `Papirus`: PaPiRus ePaper / eInk Screen HAT
-  - `DFRobot_RPi_Display`: e-ink Display Module
-  - `Pirate_Audio`, `Pirate_Audio_old`: Pirate Audio ("old" assigns the Y button to GPIO 20.)
-  - `Display_HAT_Mini`: Display HAT Mini
 - `autostop_cutoff`
   - Set the threshold for the speed at which the stopwatch will automatically stop/start after it is activated.
   - The default value is `4` [km/h].
