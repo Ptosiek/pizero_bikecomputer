@@ -9,6 +9,7 @@ from modules._pyqt import (
     qasync,
 )
 from modules.pyqt.components import icons, topbar
+from modules.pyqt.pyqt_item import Item
 from modules.settings import settings
 from modules.utils.network import detect_network
 from .pyqt_menu_widget import (
@@ -201,8 +202,7 @@ class CourseDetailWidget(MenuWidget):
     map_image_size = None
     profile_image_size = None
     next_button = None
-
-    address_format = "{locality}, {administrative_area}"
+    font_size = 20
 
     def setup_menu(self):
         self.make_menu_layout(QtWidgets.QVBoxLayout)
@@ -213,29 +213,34 @@ class CourseDetailWidget(MenuWidget):
         self.profile_image = QtWidgets.QLabel()
         self.profile_image.setAlignment(QT_ALIGN_CENTER)
 
-        self.distance_label = QtWidgets.QLabel()
-        self.distance_label.setMargin(0)
-        self.distance_label.setContentsMargins(0, 0, 0, 0)
+        self.set_font_size()
 
-        self.elevation_label = QtWidgets.QLabel()
-        self.elevation_label.setMargin(0)
-        self.elevation_label.setContentsMargins(0, 0, 0, 0)
-
-        self.locality_label = QtWidgets.QLabel()
-        self.locality_label.setMargin(0)
-        self.locality_label.setContentsMargins(0, 0, 0, 0)
-        self.locality_label.setWordWrap(True)
+        self.distance_item = Item(
+            config=self.config,
+            name="Distance",
+            font_size=20,
+            right_flag=True,
+            bottom_flag=False,
+        )
+        self.ascent_item = Item(
+            config=self.config,
+            name="Ascent",
+            font_size=20,
+            right_flag=True,
+            bottom_flag=False,
+        )
 
         info_layout = QtWidgets.QVBoxLayout()
-        info_layout.setContentsMargins(5, 0, 0, 0)
+        info_layout.setContentsMargins(0, 0, 0, 0)
         info_layout.setSpacing(0)
-        info_layout.addWidget(self.distance_label)
-        info_layout.addWidget(self.elevation_label)
-        info_layout.addWidget(self.locality_label)
 
         outer_layout = QtWidgets.QHBoxLayout()
         outer_layout.setContentsMargins(0, 0, 0, 0)
         outer_layout.setSpacing(0)
+
+        info_layout.addLayout(self.distance_item)
+        info_layout.addLayout(self.ascent_item)
+
         outer_layout.addWidget(self.map_image)
         outer_layout.addLayout(info_layout)
 
@@ -269,9 +274,8 @@ class CourseDetailWidget(MenuWidget):
         self.next_button.setEnabled(False)
 
         self.page_name_label.setText(course_info["name"])
-        self.distance_label.setText("{:.1f}km".format(course_info["distance"] / 1000))
-        self.elevation_label.setText("{:.0f}m up".format(course_info["elevation_gain"]))
-        self.locality_label.setText(self.address_format.format(**course_info))
+        self.distance_item.update_value(course_info["distance"])
+        self.ascent_item.update_value(course_info["elevation_gain"])
 
         self.list_id = course_info["id"]
 
@@ -360,12 +364,15 @@ class CourseDetailWidget(MenuWidget):
             )
         return True
 
-    def resizeEvent(self, event):
-        h = self.size().height()
-        q = self.distance_label.font()
-        q.setPixelSize(int(h / 12))
+    def set_font_size(self, init=False):
+        if init:
+            self.font_size = int(min(self.config.display.resolution) / 10)
+        else:
+            self.font_size = int(min(self.size().width(), self.size().height()) / 10)
 
-        for label in [self.distance_label, self.elevation_label, self.locality_label]:
-            label.setFont(q)
+    def resizeEvent(self, event):
+        self.set_font_size(event.oldSize() == QtCore.QSize(-1, -1))
+        for i in [self.distance_item, self.ascent_item]:
+            i.update_font_size(self.font_size)
 
         return super().resizeEvent(event)

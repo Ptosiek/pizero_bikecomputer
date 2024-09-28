@@ -120,9 +120,11 @@ class RWGPS:
                 params=self.get_params,
             )
             user = response.get("user")
+
             if user is not None:
                 self.user_id = user.get("id")
             else:
+                app_logger.warning(f"Could not get routes {response}")
                 return
 
         # get count of user routes

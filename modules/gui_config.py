@@ -27,6 +27,10 @@ class GUI_Config:
         "Power": (G_UNIT["Power"], "self.sensor.values['integrated']['power']"),
         "Speed": (G_UNIT["Speed"], "self.sensor.values['integrated']['speed']"),
         "Dist.": (G_UNIT["Distance"], "self.sensor.values['integrated']['distance']"),
+        "Distance": (
+            G_UNIT["Distance"],
+            "self.sensor.values['integrated']['distance']",
+        ),
         "Cad.": (G_UNIT["Cadence"], "self.sensor.values['integrated']['cadence']"),
         "HR": (G_UNIT["HeartRate"], "self.sensor.values['integrated']['heart_rate']"),
         "Work": (
