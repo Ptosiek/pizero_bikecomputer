@@ -462,12 +462,7 @@ class SettingsNamespace:
                 if map_dict is None:
                     return
 
-                self.MAP_CONFIG.update(
-                    {
-                        k: MapDict({**v, "attribution": v.get("attribution") or ""})
-                        for k, v in map_dict.items()
-                    }
-                )
+                self.MAP_CONFIG.update({k: MapDict(v) for k, v in map_dict.items()})
         except FileNotFoundError:
             pass
 

@@ -88,14 +88,6 @@ class MapWidget(BaseMapWidget):
         color=(0, 0, 0),
     )
 
-    map_attribution = pg.TextItem(
-        anchor=(1, 1),
-        angle=0,
-        border=(255, 255, 255, 255),
-        fill=(255, 255, 255, 255),
-        color=(0, 0, 0),
-    )
-
     def setup_ui_extra(self):
         super().setup_ui_extra()
 
@@ -109,9 +101,7 @@ class MapWidget(BaseMapWidget):
         self.current_point.setZValue(40)
         self.track_plot.setZValue(30)
         self.scale_text.setZValue(100)
-        self.map_attribution.setZValue(100)
 
-        self.plot.addItem(self.map_attribution)
         self.plot.addItem(self.scale_text)
 
         # current point
@@ -207,39 +197,6 @@ class MapWidget(BaseMapWidget):
             self.drawn_tile[key] = {}
             self.existing_tiles[key] = {}
             self.pre_zoomlevel[key] = np.nan
-
-        attribution_text = settings.CURRENT_MAP["attribution"]
-
-        if self.use_heatmap_overlay_map:
-            attribution_text += (
-                "<br />"
-                + settings.HEATMAP_OVERLAY_MAP_CONFIG[settings.HEATMAP_OVERLAY_MAP][
-                    "attribution"
-                ]
-            )
-        if self.use_rain_overlay_map:
-            attribution_text += (
-                "<br />"
-                + settings.RAIN_OVERLAY_MAP_CONFIG[settings.RAIN_OVERLAY_MAP][
-                    "attribution"
-                ]
-            )
-        if self.use_wind_overlay_map:
-            attribution_text += (
-                "<br />"
-                + settings.WIND_OVERLAY_MAP_CONFIG[settings.WIND_OVERLAY_MAP][
-                    "attribution"
-                ]
-            )
-        self.map_attribution.setHtml(
-            '<div style="text-align: right;"><span style="color: #000; font-size: 10px;">'
-            + attribution_text
-            + "</span></div>"
-        )
-        if attribution_text == "":
-            self.map_attribution.setZValue(-100)
-        else:
-            self.map_attribution.setZValue(100)
 
     def init_cuesheet_and_instruction(self):
         # init cuesheet_widget
@@ -528,8 +485,6 @@ class MapWidget(BaseMapWidget):
         if not np.any(np.isnan([x_start, y_start])):
             # draw scale
             self.draw_scale(x_start, y_start)
-            # draw map attribution
-            self.draw_map_attribution(x_start, y_start)
 
     def get_track(self):
         # get track from SQL
@@ -958,10 +913,6 @@ class MapWidget(BaseMapWidget):
             scale_unit = "km"
         self.scale_text.setPlainText(f"{scale_label}{scale_unit}\n(z{self.zoomlevel})")
         self.scale_text.setPos((scale_x1 + scale_x2) / 2, scale_y2)
-
-    def draw_map_attribution(self, x_start, y_start):
-        # draw map attribution at right bottom
-        self.map_attribution.setPos(x_start + self.map_area["w"], get_mod_lat(y_start))
 
     async def update_cuesheet_and_instruction(
         self, x_start, x_end, y_start, y_end, auto_zoom=False

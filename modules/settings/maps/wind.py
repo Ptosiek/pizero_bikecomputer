@@ -11,7 +11,6 @@ WIND_OVERLAY_MAP_CONFIG = {
     # https://weather.openportguide.de/index.php/en/weather-forecasts/weather-tiles
     WindMap.OPEN_PORT_GUIDE: {
         "url": "https://weather.openportguide.de/tiles/actual/wind_stream/0h/{z}/{x}/{y}.png",
-        "attribution": "openportguide",
         "tile_size": 256,
         "max_zoomlevel": 7,
         "min_zoomlevel": 0,

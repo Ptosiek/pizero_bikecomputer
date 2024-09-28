@@ -579,7 +579,6 @@ Set the value before starting the program. If the value is set during running, i
   - Set the map.
   - The `G_MAP_CONFIG` in modules/config.py provides some preset definitions.
   - `wikimedia`: An example map of a full-color map. [https://maps.wikimedia.org/](https://maps.wikimedia.org/)
-  - `jpn_kokudo_chiri_in`: A map from Japan GSI. [https://cyberjapandata.gsi.go.jp](https://cyberjapandata.gsi.go.jp)
   - (obsolete) `toner`: A map for monochrome colors. [http://maps.stamen.com/toner/](http://maps.stamen.com/toner/)
   - You can add a map URL to map.yaml. Specify the URL in tile format (tile coordinates by [x, y] and zoom level by [z]). And The map name is set to this setting `map`.
   - Also, you can set raster mbtiles mapsets generated from [mb-util](https://github.com/mapbox/mbutil). It is sqlite3 db packed with raster maptile images. The definition in map.yaml is following with sample mbtile map named `sample_mbtile` placed at `maptile/sample_mbtile.mbtiles`.
@@ -589,7 +588,6 @@ map.yaml entry
 
   sample_mbtile:
     url: 
-    attribution: some attribution.
     use_mbtiles: true
 ```
 
@@ -686,7 +684,6 @@ Register the map name, tile URL and copyright in this file.
 ```
 openstreetmap:
   url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
-  attribution: © OpenStreetMap contributors
 ```
 
 - Line 1: Map name
