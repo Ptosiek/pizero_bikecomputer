@@ -64,7 +64,6 @@ class MapWidget(BaseMapWidget):
 
     drawn_tile = {}
     existing_tiles = {}
-    map_cuesheet_ratio = 1  # map:cuesheet = 1:0
 
     zoom_delta_from_tilesize = 0
     auto_zoomlevel = None
@@ -209,8 +208,6 @@ class MapWidget(BaseMapWidget):
                 self.cuesheet_widget = CueSheetWidget(self, self.config)
                 self.cuesheet_widget.hide()  # adhoc
 
-            self.map_cuesheet_ratio = 1.0
-
             # init instruction
             self.instruction = pg.TextItem(
                 color=(0, 0, 0),
@@ -219,21 +216,6 @@ class MapWidget(BaseMapWidget):
                 border=(0, 0, 0),
             )
             self.instruction.setZValue(100)
-
-    def resizeEvent(self, event):
-        if (
-            not self.course_points.is_set
-            or not settings.CUESHEET_DISPLAY_ON_MAP
-            or not settings.COURSE_INDEXING
-        ):
-            self.map_cuesheet_ratio = 1.0
-        # if settings.CUESHEET_DISPLAY_NUM:
-        else:
-            # self.cuesheet_widget.setFixedWidth(int(self.width()*(1-self.map_cuesheet_ratio)))
-            # self.cuesheet_widget.setFixedHeight(self.height())
-            pass
-        self.plot.setFixedWidth(int(self.width() * (self.map_cuesheet_ratio)))
-        self.plot.setFixedHeight(self.height())
 
     # override for long press
     def switch_lock(self):
@@ -923,23 +905,18 @@ class MapWidget(BaseMapWidget):
             or not settings.COURSE_INDEXING
         ):
             return
+
         await self.cuesheet_widget.update_display()
 
         if self.instruction is not None:
             self.plot.removeItem(self.instruction)
-        image_src = '<img src="img/navi_flag.png">'  # svg
-        if self.cuesheet_widget.cuesheet[0].name.text() == "Right":
-            image_src = '<img src="img/navi_turn_right.svg">'
-        elif self.cuesheet_widget.cuesheet[0].name.text() == "Left":
-            image_src = '<img src="img/navi_turn_left.svg">'
-        elif self.cuesheet_widget.cuesheet[0].name.text() == "Summit":
-            image_src = '<img src="img/summit.png">'  # svg
+
+        cue = self.cuesheet_widget.cuesheet[0]
+
         self.instruction.setHtml(
-            '<div style="text-align: left; vertical-align: bottom;">'
-            + image_src
-            + '<span style="font-size: 28px;">'
-            + self.cuesheet_widget.cuesheet[0].dist.text()
-            + "</span></div>"
+            f'<div style="text-align: left; vertical-align: bottom;">'
+            f'<img src="{cue.image}"><span style="font-size: 28px;">{cue.dist.text()}</span>'
+            f"</div>"
         )
         self.instruction.setPos(
             (x_end + x_start) / 2,
@@ -950,7 +927,7 @@ class MapWidget(BaseMapWidget):
         if auto_zoom:
             delta = self.zoom_delta_from_tilesize
             # print(self.zoomlevel, self.cuesheet_widget.cuesheet[0].dist_num, self.auto_zoomlevel_back)
-            if self.cuesheet_widget.cuesheet[0].dist_num < 1000:
+            if cue.dist_num < 1000:
                 if (
                     self.auto_zoomlevel_back is None
                     and self.zoomlevel < self.auto_zoomlevel - delta
@@ -984,7 +961,7 @@ class MapWidget(BaseMapWidget):
             self.zoomlevel, tile_x + 1, tile_y + 1
         )
         return (
-            abs(pos_x1 - pos_x0) / tile_size * (self.width() * self.map_cuesheet_ratio),
+            abs(pos_x1 - pos_x0) / tile_size * self.width(),
             abs(pos_y1 - pos_y0) / tile_size * self.height(),
         )
 

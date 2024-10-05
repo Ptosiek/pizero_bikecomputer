@@ -15,38 +15,49 @@ class MarqueeLabel(QtWidgets.QLabel):
         border-bottom: 1px solid #CCCCCC;
       }
     """
+    has_scroll = settings.CUESHEET_SCROLL
+    speed = 5
+    time = None
+    timer_interval = 200  # [ms]
 
     def __init__(self, config, parent=None):
         QtWidgets.QLabel.__init__(self, parent)
         self.config = config
         self.px = 0
         self.py = 18
-        self.timer = QtCore.QTimer(self)
-        self.timer.timeout.connect(self.update)
-        self.timer_interval = 200  # [ms]
-        self._speed = 5
         self.textLength = 0
+
+        if self.has_scroll:
+            self.timer = QtCore.QTimer(self)
+            self.timer.timeout.connect(self.update)
+
         self.setWordWrap(False)
         self.setStyleSheet(self.STYLES)
 
+    def get_text_length(self, text):
+        return self.fontMetrics().horizontalAdvance(text)
+
     def setText(self, text):
         super().setText(text)
-        self.textLength = self.fontMetrics().horizontalAdvance(text)
-        if self.textLength > self.width() and settings.CUESHEET_SCROLL:
+        self.textLength = self.get_text_length(text)
+
+        if self.has_scroll and self.textLength > self.width():
             self.timer.start(self.timer_interval)
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
         self.py = int(self.height() * 0.9)
-        if self.textLength <= self.width() or not settings.CUESHEET_SCROLL:
+
+        if not self.has_scroll or self.textLength <= self.width():
             painter.drawText(self.px + 5, self.py, self.text())
             return
 
-        if self.px <= -self.fontMetrics().horizontalAdvance(self.text()):
+        if self.px <= -self.get_text_length(self.text()):
             self.px = self.width()
+
         painter.drawText(self.px, self.py, self.text())
         painter.translate(self.px, 0)
-        self.px -= self._speed
+        self.px -= self.speed
 
 
 class DistanceLabel(QtWidgets.QLabel):
@@ -66,7 +77,27 @@ class CueSheetItem(QtWidgets.QVBoxLayout):
     dist = None
     name = None
 
+    # used on map to set zoom level
     dist_num = 0
+
+    # image used on map
+    @property
+    def image(self):
+        text = self.name.text()
+        image = "img/navigation/flag.svg"
+
+        if text == "Right":
+            image = "img/navigation/turn_right.svg"
+        elif text == "Left":
+            image = "img/navigation/turn_left.svg"
+        elif text == "Summit":
+            image = "img/navigation/summit.svg"
+
+        return image
+
+    @staticmethod
+    def get_formatted_distance(distance):
+        return f"{distance / 1000:4.1f}km" if distance > 1000 else f"{distance:6.0f}m"
 
     def __init__(self, parent, config):
         self.config = config
@@ -80,6 +111,17 @@ class CueSheetItem(QtWidgets.QVBoxLayout):
 
         self.addWidget(self.dist)
         self.addWidget(self.name)
+
+    def set(self, dist, name):
+        self.dist_num = dist
+
+        # TODO, to fix as for first item if null we compare 0 to 0.0 (so always false)
+        #  do we even want to have this (initial point) on the cuesheet anyway?
+        if dist < 0:
+            return
+
+        self.dist.setText(self.get_formatted_distance(dist))
+        self.name.setText(name)
 
     def reset(self):
         self.dist.setText("")
@@ -133,16 +175,12 @@ class CueSheetWidget(ScreenWidget):
 
         # cuesheet
         for i, cuesheet_item in enumerate(self.cuesheet):
-            if cp_i + i > len(self.course_points.distance) - 1:
+            next = cp_i + i
+
+            if next > len(self.course_points.distance) - 1:
                 cuesheet_item.reset()
                 continue
-            dist = cuesheet_item.dist_num = (
-                self.course_points.distance[cp_i + i] * 1000
-                - self.course.index.distance
-            )
-            if dist < 0:
-                continue
-            dist_text = f"{dist / 1000:4.1f}km " if dist > 1000 else f"{dist:6.0f}m  "
-            cuesheet_item.dist.setText(dist_text)
-            name_text = self.course_points.type[cp_i + i]
-            cuesheet_item.name.setText(name_text)
+
+            dist = self.course_points.distance[next] * 1000 - self.course.index.distance
+
+            cuesheet_item.set(dist, self.course_points.type[next])
