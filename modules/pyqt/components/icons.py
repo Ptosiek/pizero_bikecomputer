@@ -33,28 +33,24 @@ class BackIcon(_QIconWithPath):
     path = "img/back.svg"
 
 
-class ForwardIcon(_QIconWithPath):
-    path = "img/forward.svg"
-
-
-class ForwardLineIcon(_QIconWithPath):
-    path = "img/forward_line.svg"
-
-
 class LapIcon(_QIconWithPath):
-    path = "img/lap_white.png"
+    path = "img/box_menu/lap.svg"
 
 
 class MenuIcon(_QIconWithPath):
-    path = "img/menu.png"
+    path = "img/box_menu/menu.svg"
 
 
 class NextIcon(_QIconWithPath):
-    path = "img/next_white.png"
+    path = "img/next.svg"
 
 
 class PauseIcon(_QIconWithPath):
-    path = "img/pause_white.png"
+    path = "img/box_menu/pause.svg"
+
+
+class StartIcon(_QIconWithPath):
+    path = "img/box_menu/start.svg"
 
 
 class ToggleOffIcon(_QIconWithPath):
@@ -74,43 +70,43 @@ class CloudIcon(_QIconWithPath):
 
 
 class ZoomInIcon(_QIconWithPath):
-    path = "img/zoom_in.svg"
+    path = "img/map/zoom_in.svg"
 
 
 class ZoomOutIcon(_QIconWithPath):
-    path = "img/zoom_out.svg"
+    path = "img/map/zoom_out.svg"
 
 
 class LockIcon(_QIconWithPath):
-    path = "img/lock.svg"
+    path = "img/map/lock.svg"
 
 
 class LockOpenIcon(_QIconWithPath):
-    path = "img/lock_open.svg"
+    path = "img/map/lock_open.svg"
 
 
 class ArrowNorthIcon(_QIconWithPath):
-    path = "img/arrow_north.svg"
+    path = "img/map/arrow_north.svg"
 
 
 class ArrowSouthIcon(_QIconWithPath):
-    path = "img/arrow_south.svg"
+    path = "img/map/arrow_south.svg"
 
 
 class ArrowWestIcon(_QIconWithPath):
-    path = "img/arrow_west.svg"
+    path = "img/map/arrow_west.svg"
 
 
 class ArrowEastIcon(_QIconWithPath):
-    path = "img/arrow_east.svg"
+    path = "img/map/arrow_east.svg"
 
 
 class DirectionsIcon(_QIconWithPath):
-    path = "img/directions.svg"
+    path = "img/map/directions.svg"
 
 
 class MapLayersIcon(_QIconWithPath):
-    path = "img/map_layers.svg"
+    path = "img/map/map_layers.svg"
 
 
 # "Icons label"
@@ -140,13 +136,13 @@ class MenuBackgroundIcon(BaseMenuIcon):
 
 
 class MenuRightIcon(BaseMenuIcon):
-    icon = ForwardLineIcon
+    icon = NextIcon
     size = 20
     margin = 1
 
     @staticmethod
     def icon_hover():
-        return ForwardLineIcon(color="white")
+        return NextIcon(color="white")
 
 
 class MenuToggleIcon(BaseMenuIcon):
@@ -177,7 +173,7 @@ class CourseRightIcon(QtWidgets.QLabel):
 
     def __init__(self, *args):
         super().__init__(*args)
-        icon = ForwardLineIcon()
+        icon = NextIcon()
         self.setPixmap(icon.pixmap(QtCore.QSize(20, 20)))
         self.setStyleSheet(self.STYLES)
 

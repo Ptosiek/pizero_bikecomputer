@@ -18,8 +18,6 @@ class SystemMenuWidget(MenuWidget):
         button_conf = (
             # Name(page_name), button_attribute, connected functions, layout
             ("Network", "submenu", self.network),
-            ("Brightness", None, None),
-            ("Language", None, None),
             (
                 "Update",
                 "dialog",
@@ -36,11 +34,11 @@ class SystemMenuWidget(MenuWidget):
         )
         self.add_buttons(button_conf)
 
-    def network(self):
-        self.change_page("Network", preprocess=True)
-
     def debug(self):
         self.change_page("Debug")
+
+    def network(self):
+        self.change_page("Network", preprocess=True)
 
 
 class NetworkMenuWidget(MenuWidget):

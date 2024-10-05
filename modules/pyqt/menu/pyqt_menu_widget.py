@@ -1,4 +1,3 @@
-from logger import app_logger
 from modules._pyqt import (
     QT_ALIGN_LEFT,
     QT_KEY_SPACE,
@@ -7,10 +6,10 @@ from modules._pyqt import (
     QT_STRONG_FOCUS,
     QtCore,
     QtWidgets,
+    Signal,
     qasync,
 )
 from modules.pyqt.components import icons, topbar
-from modules.settings import settings
 
 from .pyqt_menu_button import MenuButton
 
@@ -27,9 +26,6 @@ class MenuWidget(QtWidgets.QWidget):
 
     buttons = None
     menu_layout = None
-
-    icon_x = 40
-    icon_y = 32
 
     @property
     def is_vertical(self):
@@ -53,7 +49,7 @@ class MenuWidget(QtWidgets.QWidget):
         # top bar
         self.top_bar = topbar.TopBar()
 
-        self.back_button = topbar.TopBarBackButton((self.icon_x, self.icon_y))
+        self.back_button = topbar.TopBarBackButton()
         self.page_name_label = topbar.TopBarLabel(self.page_name)
 
         self.top_bar_layout = QtWidgets.QHBoxLayout()
@@ -286,21 +282,44 @@ class ListWidget(MenuWidget):
         self.list.setItemWidget(list_item, item)
 
 
+class ListDetailLabel(QtWidgets.QLabel):
+    @property
+    def STYLES(self):
+        return f"""
+          border-bottom: 1px solid #AAAAAA;
+          padding-bottom: 2%;
+          padding-left: 20%;
+        """
+
+    def __init__(self, *__args):
+        super().__init__(*__args)
+        self.setMargin(0)
+        self.setContentsMargins(0, 0, 0, 0)
+        self.setStyleSheet(self.STYLES)
+
+
+class ListTitleLabel(QtWidgets.QLabel):
+    @property
+    def STYLES(self):
+        border_style = "border-bottom: 1px solid #AAAAAA;" if self.with_border else ""
+        return f"""
+          {border_style}
+          padding-left: 10%;
+          padding-top: 2%;
+        """
+
+    def __init__(self, with_border=False, *__args):
+        self.with_border = with_border
+        super().__init__(*__args)
+        self.setMargin(0)
+        self.setContentsMargins(0, 0, 0, 0)
+        self.setStyleSheet(self.STYLES)
+
+
 class ListItemWidget(QtWidgets.QWidget):
-    enter_signal = QtCore.pyqtSignal()
+    enter_signal = Signal()
     title = ""
     detail = ""
-
-    def get_styles(self):
-        border_style = "border-bottom: 1px solid #AAAAAA;"
-        title_style = "padding-left: 10%; padding-top: 2%;"
-        detail_style = None
-
-        if self.detail:
-            detail_style = f"padding-left: 20%; padding-bottom: 2%; {border_style}"
-        else:
-            title_style = f"{title_style} {border_style}"
-        return title_style, detail_style
 
     def __init__(self, parent, title, detail=None):
         self.title = title
@@ -316,20 +335,12 @@ class ListItemWidget(QtWidgets.QWidget):
         inner_layout.setContentsMargins(0, 0, 0, 0)
         inner_layout.setSpacing(0)
 
-        title_style, detail_style = self.get_styles()
-
-        self.title_label = QtWidgets.QLabel()
-        self.title_label.setMargin(0)
-        self.title_label.setContentsMargins(0, 0, 0, 0)
-        self.title_label.setStyleSheet(title_style)
+        self.title_label = ListTitleLabel(with_border=not self.detail)
         self.title_label.setText(self.title)
         inner_layout.addWidget(self.title_label)
 
         if self.detail:
-            self.detail_label = QtWidgets.QLabel()
-            self.detail_label.setMargin(0)
-            self.detail_label.setContentsMargins(0, 0, 0, 0)
-            self.detail_label.setStyleSheet(detail_style)
+            self.detail_label = ListDetailLabel()
             self.detail_label.setText(self.detail)
             inner_layout.addWidget(self.detail_label)
 

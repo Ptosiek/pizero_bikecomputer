@@ -11,18 +11,12 @@ class SensorMenuWidget(MenuWidget):
         button_conf = (
             # Name(page_name), button_attribute, connected functions, layout
             ("ANT+ Sensors", "submenu", self.ant_sensors_menu),
-            ("Wheel Size", "submenu", self.adjust_wheel_circumference),
-            ("Auto Stop", None, None),
-            ("Gross Avg Speed", None, None),
             ("Adjust Altitude", "submenu", self.adjust_altitude),
         )
         self.add_buttons(button_conf)
 
     def ant_sensors_menu(self):
         self.change_page("ANT+ Sensors")
-
-    def adjust_wheel_circumference(self):
-        self.change_page("Wheel Size", preprocess=True)
 
     def adjust_altitude(self):
         self.change_page("Adjust Altitude")

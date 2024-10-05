@@ -31,11 +31,11 @@ class UnitLabel(QtWidgets.QLabel):
 class AdjustButton(QtWidgets.QPushButton):
     STYLES = """
       QPushButton{
-        font-size: 15px;
-        padding: 2px;
-        margin: 1px;
         border: 1px solid #AAAAAA;
         border-radius: 5%;
+        font-size: 15px;
+        margin: 1px;
+        padding: 2px;
       }
 
       QPushButton:pressed{
@@ -57,9 +57,9 @@ class AdjustButton(QtWidgets.QPushButton):
 class AdjustEdit(QtWidgets.QLineEdit):
     STYLES = """
       QLineEdit {
+        border: none;
         font-size: 35px;
         padding: 5px;
-        border: none;
       }
     """
 

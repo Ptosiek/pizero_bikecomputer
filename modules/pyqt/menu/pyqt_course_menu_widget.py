@@ -260,7 +260,7 @@ class CourseDetailWidget(MenuWidget):
         self.timer.timeout.connect(self.update_display)
 
         # also set extra button for topbar
-        self.next_button = topbar.TopBarNextButton((self.icon_x, self.icon_y))
+        self.next_button = topbar.TopBarNextButton()
         self.next_button.setEnabled(False)
 
         self.top_bar_layout.addWidget(self.next_button)

@@ -126,9 +126,9 @@ class ScreenWidget(QtWidgets.QWidget):
                 if pos[1] == self.max_width:
                     right_flag = True
                 if len(pos) == 4:
-                    if pos[2] - 1 == self.max_height:
+                    if pos[2] in [-1, self.max_height + 1]:
                         bottom_flag = True
-                    if pos[3] - 1 == self.max_width:
+                    if pos[3] in [-1, self.max_width + 1]:
                         right_flag = True
 
                 item = Item(

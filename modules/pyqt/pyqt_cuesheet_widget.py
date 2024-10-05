@@ -12,7 +12,7 @@ from .pyqt_screen_widget import ScreenWidget
 class MarqueeLabel(QtWidgets.QLabel):
     STYLES = """
       QLabel {
-        border-bottom: 1px solid #CCCCCC;
+        border-bottom: 1px solid #AAAAAA;
       }
     """
     has_scroll = settings.CUESHEET_SCROLL
@@ -84,14 +84,14 @@ class CueSheetItem(QtWidgets.QVBoxLayout):
     @property
     def image(self):
         text = self.name.text()
-        image = "img/navigation/flag.svg"
+        image = "img/map/navigation/flag.svg"
 
         if text == "Right":
-            image = "img/navigation/turn_right.svg"
+            image = "img/map/navigation/turn_right.svg"
         elif text == "Left":
-            image = "img/navigation/turn_left.svg"
+            image = "img/map/navigation/turn_left.svg"
         elif text == "Summit":
-            image = "img/navigation/summit.svg"
+            image = "img/map/navigation/summit.svg"
 
         return image
 

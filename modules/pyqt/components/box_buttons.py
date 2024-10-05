@@ -1,21 +1,14 @@
 from modules._pyqt import QtWidgets
-from .icons import BackIcon, ForwardIcon, NextIcon, LapIcon, MenuIcon
+from .icons import BackIcon, LapIcon, PauseIcon, MenuIcon, NextIcon, StartIcon
 from .navi_button import NaviButton
 
 
 class LapButton(QtWidgets.QPushButton):
     STYLES = """
       QPushButton {
-        background-color: #FF0000;
-        color: black;
-        border-color: red;
-        border-radius: 15px;
+        border-color: none;
         border-style: outset;
         border-width: 0px;
-      }
-
-      QPushButton:pressed {
-        background-color: white;
       }
     """
 
@@ -33,15 +26,9 @@ class LapButton(QtWidgets.QPushButton):
 class MenuButton(QtWidgets.QPushButton):
     STYLES = """
       QPushButton {
-        color: none;
         border-color: none;
-        border-radius: 2px;
         border-style: outset;
         border-width: 0px;
-      }
-
-      QPushButton:pressed {
-        background-color: white;
       }
     """
 
@@ -53,7 +40,7 @@ class MenuButton(QtWidgets.QPushButton):
 
 class ScrollNextButton(NaviButton):
     def __init__(self, *args):
-        super().__init__(ForwardIcon(), "", *args)
+        super().__init__(NextIcon(), "", *args)
         self.setFixedSize(60, 30)
 
 
@@ -66,21 +53,14 @@ class ScrollPrevButton(NaviButton):
 class StartButton(QtWidgets.QPushButton):
     STYLES = """
       QPushButton {
-        background-color: #FF0000;
-        color: black;
-        border-color: red;
-        border-radius: 15px;
+        border-color: none;
         border-style: outset;
         border-width: 0px;
-      }
-
-      QPushButton:pressed {
-        background-color: white;
       }
     """
 
     def __init__(self, *args):
-        super().__init__(NextIcon(), "", *args)
+        super().__init__(StartIcon(), "", *args)
         self.setStyleSheet(self.STYLES)
         self.setFixedSize(50, 30)
         # long press
@@ -88,3 +68,7 @@ class StartButton(QtWidgets.QPushButton):
         self.setAutoRepeatDelay(1000)
         self.setAutoRepeatInterval(1000)
         self._state = 0
+
+    def toggle(self, status):
+        icon = PauseIcon() if status == "START" else StartIcon()
+        self.setIcon(icon)

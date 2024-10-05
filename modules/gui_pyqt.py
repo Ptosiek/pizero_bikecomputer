@@ -1,9 +1,9 @@
-import sys
-import os
-
-import datetime
-import signal
 import asyncio
+import datetime
+import os
+import signal
+import sys
+
 import numpy as np
 
 from logger import app_logger
@@ -23,9 +23,11 @@ from modules._pyqt import (
     QT_NO_MODIFIER,
     QT_FORMAT_MONO,
     QT_FORMAT_RGB888,
+    QT_VERSION_STR,
     QtCore,
     QtWidgets,
     QtGui,
+    Signal,
     qasync,
 )
 from modules.settings import settings
@@ -56,22 +58,19 @@ class BootStatus(QtWidgets.QLabel):
 
 
 class MainWindow(QtWidgets.QMainWindow):
+    STYLES = """
+      background-color: white;
+      color: black;
+    """
+
     gui = None
 
     def __init__(self, title, size, parent=None):
         super().__init__(parent=parent)
-        app_logger.info(f"Qt version: {QtCore.QT_VERSION_STR}")
+        app_logger.info(f"Qt version: {QT_VERSION_STR}")
         self.setWindowTitle(title)
         self.setMinimumSize(*size)
-        self.set_color()
-
-    # TODO, daylight does not seem to be used at all,
-    #  Could/Should be replaced by setting stylesheet on init
-    def set_color(self, daylight=True):
-        if daylight:
-            self.setStyleSheet("color: black; background-color: white")
-        else:
-            self.setStyleSheet("color: white; background-color: #222222")
+        self.setStyleSheet(self.STYLES)
 
     def set_gui(self, gui):
         self.gui = gui
@@ -103,14 +102,14 @@ class GUI_PyQt(QtCore.QObject):
     cuesheet_widget = None
 
     # signal
-    signal_next_button = QtCore.pyqtSignal(int)
-    signal_prev_button = QtCore.pyqtSignal(int)
-    signal_menu_button = QtCore.pyqtSignal(int)
-    signal_menu_back_button = QtCore.pyqtSignal()
-    signal_get_screenshot = QtCore.pyqtSignal()
-    signal_start_and_stop_manual = QtCore.pyqtSignal()
-    signal_count_laps = QtCore.pyqtSignal()
-    signal_boot_status = QtCore.pyqtSignal(str)
+    signal_next_button = Signal(int)
+    signal_prev_button = Signal(int)
+    signal_menu_button = Signal(int)
+    signal_menu_back_button = Signal()
+    signal_get_screenshot = Signal()
+    signal_start_and_stop_manual = Signal()
+    signal_count_laps = Signal()
+    signal_boot_status = Signal(str)
 
     # for draw_display
     image_format = None
@@ -278,7 +277,6 @@ class GUI_PyQt(QtCore.QObject):
             menus = [
                 ("ANT+ Detail", ANTListWidget),
                 ("ANT+ Sensors", ANTMenuWidget),
-                ("Wheel Size", AdjustWheelCircumferenceWidget),
                 ("Adjust Altitude", AdjustAltitudeWidget),
                 ("Sensors", SensorMenuWidget),
                 ("BT Tethering", BluetoothTetheringListWidget),
@@ -286,8 +284,9 @@ class GUI_PyQt(QtCore.QObject):
                 ("Debug Log", DebugLogViewerWidget),
                 ("Debug", DebugMenuWidget),
                 ("System", SystemMenuWidget),
-                ("CP", AdjustCPWidget),
                 ("W Prime Balance", AdjustWPrimeBalanceWidget),
+                ("CP", AdjustCPWidget),
+                ("Wheel Size", AdjustWheelCircumferenceWidget),
                 ("Profile", ProfileWidget),
                 ("Upload Activity", UploadActivityMenuWidget),
                 ("Wind map List", WindmapListWidget),
@@ -389,6 +388,7 @@ class GUI_PyQt(QtCore.QObject):
         with timers[3]:
             # integrate main_layout
             main_layout.addWidget(self.main_page)
+
             if self.config.display.has_touch:
                 from modules.pyqt.pyqt_button_box_widget import ButtonBoxWidget
 
@@ -416,7 +416,7 @@ class GUI_PyQt(QtCore.QObject):
             p = self.stack_widget.grab().toImage().convertToFormat(self.image_format)
 
             # PyQt 5.11(Buster) or 5.15(Bullseye)
-            qt_version = QtCore.QT_VERSION_STR.split(".")
+            qt_version = QT_VERSION_STR.split(".")
 
             if qt_version[0] == "5" and int(qt_version[1]) < 15:
                 self.bufsize = p.bytesPerLine() * p.height()  # PyQt 5.11(Buster)

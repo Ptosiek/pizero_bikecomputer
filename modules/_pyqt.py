@@ -1,6 +1,15 @@
 import os
 
-__all__ = ["USE_PYQT6", "QtCore", "QtWidgets", "QtGui", "pg", "qasync"]
+__all__ = [
+    "USE_PYQT6",
+    "QtCore",
+    "QtWidgets",
+    "QtGui",
+    "Signal",
+    "Slot",
+    "pg",
+    "qasync",
+]
 
 USE_PYQT6 = False
 try:
@@ -13,6 +22,10 @@ except (ImportError, ModuleNotFoundError):
     import PyQt5.QtCore as QtCore
     import PyQt5.QtWidgets as QtWidgets
     import PyQt5.QtGui as QtGui
+
+QT_VERSION_STR = QtCore.QT_VERSION_STR
+Signal = QtCore.pyqtSignal
+Slot = QtCore.pyqtSlot
 
 # import qasync once pyQt is imported so the correct version is used (it starts with PyQt5 then tries PyQt6)
 import qasync  # noqa

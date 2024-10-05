@@ -4,6 +4,7 @@ from modules._pyqt import (
     QtCore,
     QtWidgets,
     QtGui,
+    Slot,
 )
 from modules.pyqt.components import icons
 
@@ -21,23 +22,37 @@ MENU_BUTTON_ICON_MAP = {
 
 class MenuButton(QtWidgets.QPushButton):
     STYLES = """
-      QPushButton{
+      QPushButton {
         border-color: #AAAAAA;
         border-style: outset;
         border-width: 0px 1px 1px 0px;
-        text-align: left;
         padding-left: 15%;
+        text-align: left;
       }
-      QPushButton:pressed{background-color: black; }
-      QPushButton:focus{background-color: black; color: white; }
-      QPushButton[style='connect']{
-        text-align: center;
-        padding-left: 0;
-        border-width: 1px 0px 0px 0px;
+
+      QPushButton:pressed {
+        background-color: black;
+      }
+
+      QPushButton:focus {
+        background-color: black;
+        color: white;
+      }
+
+      QPushButton[style='connect'] {
         border-style: solid;
+        border-width: 1px 0px 0px 0px;
+        padding-left: 0;
+        text-align: center;
       }
-      QPushButton[style='dummy']{ border-width: 0px; }
-      QPushButton[style='unavailable']{ color: #AAAAAA; }
+
+      QPushButton[style='dummy'] {
+        border-width: 0px;
+      }
+
+      QPushButton[style='unavailable'] {
+        color: #AAAAAA;
+      }
     """
     config = None
     button_type = None
@@ -127,13 +142,13 @@ class MenuButton(QtWidgets.QPushButton):
         self.status = status
         self.right_icon.toggle(status, self.hasFocus())
 
-    @QtCore.pyqtSlot()
+    @Slot()
     def loading_start(self):
         if not self.status:
             self.status = True
             self.loading_movie.start()
 
-    @QtCore.pyqtSlot()
+    @Slot()
     def loading_stop(self, res):
         self.loading_movie.stop()
         self.right_icon.set_icon(self.res_img[res])
@@ -147,7 +162,7 @@ class MenuButton(QtWidgets.QPushButton):
         if self.loading_movie.loopCount() != -1:
             self.loading_movie.finished.connect(self.start)
 
-    @QtCore.pyqtSlot(int)
+    @Slot(int)
     def on_frameChanged(self, frameNumber):
         self.right_icon.set_icon(QtGui.QIcon(self.loading_movie.currentPixmap()))
 

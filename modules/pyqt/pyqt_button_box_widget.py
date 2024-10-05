@@ -1,13 +1,9 @@
 from logger import app_logger
 from modules._pyqt import QtWidgets
-from modules.pyqt.components import box_buttons, icons
+from modules.pyqt.components import box_buttons
 
 
 class ButtonBoxWidget(QtWidgets.QWidget):
-    STYLES = """
-      background-color: #CCCCCC;
-    """
-
     config = None
 
     # for long press
@@ -21,9 +17,7 @@ class ButtonBoxWidget(QtWidgets.QWidget):
 
     def setup_ui(self):
         self.setContentsMargins(0, 0, 0, 0)
-        self.setStyleSheet(self.STYLES)
         self.show()
-        self.setAutoFillBackground(True)
 
         self.start_button = box_buttons.StartButton()
         self.lap_button = box_buttons.LapButton()
@@ -87,5 +81,4 @@ class ButtonBoxWidget(QtWidgets.QWidget):
             self.config.gui.start_and_stop_manual()
 
     def change_start_stop_button(self, status):
-        icon = icons.PauseIcon() if status == "START" else icons.NextIcon()
-        self.start_button.setIcon(icon)
+        self.start_button.toggle(status)

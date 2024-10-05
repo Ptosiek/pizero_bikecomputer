@@ -15,7 +15,7 @@ class ItemLabel(QtWidgets.QLabel):
         return f"""
             border-width: 0px {right_border_width} 0px 0px;
             border-style: solid;
-            border-color: #CCCCCC;
+            border-color: #AAAAAA;
         """
 
     def __init__(self, right, *__args):
@@ -36,7 +36,7 @@ class ItemValue(QtWidgets.QLabel):
         return f"""
             border-width: 0px {right_border_width} {bottom_border_width} 0px;
             border-style: solid;
-            border-color: #CCCCCC;
+            border-color: #AAAAAA;
         """
 
     def __init__(self, right, bottom, *__args):

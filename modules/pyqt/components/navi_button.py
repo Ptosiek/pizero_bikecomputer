@@ -5,17 +5,13 @@ class NaviButton(QtWidgets.QPushButton):
     STYLES = """
       QPushButton {
         color: none;
-        border: 0px solid #FFFFFF;
+        border: 0px solid;
         border-radius: 15px;
         outline: 0;
       }
 
-      QPushButton:pressed {
-        background-color: white;
-      }
-
       QPushButton[style='menu']:focus {
-        border-color: white; border-width: 3px;
+        border-width: 3px;
       }
     """
 
