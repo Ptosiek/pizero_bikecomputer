@@ -564,7 +564,7 @@ Set the value before starting the program. If the value is set during running, i
   - Set the wheel circumference required for ANT+ speed sensor use.
   - It can also be set on the screen.
   - The default value is `2105` (unit is mm) for 700x25c.
-- `gross_ave_speed`
+- `gross_avg_speed`
   - Set the gross average speed, which is used in the brevet and the like.
   - It is used for cycling long distances with a set time limit.
   - The screen shows the actual gross average and the gained time from this gross average speed.

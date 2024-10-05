@@ -358,7 +358,7 @@ class GUI_Config:
         "Lap": (ValueFormatter(value_format="d"), "self.logger.values['lap']"),
         "Time": (Time, "0"),
         "ElapsedTime": (Time, "self.logger.values['elapsed_time']"),
-        "GrossAveSPD": (Speed, "self.logger.values['gross_ave_spd']"),
+        "GrossAvgSPD": (Speed, "self.logger.values['gross_avg_spd']"),
         "GrossDiffTime": (ValueFormatter, "self.logger.values['gross_diff_time']"),
         "CPU_MEM": (ValueFormatter, "self.sensor.values['integrated']['CPU_MEM']"),
         "Send Time": (

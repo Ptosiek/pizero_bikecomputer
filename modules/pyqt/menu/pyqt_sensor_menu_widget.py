@@ -13,7 +13,7 @@ class SensorMenuWidget(MenuWidget):
             ("ANT+ Sensors", "submenu", self.ant_sensors_menu),
             ("Wheel Size", "submenu", self.adjust_wheel_circumference),
             ("Auto Stop", None, None),
-            ("Gross Ave Speed", None, None),
+            ("Gross Avg Speed", None, None),
             ("Adjust Altitude", "submenu", self.adjust_altitude),
         )
         self.add_buttons(button_conf)
@@ -58,7 +58,6 @@ class ANTMenuWidget(MenuWidget):
         if self.config.G_ANT["USE"][ant_name]:
             # disable ANT+ sensor
             self.config.logger.sensor.sensor_ant.disconnect_ant_sensor(ant_name)
-            self.config.conf_parser.write_config()
         else:
             # search ANT+ sensor
             self.change_page(
@@ -98,7 +97,6 @@ class ANTListWidget(ListWidget):
             self.ant_sensor_types[ant_id][0],  # id_type
             self.ant_sensor_types[ant_id][1],  # connection status
         )
-        self.config.conf_parser.write_config()
 
     def on_back_menu(self):
         self.timer.stop()

@@ -34,7 +34,7 @@ class LoggerCore:
         "lap": 0,
         "elapsed_time": 0,  # [s]
         "start_time": None,
-        "gross_ave_spd": 0,  # [km/h]
+        "gross_avg_spd": 0,  # [km/h]
         "gross_diff_time": "00:00",  # "+-hh:mm" (string)
     }
     record_stats = {
@@ -489,7 +489,7 @@ class LoggerCore:
         self.values["lap"] = 0
         self.values["elapsed_time"] = 0
         self.values["start_time"] = None
-        self.values["gross_ave_spd"] = 0
+        self.values["gross_avg_spd"] = 0
         self.values["gross_diff_time"] = "00:00"
 
         for k in self.lap_keys:
@@ -606,7 +606,7 @@ class LoggerCore:
         ?,?,?,?,?,\
         ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,\
         ?,?,?,?,?,?,\
-        ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,\
+        ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,\
         ?,?,?,?,?,?,?,?,\
         ?,?,?,?,\
         ?,?,?,?,?,?,?,?\
@@ -707,25 +707,25 @@ class LoggerCore:
             datetime.utcnow().timestamp() - self.values["start_time"]
         )
 
-        # gross_ave_spd
+        # gross_avg_spd
         if self.values["elapsed_time"] == 0:
             return
         # [m]/[s]
-        self.values["gross_ave_spd"] = (
+        self.values["gross_avg_spd"] = (
             self.sensor.values["integrated"]["distance"] / self.values["elapsed_time"]
         )
 
         # gross_diff_time
-        if settings.GROSS_AVE_SPEED == 0:
+        if settings.GROSS_AVG_SPEED == 0:
             return
 
         # [km]/[km/h] = +-[h] -> +-[m]
         diff_time = (
             (
                 self.sensor.values["integrated"]["distance"] / 1000
-                - settings.GROSS_AVE_SPEE * self.values["elapsed_time"] / 3600
+                - settings.GROSS_AVG_SPEED * self.values["elapsed_time"] / 3600
             )
-            / settings.GROSS_AVE_SPEE
+            / settings.GROSS_AVG_SPEED
             * 60
         )
         diff_h, diff_m = divmod(abs(diff_time), 60)
@@ -739,7 +739,7 @@ class LoggerCore:
             diff_time_sign, diff_h, diff_m
         )
 
-        # print(self.values['elapsed_time'], self.values['gross_ave_spd'], self.values['gross_diff_time'], round(diff_time,1))
+        # print(self.values['elapsed_time'], self.values['gross_avg_spd'], self.values['gross_diff_time'], round(diff_time,1))
 
     def resume(self):
         self.cur.execute("SELECT count(*) FROM BIKECOMPUTER_LOG")
@@ -751,7 +751,7 @@ class LoggerCore:
         row_all = "\
       timestamp,lap,timer,total_timer_time,\
       distance,accumulated_power,total_ascent,total_descent,altitude,\
-      position_lat, position_long, \
+      position_lat,position_long, \
       lap_heart_rate,lap_cadence,lap_distance,lap_speed,lap_power,\
       lap_accumulated_power,lap_total_ascent,lap_total_descent,\
       avg_heart_rate,avg_cadence,avg_speed,avg_power,\

@@ -163,9 +163,7 @@ class AdjustWheelCircumferenceWidget(AdjustWidget):
         self.display.setMaxLength(4)
 
     async def set_value_extra(self, value):
-        pre_v = settings.WHEEL_CIRCUMFERENCE
         settings.update_setting("WHEEL_CIRCUMFERENCE", value)
-        app_logger.info(f"set WHEEL_CIRCUMFERENCE from {pre_v} to {value}")
 
     def preprocess(self):
         self.display.setText(str(int(settings.WHEEL_CIRCUMFERENCE)))
@@ -191,7 +189,7 @@ class AdjustWPrimeBalanceWidget(AdjustWidget):
         self.display.setMaxLength(5)
 
     async def set_value_extra(self, value):
-        self.config.G_POWER_W_PRIME = value
+        settings.update_setting("POWER_W_PRIME", value)
 
     def preprocess(self):
-        self.display.setText(str(int(self.config.G_POWER_W_PRIME)))
+        self.display.setText(str(int(settings.POWER_W_PRIME)))

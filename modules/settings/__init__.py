@@ -203,7 +203,7 @@ class SettingsNamespace:
     GUI_ACC_TIME_RANGE = int(1 * 60 / (REALTIME_GRAPH_INTERVAL / 1000))  # [s]
 
     # gross average speed (in setting.conf)
-    GROSS_AVE_SPEED = 15  # [km/h]
+    GROSS_AVG_SPEED = 15  # [km/h]
 
     # auto pause cutoff [m/s] (in setting.conf)
     AUTOSTOP_CUTOFF = 4.0 * 1000 / 3600
@@ -248,7 +248,7 @@ class SettingsNamespace:
     UPLOAD_FILE = ""
 
     # Ride with GPS
-    RWGPS_APIKEY = "pizero_bikercomputer"
+    RWGPS_APIKEY = "pizero_bikecomputer"
     RWGPS_TOKEN = ""
     RWGS_ROUTE_DOWNLOAD_DIR = os.path.join(COURSE_DIR, "ridewithgps")
 
@@ -261,6 +261,10 @@ class SettingsNamespace:
         return self.WHEEL_CIRCUMFERENCE / 1000
 
     def __post_init__(self):
+        # mapping to config and setting object, so update to setting will be propagated
+        # if they exist in/for config
+        setattr(self.config_parser, "binder", {})
+
         if self.IS_RASPI:
             app_logger.info(f"{model}({unit}), serial:{hex(self.UNIT_ID)}")
 
@@ -288,6 +292,9 @@ class SettingsNamespace:
         )
 
         try:
+            if not self.config_parser.has_option(config_section.name, key):
+                raise KeyError
+
             if getter:
                 value = getattr(config_section, getter)(key)
             else:
@@ -300,11 +307,16 @@ class SettingsNamespace:
         except KeyError:
             value = getattr(self, setting_key)
         except ValueError:
-            app_logger.warning(f"{value} is not a valid value for {key}")
             value = getattr(self, setting_key)
 
         self.update_setting(setting_key, value)
         config_section[key] = write_transform(value)
+
+        self.config_parser.binder[setting_key] = (
+            config_section.name,
+            key,
+            write_transform,
+        )
 
     def hand_cli_arguments(self):
         parser = argparse.ArgumentParser()
@@ -337,125 +349,84 @@ class SettingsNamespace:
         if os.path.exists(filename):
             cf.read(filename)
 
-        if cf.default_section in cf:
-            section = cf[cf.default_section]
+        section = cf[cf.default_section]
 
-            self._set_config_value(section, "DISPLAY")
+        self._set_config_value(section, "DISPLAY")
+        self._set_config_value(
+            section,
+            "AUTOSTOP_CUTOFF",
+            "getspeed",
+            lambda x: str(int(x * 3.6)),
+        )
+        self._set_config_value(section, "WHEEL_CIRCUMFERENCE", "getint")
+        self._set_config_value(section, "GROSS_AVG_SPEED", "getint")
+        self._set_config_value(section, "AUTO_BACKLIGHT_CUTOFF", "getint")
+        self._set_config_value(section, "LANG", "getupper")
+        self._set_config_value(section, "FONT_FILE")
+        self._set_config_value(
+            section,
+            "MAP",
+            "getlower",
+            validator=lambda x: x in list(self.MAP_CONFIG.keys()),
+        )
 
-            self._set_config_value(
-                section,
-                "AUTOSTOP_CUTOFF",
-                "getspeed",
-                lambda x: str(int(x * 3.6)),
-            )
+        if not cf.has_section("POWER"):
+            cf.add_section("POWER")
 
-            # make sure GPS_SPEED_CUTOFF is set accordingly
-            self.update_setting("GPS_SPEED_CUTOFF", self.AUTOSTOP_CUTOFF)
+        section = cf["POWER"]
 
-            self.update_setting("WHEEL_CIRCUMFERENCE", self.WHEEL_CIRCUMFERENCE)
+        self._set_config_value(section, "CP", "getint")
+        self._set_config_value(section, "W_PRIME", "getint")
 
-            # GROSS_AVE_SPEED
-            self._set_config_value(section, "GROSS_AVE_SPEED", "getint")
+        if not cf.has_section("IMU"):
+            cf.add_section("IMU")
 
-            self._set_config_value(section, "AUTO_BACKLIGHT_CUTOFF", "getint")
-            self._set_config_value(section, "LANG", "getupper")
-            self._set_config_value(section, "FONT_FILE")
-            self._set_config_value(
-                section,
-                "MAP",
-                "getlower",
-                validator=lambda x: x in list(self.MAP_CONFIG.keys()),
-            )
+        section = cf["IMU"]
 
-        else:
-            cf[cf.default_section] = {
-                "DISPLAY": "None",
-                "AUTOSTOP_CUTOFF": str(int(self.AUTOSTOP_CUTOFF * 3.6)),
-                "WHEEL_CIRCUMFERENCE": str(int(2.105 * 1000)),
-                "GROSS_AVE_SPEED": str(self.GROSS_AVE_SPEED),
-                "AUTO_BACKLIGHT_CUTOFF": str(self.AUTO_BACKLIGHT_CUTOFF),
-                "LANG": self.LANG,
-                "FONT_FILE": self.FONT_FILE,
-                "MAP": self.MAP,
-            }
+        self._set_config_value(section, "AXIS_SWAP_XY_STATUS", "getboolean")
+        self._set_config_value(section, "AXIS_CONVERSION_STATUS", "getboolean")
+        self._set_config_value(
+            section,
+            "AXIS_CONVERSION_COEF",
+            "getnparray",
+            lambda x: str(list(x)),
+            # validator TODO (np.sum((coef == 1) | (coef == -1)) == n ??)
+        )
+        self._set_config_value(section, "MAG_AXIS_SWAP_XY_STATUS", "getboolean")
+        self._set_config_value(section, "MAG_AXIS_CONVERSION_STATUS", "getboolean")
+        self._set_config_value(
+            section,
+            "MAG_AXIS_CONVERSION_COEF",
+            "getnparray",
+            lambda x: str(list(x)),
+            # validator TODO (np.sum((coef == 1) | (coef == -1)) == n ??)
+        )
+        self._set_config_value(section, "MAG_DECLINATION", "getint")
 
-        if "POWER" in cf:
-            section = cf["POWER"]
+        if not cf.has_section("DISPLAY_PARAM"):
+            cf.add_section("DISPLAY_PARAM")
 
-            self._set_config_value(section, "CP", "getint")
-            self._set_config_value(section, "W_PRIME", "getint")
-        else:
-            cf["POWER"] = {
-                "CP": str(self.POWER_CP),
-                "W_PRIME": str(self.POWER_W_PRIME),
-            }
+        self._set_config_value(cf["DISPLAY_PARAM"], "SPI_CLOCK", "getint")
 
-        if "IMU" in cf:
-            section = cf["IMU"]
+        if not cf.has_section("GPSD_PARAM"):
+            cf.add_section("GPSD_PARAM")
 
-            self._set_config_value(section, "AXIS_SWAP_XY_STATUS", "getboolean")
-            self._set_config_value(section, "AXIS_CONVERSION_STATUS", "getboolean")
-            self._set_config_value(
-                section,
-                "AXIS_CONVERSION_COEF",
-                "getnparray",
-                lambda x: str(list(x)),
-                # validator TODO (np.sum((coef == 1) | (coef == -1)) == n ??)
-            )
-            self._set_config_value(section, "MAG_AXIS_SWAP_XY_STATUS", "getboolean")
-            self._set_config_value(section, "MAG_AXIS_CONVERSION_STATUS", "getboolean")
-            self._set_config_value(
-                section,
-                "MAG_AXIS_CONVERSION_COEF",
-                "getnparray",
-                lambda x: str(list(x)),
-                # validator TODO (np.sum((coef == 1) | (coef == -1)) == n ??)
-            )
-            self._set_config_value(section, "MAG_DECLINATION", "getint")
-        else:
-            cf["IMU"] = {
-                "AXIS_SWAP_XY_STATUS": str(self.IMU_AXIS_SWAP_XY_STATUS),
-                "AXIS_CONVERSION_STATUS": str(self.IMU_AXIS_CONVERSION_STATUS),
-                "AXIS_CONVERSION_COEF": str(list(self.IMU_AXIS_CONVERSION_COEF)),
-                "MAG_AXIS_SWAP_XY_STATUS": str(self.IMU_MAG_AXIS_SWAP_XY_STATUS),
-                "MAG_AXIS_CONVERSION_STATUS": str(self.IMU_MAG_AXIS_CONVERSION_STATUS),
-                "MAG_AXIS_CONVERSION_COEF": str(
-                    list(self.IMU_MAG_AXIS_CONVERSION_COEF)
-                ),
-                "MAG_DECLINATION": str(self.IMU_MAG_DECLINATION),
-            }
+        section = cf["GPSD_PARAM"]
 
-        if "DISPLAY_PARAM" in cf:
-            self._set_config_value(cf["DISPLAY_PARAM"], "SPI_CLOCK", "getint")
-        else:
-            cf["DISPLAY_PARAM"] = {
-                "SPI_CLOCK": str(self.DISPLAY_PARAM_SPI_CLOCK),
-            }
+        self._set_config_value(section, "EPX_EPY_CUTOFF", "getfloat")
+        self._set_config_value(section, "EPV_CUTOFF", "getfloat")
+        self._set_config_value(section, "SP1_EPV_CUTOFF", "getfloat")
+        self._set_config_value(section, "SP1_USED_SATS_CUTOFF", "getint")
 
-        if "GPSD_PARAM" in cf:
-            section = cf["GPSD_PARAM"]
+        if not cf.has_section("RWGPS"):
+            cf.add_section("RWGPS")
 
-            self._set_config_value(section, "EPX_EPY_CUTOFF", "getfloat")
-            self._set_config_value(section, "EPV_CUTOFF", "getfloat")
-            self._set_config_value(section, "SP1_EPV_CUTOFF", "getfloat")
-            self._set_config_value(section, "SP1_USED_SATS_CUTOFF", "getint")
-        else:
-            cf["GPSD_PARAM"] = {
-                "EPX_EPY_CUTOFF": str(self.GPSD_PARAM_EPX_EPY_CUTOFF),
-                "EPV_CUTOFF": str(self.GPSD_PARAM_EPV_CUTOFF),
-                "SP1_EPV_CUTOFF": str(self.GPSD_PARAM_SP1_EPV_CUTOFF),
-                "SP1_USED_SATS_CUTOFF": str(self.GPSD_PARAM_SP1_EPV_CUTOFF),
-            }
+        section = cf["RWGPS"]
+        self._set_config_value(section, "APIKEY")
+        self._set_config_value(section, "TOKEN")
 
-        if "RWGPS" in cf:
-            section = cf["RWGPS"]
-            self._set_config_value(section, "APIKEY")
-            self._set_config_value(section, "TOKEN")
-        else:
-            cf["RWGPS"] = {
-                "APIKEY": str(self.RWGPS_APIKEY),
-                "TOKEN": str(self.RWGPS_TOKEN),
-            }
+        # make sure GPS_SPEED_CUTOFF is set accordingly
+        self.update_setting("GPS_SPEED_CUTOFF", self.AUTOSTOP_CUTOFF)
 
     def read_map_list(self):
         try:
@@ -480,6 +451,10 @@ class SettingsNamespace:
             raise AttributeError(f"Unknown setting: {key}")
 
         object.__setattr__(self, key, value)
+
+        if key in self.config_parser.binder:
+            section, option, write_transform = self.config_parser.binder[key]
+            self.config_parser[section][option] = write_transform(value)
 
 
 settings = SettingsNamespace()

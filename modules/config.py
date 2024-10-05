@@ -7,7 +7,6 @@ from datetime import datetime
 from glob import glob
 
 from logger import CustomRotatingFileHandler, app_logger
-from modules.config_parser import ConfParser
 from modules.button_config import Button_Config
 from modules.state import AppState
 from modules.utils.cmd import (
@@ -119,7 +118,6 @@ class Config:
             app_logger.setLevel(logging.DEBUG)
 
         # read setting.conf and state.pickle
-        self.conf_parser = ConfParser(self)
         self.state = AppState()
 
         # make sure all folders exist
