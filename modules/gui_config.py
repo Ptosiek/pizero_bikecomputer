@@ -139,11 +139,6 @@ class Work(ValueFormatter):
 
 
 class GUI_Config:
-    G_GUI_INDEX = {
-        "boot": 0,
-        "Main": 1,
-    }
-
     G_ITEM_DEF = {
         # integrated
         "Power": (Power, "self.sensor.values['integrated']['power']"),

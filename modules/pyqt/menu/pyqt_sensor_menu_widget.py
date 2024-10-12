@@ -2,6 +2,7 @@ from functools import partial
 
 from logger import app_logger
 from modules._pyqt import QtCore, QtWidgets, QtGui
+from modules.constants import MenuLabel
 from modules.settings import ant, settings
 from .pyqt_menu_widget import MenuWidget, ListWidget, ListItemWidget
 
@@ -9,17 +10,18 @@ from .pyqt_menu_widget import MenuWidget, ListWidget, ListItemWidget
 class SensorMenuWidget(MenuWidget):
     def setup_menu(self):
         button_conf = (
-            # Name(page_name), button_attribute, connected functions, layout
-            ("ANT+ Sensors", "submenu", self.ant_sensors_menu),
-            ("Adjust Altitude", "submenu", self.adjust_altitude),
+            # Name(page_name), button_attribute, connected functions
+            (
+                MenuLabel.ANT_SENSORS,
+                "submenu",
+                partial(self.change_page, MenuLabel.ANT_SENSORS),
+            ),
+            (MenuLabel.ADJUST_ALTITUDE, "submenu", self.adjust_altitude),
         )
         self.add_buttons(button_conf)
 
-    def ant_sensors_menu(self):
-        self.change_page("ANT+ Sensors")
-
     def adjust_altitude(self):
-        self.change_page("Adjust Altitude")
+        self.change_page(MenuLabel.ADJUST_ALTITUDE)
         # temporary
         self.config.logger.sensor.sensor_i2c.recalibrate_position()
 
@@ -54,9 +56,7 @@ class ANTMenuWidget(MenuWidget):
             self.config.logger.sensor.sensor_ant.disconnect_ant_sensor(ant_name)
         else:
             # search ANT+ sensor
-            self.change_page(
-                "ANT+ Detail", preprocess=True, reset=True, list_type=ant_name
-            )
+            self.change_page(MenuLabel.ANT_DETAIL, reset=True, list_type=ant_name)
 
         self.update_button_label()
 
@@ -96,8 +96,9 @@ class ANTListWidget(ListWidget):
         self.timer.stop()
         self.config.logger.sensor.sensor_ant.searcher.stop_search()
         # button update
-        index = self.config.gui.gui_config.G_GUI_INDEX[self.back_index_key]
-        self.parentWidget().widget(index).update_button_label()
+        self.parentWidget().findChild(
+            QtWidgets.QWidget, MenuLabel.ANT_SENSORS
+        ).update_button_label()
 
     def preprocess_extra(self):
         self.ant_sensor_types.clear()

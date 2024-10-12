@@ -1,6 +1,6 @@
-import asyncio
 from functools import partial
 
+from modules.constants import MenuLabel
 from modules.settings import settings
 from modules.utils.map import check_map_dir
 from .pyqt_menu_widget import MenuWidget, ListWidget
@@ -10,16 +10,18 @@ class MapMenuWidget(MenuWidget):
     def setup_menu(self):
         button_conf = (
             # Name(page_name), button_attribute, connected functions, layout
-            ("Select Map", "submenu", self.select_map),
-            ("Map Overlay", "submenu", self.map_overlay),
+            (
+                MenuLabel.SELECT_MAP,
+                "submenu",
+                partial(self.change_page, MenuLabel.SELECT_MAP),
+            ),
+            (
+                MenuLabel.MAP_OVERLAY,
+                "submenu",
+                partial(self.change_page, MenuLabel.MAP_OVERLAY),
+            ),
         )
         self.add_buttons(button_conf)
-
-    def select_map(self):
-        self.change_page("Select Map", preprocess=True)
-
-    def map_overlay(self):
-        self.change_page("Map Overlay")
 
 
 class MapListWidget(ListWidget):
@@ -38,19 +40,31 @@ class MapListWidget(ListWidget):
 class MapOverlayMenuWidget(MenuWidget):
     def setup_menu(self):
         button_conf = (
-            # Name(page_name), button_attribute, connected functions, layout
-            ("Heatmap", "toggle", partial(self.onoff_map, "Heatmap")),
-            ("Heatmap List", "submenu", self.select_heatmap),
-            ("Rain map", "toggle", partial(self.onoff_map, "Rain map")),
-            ("Rain map List", "submenu", self.select_rainmap),
-            ("Wind map", "toggle", partial(self.onoff_map, "Wind map")),
-            ("Wind map List", "submenu", self.select_windmap),
+            # Name(page_name), button_attribute, connected functions
+            (MenuLabel.HEATMAP, "toggle", partial(self.onoff_map, "Heatmap")),
+            (
+                MenuLabel.HEATMAP_LIST,
+                "submenu",
+                partial(self.change_page, MenuLabel.HEATMAP_LIST),
+            ),
+            (MenuLabel.RAIN_MAP, "toggle", partial(self.onoff_map, "Rain map")),
+            (
+                MenuLabel.RAIN_MAP_LIST,
+                "submenu",
+                partial(self.change_page, MenuLabel.RAIN_MAP_LIST),
+            ),
+            (MenuLabel.WIND_MAP_LIST, "toggle", partial(self.onoff_map, "Wind map")),
+            (
+                MenuLabel.WIND_MAP_LIST,
+                "submenu",
+                partial(self.change_page, MenuLabel.WIND_MAP_LIST),
+            ),
         )
         self.add_buttons(button_conf)
 
-        self.buttons["Heatmap List"].disable()
-        self.buttons["Rain map List"].disable()
-        self.buttons["Wind map List"].disable()
+        self.buttons[MenuLabel.HEATMAP_LIST].disable()
+        self.buttons[MenuLabel.RAIN_MAP_LIST].disable()
+        self.buttons[MenuLabel.WIND_MAP_LIST].disable()
 
     def onoff_map(self, overlay_type):
         if self.config.gui.map_widget is not None:
@@ -62,15 +76,6 @@ class MapOverlayMenuWidget(MenuWidget):
 
             # toggle list
             self.buttons[f"{overlay_type} List"].onoff_button(status)
-
-    def select_heatmap(self):
-        self.change_page("Heatmap List", preprocess=True)
-
-    def select_rainmap(self):
-        self.change_page("Rain map List", preprocess=True)
-
-    def select_windmap(self):
-        self.change_page("Wind map List", preprocess=True)
 
 
 class HeatmapListWidget(ListWidget):

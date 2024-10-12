@@ -10,6 +10,7 @@ from modules._pyqt import (
     QtGui,
     qasync,
 )
+from modules.constants import MenuLabel
 from modules.pyqt.components import icons, topbar
 from modules.pyqt.pyqt_item import Item
 from modules.settings import settings
@@ -25,9 +26,9 @@ class CoursesMenuWidget(MenuWidget):
     def setup_menu(self):
         button_conf = (
             # Name(page_name), button_attribute, connected functions, icon
-            ("Local Storage", "submenu", self.load_local_courses),
+            (MenuLabel.LOCAL_STORAGE, "submenu", self.load_local_courses),
             (
-                "Ride with GPS",
+                MenuLabel.RIDE_WITH_GPS,
                 "submenu",
                 self.load_rwgps_courses,
                 (
@@ -36,10 +37,10 @@ class CoursesMenuWidget(MenuWidget):
                 ),
             ),
             (
-                "Cancel Course",
+                MenuLabel.CANCEL_COURSE,
                 "dialog",
                 lambda: self.config.gui.show_dialog(
-                    self.cancel_course, "Cancel Course"
+                    self.cancel_course, MenuLabel.CANCEL_COURSE
                 ),
             ),
         )
@@ -51,14 +52,18 @@ class CoursesMenuWidget(MenuWidget):
     @qasync.asyncSlot()
     async def load_local_courses(self):
         widget = self.change_page(
-            "Courses List", preprocess=True, reset=True, list_type="Local Storage"
+            MenuLabel.COURSES_LIST,
+            reset=True,
+            list_type=MenuLabel.LOCAL_STORAGE,
         )
         await widget.list_local_courses()
 
     @qasync.asyncSlot()
     async def load_rwgps_courses(self):
         widget = self.change_page(
-            "Courses List", preprocess=True, reset=True, list_type="Ride with GPS"
+            MenuLabel.COURSES_LIST,
+            reset=True,
+            list_type=MenuLabel.RIDE_WITH_GPS,
         )
         await widget.list_ride_with_gps(reset=True)
 
@@ -94,16 +99,16 @@ class CourseListWidget(ListWidget):
     @qasync.asyncSlot(int)
     async def detect_bottom(self, value):
         if (
-            self.list_type == "Ride with GPS"
+            self.list_type == MenuLabel.RIDE_WITH_GPS
             and value == self.vertical_scrollbar.maximum()
         ):
             await self.list_ride_with_gps()
 
     @qasync.asyncSlot()
     async def button_func(self):
-        if self.list_type == "Local Storage":
+        if self.list_type == MenuLabel.LOCAL_STORAGE:
             self.set_course()
-        elif self.list_type == "Ride with GPS":
+        elif self.list_type == MenuLabel.RIDE_WITH_GPS:
             await self.change_course_detail_page()
 
     @qasync.asyncSlot()
@@ -112,8 +117,7 @@ class CourseListWidget(ListWidget):
             return
 
         widget = self.change_page(
-            "Course Detail",
-            preprocess=True,
+            MenuLabel.COURSE_DETAIL,
             course_info=self.selected_item.list_info,
         )
         await widget.load_images()
@@ -154,14 +158,14 @@ class CourseListWidget(ListWidget):
             self.config.gui.show_dialog(self.set_new_course, "Set this course?")
 
     def cancel_and_set_new_course(self):
-        self.parentWidget().widget(
-            self.config.gui.gui_config.G_GUI_INDEX[self.back_index_key]
+        self.parentWidget().findChild(
+            QtWidgets.QWidget, MenuLabel.COURSES
         ).cancel_course()
         self.set_new_course()
 
     def set_new_course(self):
-        self.parentWidget().widget(
-            self.config.gui.gui_config.G_GUI_INDEX[self.back_index_key]
+        self.parentWidget().findChild(
+            QtWidgets.QWidget, MenuLabel.COURSES
         ).set_new_course(self.course_file)
         self.back()
 
@@ -328,8 +332,10 @@ class CourseDetailWidget(MenuWidget):
         return False
 
     def set_course(self):
-        index = self.config.gui.gui_config.G_GUI_INDEX["Courses List"]
-        self.parentWidget().widget(index).set_course(
+        widget = self.parentWidget().findChild(
+            QtWidgets.QWidget, MenuLabel.COURSES_LIST
+        )
+        widget.set_course(
             os.path.join(settings.RWGS_ROUTE_DOWNLOAD_DIR, f"course-{self.list_id}.tcx")
         )
 

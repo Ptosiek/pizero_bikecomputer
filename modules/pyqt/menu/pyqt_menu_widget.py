@@ -1,3 +1,6 @@
+from functools import partial
+
+from logger import app_logger
 from modules._pyqt import (
     QT_ALIGN_LEFT,
     QT_KEY_SPACE,
@@ -9,6 +12,7 @@ from modules._pyqt import (
     Signal,
     qasync,
 )
+from modules.constants import MenuLabel
 from modules.pyqt.components import icons, topbar
 
 from .pyqt_menu_button import MenuButton
@@ -21,7 +25,7 @@ from .pyqt_menu_button import MenuButton
 class MenuWidget(QtWidgets.QWidget):
     config = None
     page_name = None
-    back_index_key = None
+    back_index = None
     focus_widget = None
 
     buttons = None
@@ -32,7 +36,7 @@ class MenuWidget(QtWidgets.QWidget):
         return self.parent().size().height() > self.parent().size().width()
 
     def __init__(self, parent, page_name, config):
-        QtWidgets.QWidget.__init__(self, parent=parent)
+        QtWidgets.QWidget.__init__(self, parent=parent, objectName=page_name)
         self.config = config
         self.page_name = page_name
 
@@ -140,57 +144,55 @@ class MenuWidget(QtWidgets.QWidget):
         pass
 
     def back(self):
-        index = self.config.gui.gui_config.G_GUI_INDEX.get(self.back_index_key, 0)
         self.on_back_menu()
-        self.config.gui.change_menu_page(index, focus_reset=False)
+        self.config.gui.change_menu_page(self.back_index, focus_reset=False)
 
     def on_back_menu(self):
         pass
 
-    def change_page(self, page, preprocess=False, **kwargs):
+    def change_page(self, page, **kwargs):
         # always set back index
-        index = self.config.gui.gui_config.G_GUI_INDEX[page]
-        widget = self.parentWidget().widget(index)
-        widget.back_index_key = self.page_name
+        parent = self.parentWidget()
+        widget = parent.findChild(QtWidgets.QWidget, page)
+        widget.back_index = parent.indexOf(self)
 
-        if preprocess:
+        if hasattr(widget, "preprocess"):
             widget.preprocess(**kwargs)
-        self.config.gui.change_menu_page(index)
+
+        self.config.gui.change_menu_page(parent.indexOf(widget))
         return widget
 
 
 class TopMenuWidget(MenuWidget):
-    back_index_key = "Main"
+    back_index = 1  # Main widget
 
     def setup_menu(self):
         button_conf = (
-            # Name(page_name), button_attribute, connected functions, layout
-            ("Sensors", "submenu", self.sensors_menu),
-            ("Courses", "submenu", self.courses_menu),
-            ("Upload Activity", "submenu", self.cloud_services_menu),
-            ("Map", "submenu", self.map_menu),
-            ("Profile", "submenu", self.profile_menu),
-            ("System", "submenu", self.setting_menu),
+            # Name(page_name), button_attribute, connected functions
+            (
+                MenuLabel.SENSORS,
+                "submenu",
+                partial(self.change_page, MenuLabel.SENSORS),
+            ),
+            (
+                MenuLabel.COURSES,
+                "submenu",
+                partial(self.change_page, MenuLabel.COURSES),
+            ),
+            (
+                MenuLabel.UPLOAD_ACTIVITY,
+                "submenu",
+                partial(self.change_page, MenuLabel.UPLOAD_ACTIVITY),
+            ),
+            (MenuLabel.MAP, "submenu", partial(self.change_page, MenuLabel.MAP)),
+            (
+                MenuLabel.PROFILE,
+                "submenu",
+                partial(self.change_page, MenuLabel.PROFILE),
+            ),
+            (MenuLabel.SYSTEM, "submenu", partial(self.change_page, MenuLabel.SYSTEM)),
         )
         self.add_buttons(button_conf)
-
-    def sensors_menu(self):
-        self.change_page("Sensors")
-
-    def cloud_services_menu(self):
-        self.change_page("Upload Activity")
-
-    def courses_menu(self):
-        self.change_page("Courses", preprocess=True)
-
-    def map_menu(self):
-        self.change_page("Map")
-
-    def profile_menu(self):
-        self.change_page("Profile")
-
-    def setting_menu(self):
-        self.change_page("System")
 
 
 class ListWidget(MenuWidget):
@@ -373,7 +375,7 @@ class UploadActivityMenuWidget(MenuWidget):
         button_conf = (
             # Name(page_name), button_attribute, connected functions, icon
             (
-                "Ride with GPS",
+                MenuLabel.RIDE_WITH_GPS,
                 "cloud_upload",
                 self.rwgps_upload,
                 (
@@ -386,4 +388,4 @@ class UploadActivityMenuWidget(MenuWidget):
 
     @qasync.asyncSlot()
     async def rwgps_upload(self):
-        await self.buttons["Ride with GPS"].run(self.config.api.rwgps.upload)
+        await self.buttons[MenuLabel.RIDE_WITH_GPS].run(self.config.api.rwgps.upload)

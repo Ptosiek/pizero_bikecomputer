@@ -7,6 +7,7 @@ import sys
 import numpy as np
 
 from logger import app_logger
+from modules.constants import MenuLabel
 from modules.gui_config import GUI_Config
 from modules._pyqt import (
     QT_ALIGN_BOTTOM,
@@ -93,7 +94,7 @@ class GUI_PyQt(QtCore.QObject):
     stack_widget = None
     button_box_widget = None
     main_page = None
-    main_page_index = 0
+    main_page_index = None
     altitude_graph_widget = None
     acc_graph_widget = None
     performance_graph_widget = None
@@ -265,7 +266,7 @@ class GUI_PyQt(QtCore.QObject):
             #    ant_menu_widget
             #    ant_detail_widget
             #    adjust_wheel_circumference_widget
-            #    adjust_atitude_widget
+            #    adjust_altitude_widget
             #    debug_log_viewer_widget
 
             # stack_widget elements (main)
@@ -273,40 +274,38 @@ class GUI_PyQt(QtCore.QObject):
             main_widget.setContentsMargins(0, 0, 0, 0)
             self.stack_widget.addWidget(main_widget)
 
-            # reverse order (make children widget first, then make parent widget)
             menus = [
-                ("ANT+ Detail", ANTListWidget),
-                ("ANT+ Sensors", ANTMenuWidget),
-                ("Adjust Altitude", AdjustAltitudeWidget),
-                ("Sensors", SensorMenuWidget),
-                ("BT Tethering", BluetoothTetheringListWidget),
-                ("Network", NetworkMenuWidget),
-                ("Debug Log", DebugLogViewerWidget),
-                ("Debug", DebugMenuWidget),
-                ("System", SystemMenuWidget),
-                ("W Prime Balance", AdjustWPrimeBalanceWidget),
-                ("CP", AdjustCPWidget),
-                ("Wheel Size", AdjustWheelCircumferenceWidget),
-                ("Profile", ProfileWidget),
-                ("Upload Activity", UploadActivityMenuWidget),
-                ("Wind map List", WindmapListWidget),
-                ("Rain map List", RainmapListWidget),
-                ("Heatmap List", HeatmapListWidget),
-                ("Map Overlay", MapOverlayMenuWidget),
-                ("Select Map", MapListWidget),
-                ("Map", MapMenuWidget),
-                ("Course Detail", CourseDetailWidget),
-                ("Courses List", CourseListWidget),
-                ("Courses", CoursesMenuWidget),
-                ("Menu", TopMenuWidget),
+                (MenuLabel.MENU, TopMenuWidget),
+                (MenuLabel.SENSORS, SensorMenuWidget),
+                (MenuLabel.ANT_SENSORS, ANTMenuWidget),
+                (MenuLabel.ANT_DETAIL, ANTListWidget),
+                (MenuLabel.ADJUST_ALTITUDE, AdjustAltitudeWidget),
+                (MenuLabel.COURSES, CoursesMenuWidget),
+                (MenuLabel.COURSES_LIST, CourseListWidget),
+                (MenuLabel.COURSE_DETAIL, CourseDetailWidget),
+                (MenuLabel.UPLOAD_ACTIVITY, UploadActivityMenuWidget),
+                (MenuLabel.MAP, MapMenuWidget),
+                (MenuLabel.SELECT_MAP, MapListWidget),
+                (MenuLabel.MAP_OVERLAY, MapOverlayMenuWidget),
+                (MenuLabel.HEATMAP_LIST, HeatmapListWidget),
+                (MenuLabel.RAIN_MAP_LIST, RainmapListWidget),
+                (MenuLabel.WIND_MAP_LIST, WindmapListWidget),
+                (MenuLabel.PROFILE, ProfileWidget),
+                (MenuLabel.WHEEL_SIZE, AdjustWheelCircumferenceWidget),
+                (MenuLabel.CP, AdjustCPWidget),
+                (MenuLabel.W_PRIME_BALANCE, AdjustWPrimeBalanceWidget),
+                (MenuLabel.SYSTEM, SystemMenuWidget),
+                (MenuLabel.NETWORK, NetworkMenuWidget),
+                (MenuLabel.BT_TETHERING, BluetoothTetheringListWidget),
+                (MenuLabel.DEBUG, DebugMenuWidget),
+                (MenuLabel.DEBUG_LOG, DebugLogViewerWidget),
             ]
-            menu_count = max(self.gui_config.G_GUI_INDEX.values()) + 1
-            for m in menus:
-                m_widget = m[1](self.stack_widget, m[0], self.config)
+
+            for label, widget in menus:
+                m_widget = widget(self.stack_widget, label, self.config)
                 m_widget.setContentsMargins(0, 0, 0, 0)
+
                 self.stack_widget.addWidget(m_widget)
-                self.gui_config.G_GUI_INDEX[m[0]] = menu_count
-                menu_count += 1
 
             self.stack_widget.setCurrentIndex(1)
 
@@ -398,7 +397,7 @@ class GUI_PyQt(QtCore.QObject):
             if settings.FULLSCREEN:
                 self.main_window.showFullScreen()
 
-            self.on_change_main_page(self.main_page_index)
+            self.on_change_main_page(0)
 
         app_logger.info("Drawing components:")
         log_timers(timers, text_total="total : {0:.3f} sec")
@@ -490,7 +489,9 @@ class GUI_PyQt(QtCore.QObject):
 
     # for main_page page transition
     def on_change_main_page(self, index):
-        self.main_page.widget(self.main_page_index).stop()
+        if self.main_page_index:
+            self.main_page.widget(self.main_page_index).stop()
+
         self.main_page.widget(index).start()
         self.main_page_index = index
 
@@ -539,8 +540,9 @@ class GUI_PyQt(QtCore.QObject):
     def enter_menu(self):
         i = self.stack_widget.currentIndex()
         if i == 1:
+            menu_widget = self.stack_widget.findChild(QtWidgets.QWidget, MenuLabel.MENU)
             # goto_menu:
-            self.signal_menu_button.emit(self.gui_config.G_GUI_INDEX["Menu"])
+            self.signal_menu_button.emit(self.stack_widget.indexOf(menu_widget))
         elif i >= 2:
             # back
             self.back_menu()
@@ -620,10 +622,10 @@ class GUI_PyQt(QtCore.QObject):
     def turn_on_off_light(self):
         self.config.logger.sensor.sensor_ant.set_light_mode("ON_OFF_FLASH_LOW")
 
-    def change_menu_page(self, page, focus_reset=True):
-        self.stack_widget.setCurrentIndex(page)
+    def change_menu_page(self, index, focus_reset=True):
+        self.stack_widget.setCurrentIndex(index)
         # default focus, set only when has_touch is false
-        focus_widget = getattr(self.stack_widget.widget(page), "focus_widget", None)
+        focus_widget = getattr(self.stack_widget.widget(index), "focus_widget", None)
         if focus_widget:
             if focus_reset:
                 focus_widget.setFocus()
@@ -637,7 +639,8 @@ class GUI_PyQt(QtCore.QObject):
         self.stack_widget.currentWidget().back()
 
     def goto_menu(self):
-        self.change_menu_page(self.gui_config.G_GUI_INDEX["Menu"])
+        menu_widget = self.stack_widget.findChild(QtWidgets.QWidget, MenuLabel.MENU)
+        self.change_menu_page(self.stack_widget.indexOf(menu_widget))
 
     async def add_message_queue(self, title=None, message=None, fn=None):
         await self.msg_queue.put(message)
