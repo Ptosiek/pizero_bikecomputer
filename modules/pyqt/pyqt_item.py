@@ -1,9 +1,7 @@
-import time
-
 import numpy as np
 
-from logger import app_logger
 from modules._pyqt import QT_ALIGN_CENTER, QtWidgets
+from modules.item_config import ITEM_CONFIG
 
 
 class ItemLabel(QtWidgets.QLabel):
@@ -59,9 +57,9 @@ class Item(QtWidgets.QVBoxLayout):
     font_size_unit = 0
     font_size_unit_set = False
 
-    def __init__(self, config, name, font_size, bottom_flag, right_flag, *args):
+    def __init__(self, name, font_size, bottom_flag, right_flag, *args):
         super().__init__(*args)
-        self.config = config
+        self.config = ITEM_CONFIG[name]
         self.name = name
 
         self.setContentsMargins(0, 0, 0, 0)
@@ -70,7 +68,7 @@ class Item(QtWidgets.QVBoxLayout):
         self.label = ItemLabel(right_flag, name)
         self.value = ItemValue(right_flag, bottom_flag)
 
-        self.item_format = self.config.gui.gui_config.G_ITEM_DEF[name][0]
+        self.item_format = self.config[0]
 
         self.addWidget(self.label)
         self.addWidget(self.value)

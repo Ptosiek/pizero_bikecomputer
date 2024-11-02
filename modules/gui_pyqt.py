@@ -5,10 +5,10 @@ import signal
 import sys
 
 import numpy as np
+import oyaml as yaml
 
 from logger import app_logger
 from modules.constants import MenuLabel
-from modules.gui_config import GUI_Config
 from modules._pyqt import (
     QT_ALIGN_BOTTOM,
     QT_ALIGN_LEFT,
@@ -88,7 +88,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
 class GUI_PyQt(QtCore.QObject):
     config = None
-    gui_config = None
     app = None
 
     stack_widget = None
@@ -101,6 +100,9 @@ class GUI_PyQt(QtCore.QObject):
     course_profile_graph_widget = None
     map_widget = None
     cuesheet_widget = None
+
+    # layout
+    layout = None
 
     # signal
     signal_next_button = Signal(int)
@@ -132,7 +134,7 @@ class GUI_PyQt(QtCore.QObject):
         self.config = config
         self.config.gui = self
 
-        self.gui_config = GUI_Config(settings.LAYOUT_FILE)
+        self.init_layout(settings.LAYOUT_FILE)
 
         try:
             signal.signal(signal.SIGTERM, self.quit_by_ctrl_c)
@@ -318,7 +320,7 @@ class GUI_PyQt(QtCore.QObject):
             self.main_page = QtWidgets.QStackedWidget(main_widget)
             self.main_page.setContentsMargins(0, 0, 0, 0)
 
-            for k, v in self.gui_config.layout.items():
+            for k, v in self.layout.items():
                 if not v["STATUS"]:
                     continue
                 if "LAYOUT" in v:
@@ -427,6 +429,14 @@ class GUI_PyQt(QtCore.QObject):
             else:
                 self.screen_shape = (p.height(), int(p.width() / 8))
                 self.remove_bytes = p.bytesPerLine() - int(p.width() / 8)
+
+    def init_layout(self, layout_file):
+        try:
+            with open(layout_file) as file:
+                text = file.read()
+                self.layout = yaml.safe_load(text)
+        except FileNotFoundError:
+            self.layout = {}
 
     def draw_display(self, direct_update=False):
         if not self.bufsize:

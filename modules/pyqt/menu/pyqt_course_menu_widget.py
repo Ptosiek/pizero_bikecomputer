@@ -222,14 +222,12 @@ class CourseDetailWidget(MenuWidget):
         self.set_font_size()
 
         self.distance_item = Item(
-            config=self.config,
             name="Distance",
             font_size=20,
             right_flag=True,
             bottom_flag=False,
         )
         self.ascent_item = Item(
-            config=self.config,
             name="Ascent",
             font_size=20,
             right_flag=True,

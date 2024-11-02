@@ -110,7 +110,6 @@ class Config:
     state = None
     gui_class = None
     gui = None
-    gui_config = None
     boot_time = 0
 
     def __init__(self):

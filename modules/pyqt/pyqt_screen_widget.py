@@ -132,7 +132,6 @@ class ScreenWidget(QtWidgets.QWidget):
                         right_flag = True
 
                 item = Item(
-                    config=self.config,
                     name=key,
                     font_size=self.font_size,
                     bottom_flag=bottom_flag,
@@ -151,9 +150,7 @@ class ScreenWidget(QtWidgets.QWidget):
     async def update_display(self):
         for item in self.items:
             try:
-                item.update_value(
-                    eval(self.config.gui.gui_config.G_ITEM_DEF[item.name][1])
-                )
+                item.update_value(eval(item.config[1]))
             except KeyError:
                 pass
                 # item.update_value(None)
@@ -162,5 +159,5 @@ class ScreenWidget(QtWidgets.QWidget):
             except Exception:  # noqa
                 item.update_value(None)
                 app_logger.exception(
-                    f"###update_display### : {item.name} {eval(self.config.gui.gui_config.G_ITEM_DEF[item.name][1])}",
+                    f"###update_display### : {item.name} {eval(item.config[1])}",
                 )
