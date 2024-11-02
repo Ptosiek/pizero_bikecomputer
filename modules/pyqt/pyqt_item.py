@@ -1,7 +1,7 @@
 import numpy as np
 
 from modules._pyqt import QT_ALIGN_CENTER, QtWidgets
-from modules.item_config import ITEM_CONFIG
+from modules.items import ITEM_CONFIG
 
 
 class ItemLabel(QtWidgets.QLabel):
@@ -52,23 +52,21 @@ class Item(QtWidgets.QVBoxLayout):
     config = None
     label = None
     value = None
-    name = ""
 
     font_size_unit = 0
     font_size_unit_set = False
 
-    def __init__(self, name, font_size, bottom_flag, right_flag, *args):
+    def __init__(self, config, font_size, bottom_flag, right_flag, *args):
         super().__init__(*args)
-        self.config = ITEM_CONFIG[name]
-        self.name = name
+        self.config = config
 
         self.setContentsMargins(0, 0, 0, 0)
         self.setSpacing(0)
 
-        self.label = ItemLabel(right_flag, name)
+        self.label = ItemLabel(right_flag, config.label)
         self.value = ItemValue(right_flag, bottom_flag)
 
-        self.item_format = self.config[0]
+        self.item_format = self.config.formatter
 
         self.addWidget(self.label)
         self.addWidget(self.value)

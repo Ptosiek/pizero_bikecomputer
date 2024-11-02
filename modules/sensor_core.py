@@ -92,7 +92,7 @@ class SensorCore:
         for g in self.graph_keys:
             self.values["integrated"][g] = [
                 np.nan
-            ] * settings.GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE
+            ] * settings.PERFORMANCE_GRAPH_DISPLAY_RANGE
         for d in self.diff_keys:
             self.values["integrated"][d] = [np.nan] * self.grade_range
         self.brakelight_spd = [0] * self.brakelight_spd_range

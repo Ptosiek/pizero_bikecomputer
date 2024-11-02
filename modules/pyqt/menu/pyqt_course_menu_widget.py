@@ -1,5 +1,6 @@
 import os
 import shutil
+from collections import namedtuple
 
 from PIL import Image, ImageEnhance, ImageQt
 
@@ -14,12 +15,15 @@ from modules.constants import MenuLabel
 from modules.pyqt.components import icons, topbar
 from modules.pyqt.pyqt_item import Item
 from modules.settings import settings
+from modules.utils.formatter import Altitude, Distance
 from modules.utils.network import detect_network
 from .pyqt_menu_widget import (
     MenuWidget,
     ListWidget,
     ListItemWidget,
 )
+
+SimpleItemConfig = namedtuple("SimpleItemConfig", ("label", "formatter"))
 
 
 class CoursesMenuWidget(MenuWidget):
@@ -222,13 +226,13 @@ class CourseDetailWidget(MenuWidget):
         self.set_font_size()
 
         self.distance_item = Item(
-            name="Distance",
+            config=SimpleItemConfig("Distance", Distance),
             font_size=20,
             right_flag=True,
             bottom_flag=False,
         )
         self.ascent_item = Item(
-            name="Ascent",
+            config=SimpleItemConfig("Ascent", Altitude),
             font_size=20,
             right_flag=True,
             bottom_flag=False,

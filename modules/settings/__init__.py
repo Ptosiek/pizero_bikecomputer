@@ -191,16 +191,10 @@ class SettingsNamespace:
     # PerformanceGraph:
     # 1st: POWER
     # 2nd: HR or W_BAL
-    GUI_PERFORMANCE_GRAPH_DISPLAY_ITEM = ("POWER", "W_BAL")
-    GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE = int(5 * 60 / SENSOR_INTERVAL)  # [s]
-    GUI_MIN_HR = 40
-    GUI_MAX_HR = 200
-    GUI_MIN_POWER = 30
-    GUI_MAX_POWER = 300
-    GUI_MIN_W_BAL = 0
-    GUI_MAX_W_BAL = 100
-    # acceleration graph (AccelerationGraphWidget)
-    GUI_ACC_TIME_RANGE = int(1 * 60 / (REALTIME_GRAPH_INTERVAL / 1000))  # [s]
+    PERFORMANCE_GRAPH_DISPLAY_ITEM = ("Power", "W'bal")
+    PERFORMANCE_GRAPH_DISPLAY_RANGE = int(5 * 60 / SENSOR_INTERVAL)  # [s]
+    # Acceleration graph (AccelerationGraphWidget)
+    ACC_TIME_RANGE = int(1 * 60 / (REALTIME_GRAPH_INTERVAL / 1000))  # [s]
 
     # gross average speed (in setting.conf)
     GROSS_AVG_SPEED = 15  # [km/h]

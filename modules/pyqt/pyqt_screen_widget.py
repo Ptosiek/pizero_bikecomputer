@@ -1,5 +1,6 @@
 from logger import app_logger
 from modules._pyqt import QT_EXPANDING, QtCore, QtWidgets, qasync
+from modules.items import ITEM_CONFIG
 from modules.settings import settings
 
 from .pyqt_item import Item
@@ -132,7 +133,7 @@ class ScreenWidget(QtWidgets.QWidget):
                         right_flag = True
 
                 item = Item(
-                    name=key,
+                    config=ITEM_CONFIG[key],
                     font_size=self.font_size,
                     bottom_flag=bottom_flag,
                     right_flag=right_flag,
@@ -150,14 +151,13 @@ class ScreenWidget(QtWidgets.QWidget):
     async def update_display(self):
         for item in self.items:
             try:
-                item.update_value(eval(item.config[1]))
+                item.update_value(eval(item.config.value))
             except KeyError:
                 pass
                 # item.update_value(None)
-                # print("KeyError :", self.config.gui.gui_config.G_ITEM_DEF[item.name][1])
                 # traceback.print_exc()
             except Exception:  # noqa
                 item.update_value(None)
                 app_logger.exception(
-                    f"###update_display### : {item.name} {eval(item.config[1])}",
+                    f"###update_display### : {item.label} {item.config.value}",
                 )

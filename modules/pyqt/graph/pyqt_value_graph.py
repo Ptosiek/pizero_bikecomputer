@@ -1,6 +1,23 @@
 import numpy as np
 
 from modules._pyqt import pg, qasync
+from modules.items.i2c import (
+    I2C_AccXItemConfig,
+    I2C_AccZItemConfig,
+    I2C_AccYItemConfig,
+    I2C_AltitudeItemConfig,
+    I2C_MStatItemConfig,
+)
+from modules.items.general import (
+    GradeItemConfig,
+    GradeSpdItemConfig,
+    PowerItemConfig,
+    HeartRateItemConfig,
+    LapTimeItemConfig,
+    WBalNormItemConfig,
+    WBalItemConfig,
+)
+from modules.items.gps import GPS_AltitudeItemConfig
 from modules.pyqt.pyqt_screen_widget import ScreenWidget
 from modules.settings import settings
 
@@ -24,7 +41,26 @@ class GraphWidget(ScreenWidget):
 
 
 class PerformanceGraphWidget(GraphWidget):
-    elements = ("Power", "HR", "W'bal(Norm)", "LapTime")
+    elements = (
+        PowerItemConfig.name,
+        HeartRateItemConfig.name,
+        WBalNormItemConfig.name,
+        LapTimeItemConfig.name,
+    )
+    element_config = {
+        PowerItemConfig.name: {
+            "graph_key": "power_graph",
+            "yrange": [30, 300],  # this will adapt automatically
+        },
+        HeartRateItemConfig.name: {
+            "graph_key": "hr_graph",
+            "yrange": [40, 200],
+        },
+        WBalItemConfig.name: {
+            "graph_key": "w_bal_graph",
+            "yrange": (0, 100),
+        },
+    }
 
     # for Power
     # brush = pg.mkBrush(color=(0,160,255,64))
@@ -35,27 +71,11 @@ class PerformanceGraphWidget(GraphWidget):
     pen2 = pg.mkPen(color=(255, 0, 0), width=2)
 
     def __init__(self, parent, config):
-        self.display_item = settings.GUI_PERFORMANCE_GRAPH_DISPLAY_ITEM
-        self.item = {
-            "POWER": {
-                "name": "POWER",
-                "graph_key": "power_graph",
-                "yrange": [settings.GUI_MIN_POWER, settings.GUI_MAX_POWER],
-            },
-            "HR": {
-                "name": "HR",
-                "graph_key": "hr_graph",
-                "yrange": [settings.GUI_MIN_HR, settings.GUI_MAX_HR],
-            },
-            "W_BAL": {
-                "name": "W_BAL",
-                "graph_key": "w_bal_graph",
-                "yrange": [settings.GUI_MIN_W_BAL, settings.GUI_MAX_W_BAL],
-            },
-        }
+        self.display_item = settings.PERFORMANCE_GRAPH_DISPLAY_ITEM
+
         self.plot_data_x1 = []
 
-        for i in range(settings.GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE + 1):
+        for i in range(settings.PERFORMANCE_GRAPH_DISPLAY_RANGE + 1):
             self.plot_data_x1.append(i)
 
         super().__init__(parent, config)
@@ -73,13 +93,10 @@ class PerformanceGraphWidget(GraphWidget):
         self.p1.getAxis("right").linkToView(self.p2)
         self.p2.setXLink(self.p1)
 
-        plot.setXRange(0, settings.GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE)
-        self.p1.setYRange(*self.item[self.display_item[0]]["yrange"])
-        self.p2.setYRange(*self.item[self.display_item[1]]["yrange"])
+        plot.setXRange(0, settings.PERFORMANCE_GRAPH_DISPLAY_RANGE)
+        self.p1.setYRange(*self.element_config[self.display_item[0]]["yrange"])
+        self.p2.setYRange(*self.element_config[self.display_item[1]]["yrange"])
         plot.setMouseEnabled(x=False, y=False)
-
-        # self.p1.setLabels(left=self.item[self.display_item[0]]['name'])
-        # self.p1.getAxis('right').setLabel(self.display_item[self.item[1]]['name'])
 
         # p2 on p1
         self.p1.setZValue(-100)
@@ -93,43 +110,48 @@ class PerformanceGraphWidget(GraphWidget):
     @qasync.asyncSlot()
     async def update_display(self):
         super().update_display()
+        first_item, second_item = self.display_item
+        first_item_config = self.element_config[first_item]
+        second_item_config = self.element_config[second_item]
 
         # all_nan = {'hr_graph': True, 'power_graph': True}
         all_nan = {
-            self.item[self.display_item[0]]["graph_key"]: True,
-            self.item[self.display_item[1]]["graph_key"]: True,
+            first_item_config["graph_key"]: True,
+            second_item_config["graph_key"]: True,
         }
+
         for key in all_nan.keys():
             chk = np.isnan(self.sensor.values["integrated"][key])
+
             if False in chk:
                 all_nan[key] = False
 
-        if not all_nan[self.item[self.display_item[0]]["graph_key"]]:
+        if not all_nan[first_item_config["graph_key"]]:
             self.p1.clear()
 
             # change max for power
-            if self.display_item[0] == "POWER":
+            if first_item == PowerItemConfig.name:
                 power_max = 100 * (
                     int(
                         np.nanmax(
                             self.sensor.values["integrated"][
-                                self.item[self.display_item[0]]["graph_key"]
+                                first_item_config["graph_key"]
                             ]
                         )
                         / 100
                     )
                     + 1
                 )
-                if self.item[self.display_item[0]]["yrange"][1] != power_max:
-                    self.item[self.display_item[0]]["yrange"][1] = power_max
-                    self.p1.setYRange(*self.item[self.display_item[0]]["yrange"])
+                if first_item_config["yrange"][1] != power_max:
+                    first_item_config["yrange"][1] = power_max
+                    self.p1.setYRange(*first_item_config["yrange"])
 
             self.p1.addItem(
                 pg.BarGraphItem(
                     x0=self.plot_data_x1[:-1],
                     x1=self.plot_data_x1[1:],
                     height=self.sensor.values["integrated"][
-                        self.item[self.display_item[0]]["graph_key"]
+                        first_item_config["graph_key"]
                     ],
                     brush=self.brush,
                     pen=self.pen1,
@@ -137,24 +159,26 @@ class PerformanceGraphWidget(GraphWidget):
             )
 
         # if not all_nan['hr_graph']:
-        if not all_nan[self.item[self.display_item[1]]["graph_key"]]:
+        if not all_nan[second_item_config["graph_key"]]:
             self.p2.clear()
             self.p2.setGeometry(self.p1.vb.sceneBoundingRect())
             self.p2.linkedViewChanged(self.p1.vb, self.p2.XAxis)
             # for HR
             self.p2.addItem(
                 pg.PlotCurveItem(
-                    # self.sensor.values['integrated']['hr_graph'],
-                    self.sensor.values["integrated"][
-                        self.item[self.display_item[1]]["graph_key"]
-                    ],
+                    self.sensor.values["integrated"][second_item_config["graph_key"]],
                     pen=self.pen2,
                 )
             )
 
 
 class AccelerationGraphWidget(GraphWidget):
-    elements = ("ACC_X", "ACC_Y", "ACC_Z", "M_Stat")
+    elements = (
+        I2C_AccXItemConfig.name,
+        I2C_AccYItemConfig.name,
+        I2C_AccZItemConfig.name,
+        I2C_MStatItemConfig.name,
+    )
 
     # for acc
     pen1 = pg.mkPen(color=(0, 0, 255), width=3)
@@ -177,7 +201,7 @@ class AccelerationGraphWidget(GraphWidget):
         self.p1.scene().addItem(self.p3)
         self.p3.setXLink(self.p1)
 
-        plot.setXRange(0, settings.GUI_ACC_TIME_RANGE)
+        plot.setXRange(0, settings.ACC_TIME_RANGE)
         plot.setMouseEnabled(x=False, y=False)
 
         self.layout.addWidget(plot, 1, 0, 2, 4)
@@ -239,7 +263,12 @@ class AccelerationGraphWidget(GraphWidget):
 
 
 class AltitudeGraphWidget(GraphWidget):
-    elements = ("Grade", "Grade(spd)", "Altitude", "Alt.(GPS)")
+    elements = (
+        GradeItemConfig.name,
+        GradeSpdItemConfig.name,
+        I2C_AltitudeItemConfig.name,
+        GPS_AltitudeItemConfig.name,
+    )
 
     # for altitude_raw
     pen1 = pg.mkPen(color=(0, 0, 0), width=2)
@@ -248,7 +277,7 @@ class AltitudeGraphWidget(GraphWidget):
     def __init__(self, parent, config):
         super().__init__(parent, config)
         self.plot_data_x1 = []
-        for i in range(settings.GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE):
+        for i in range(settings.PERFORMANCE_GRAPH_DISPLAY_RANGE):
             self.plot_data_x1.append(i)
 
     def setup_ui_extra(self):
@@ -261,7 +290,7 @@ class AltitudeGraphWidget(GraphWidget):
         self.p1.scene().addItem(self.p2)
         self.p2.setXLink(self.p1)
 
-        plot.setXRange(0, settings.GUI_PERFORMANCE_GRAPH_DISPLAY_RANGE)
+        plot.setXRange(0, settings.PERFORMANCE_GRAPH_DISPLAY_RANGE)
         plot.setMouseEnabled(x=False, y=False)
 
         self.y_range = 15
