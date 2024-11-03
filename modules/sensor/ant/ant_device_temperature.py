@@ -1,13 +1,14 @@
 import struct
 from datetime import datetime
 
+from .ant_code import AntDeviceType
 from .ant_device import ANT_Device
 
 
 class ANT_Device_Temperature(ANT_Device):
     ant_config = {
         "interval": (8192, 65535, 65535),
-        "type": 0x19,
+        "type": AntDeviceType.TEMPERATURE,
         "transmission_type": 0x00,
         "channel_type": 0x00,  # Channel.Type.BIDIRECTIONAL_RECEIVE,
     }

@@ -4,13 +4,13 @@ from datetime import datetime
 from logger import app_logger
 from modules.settings import settings
 from .ant_device import ANT_Device
-from .ant_code import AntCode
+from .ant_code import AntCode, AntDeviceType
 
 
 class ANT_Device_Speed_Cadence(ANT_Device):
     ant_config = {
         "interval": (8086, 16172, 32344),
-        "type": 0x79,
+        "type": AntDeviceType.SPEED_AND_CADENCE,
         "transmission_type": 0x00,
         "channel_type": 0x00,  # Channel.Type.BIDIRECTIONAL_RECEIVE,
     }
@@ -118,7 +118,7 @@ class ANT_Device_Speed_Cadence(ANT_Device):
 class ANT_Device_Cadence(ANT_Device):
     ant_config = {
         "interval": (8102, 16204, 32408),
-        "type": 0x7A,
+        "type": AntDeviceType.CADENCE,
         "transmission_type": 0x00,
         "channel_type": 0x00,  # Channel.Type.BIDIRECTIONAL_RECEIVE,
     }
@@ -212,7 +212,7 @@ class ANT_Device_Cadence(ANT_Device):
 class ANT_Device_Speed(ANT_Device_Cadence):
     ant_config = {
         "interval": (8118, 16236, 32472),
-        "type": 0x7B,
+        "type": AntDeviceType.SPEED,
         "transmission_type": 0x00,
         "channel_type": 0x00,  # Channel.Type.BIDIRECTIONAL_RECEIVE,
     }

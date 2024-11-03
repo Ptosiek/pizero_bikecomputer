@@ -1,7 +1,8 @@
 from logger import app_logger
+from modules.constants import ANTDevice  # noqa (needed for AntWidget)
 from modules._pyqt import QT_EXPANDING, QtCore, QtWidgets, qasync
 from modules.items import ITEM_CONFIG
-from modules.settings import settings
+from modules.settings import settings  # noqa (needed for AntWidget)
 
 from .pyqt_item import Item
 
@@ -151,6 +152,7 @@ class ScreenWidget(QtWidgets.QWidget):
     async def update_display(self):
         for item in self.items:
             try:
+                ANTDevice
                 item.update_value(eval(item.config.value))
             except KeyError:
                 pass

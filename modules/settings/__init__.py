@@ -3,6 +3,7 @@ import asyncio
 import json
 import logging
 import os
+
 import yaml
 from configparser import ConfigParser
 from dataclasses import dataclass
@@ -22,6 +23,7 @@ from .maps.utils import MapDict
 _IS_RASPI = False
 UNIT_ID = 0x1A2B3C4D
 SETTINGS_FILE = "setting.conf"
+
 
 try:
     import RPi.GPIO as GPIO
@@ -60,6 +62,7 @@ class SettingsNamespace:
             "lower": lambda x: x.lower(),
             "nparray": lambda x: np.array(json.loads(x)),
             "speed": lambda x: int(x) / 3.6,
+            "tuple": lambda x: tuple(json.loads(x)),
             "upper": lambda x: x.upper(),
         },
     )
@@ -225,6 +228,25 @@ class SettingsNamespace:
     RAIN_OVERLAY_MAP_CONFIG = RAIN_OVERLAY_MAP_CONFIG
     WIND_OVERLAY_MAP_CONFIG = WIND_OVERLAY_MAP_CONFIG
 
+    # ANT
+    ANT_STATUS = False  # global switch
+    # individual switches
+    ANT_CADENCE_STATUS = False
+    ANT_CONTROL_STATUS = False
+    ANT_HEART_RATE_STATUS = False
+    ANT_LIGHT_STATUS = False
+    ANT_POWER_STATUS = False
+    ANT_SPEED_STATUS = False
+    ANT_TEMPERATURE_STATUS = False
+    # currently connected devices as (device_id, device_type)
+    ANT_CADENCE_DEVICE = None
+    ANT_CONTROL_DEVICE = None
+    ANT_HEART_RATE_DEVICE = None
+    ANT_LIGHT_DEVICE = None
+    ANT_POWER_DEVICE = None
+    ANT_SPEED_DEVICE = None
+    ANT_TEMPERATURE_DEVICE = None
+
     # IMU axis conversion
     #  X: to North (up rotation is plus)
     #  Y: to West (up rotation is plus)
@@ -372,6 +394,48 @@ class SettingsNamespace:
         self._set_config_value(section, "CP", "getint")
         self._set_config_value(section, "W_PRIME", "getint")
 
+        if not cf.has_section("ANT"):
+            cf.add_section("ANT")
+
+        section = cf["ANT"]
+
+        self._set_config_value(section, "STATUS", "getboolean")
+        self._set_config_value(section, "CADENCE_STATUS", "getboolean")
+        self._set_config_value(section, "CONTROL_STATUS", "getboolean")
+        self._set_config_value(section, "HEART_RATE_STATUS", "getboolean")
+        self._set_config_value(section, "LIGHT_STATUS", "getboolean")
+        self._set_config_value(section, "POWER_STATUS", "getboolean")
+        self._set_config_value(section, "SPEED_STATUS", "getboolean")
+        self._set_config_value(section, "TEMPERATURE_STATUS", "getboolean")
+
+        self._set_config_value(
+            section, "CADENCE_DEVICE", "gettuple", lambda x: str(list(x) if x else None)
+        )
+        self._set_config_value(
+            section, "CONTROL_DEVICE", "gettuple", lambda x: str(list(x) if x else None)
+        )
+        self._set_config_value(
+            section,
+            "HEART_RATE_DEVICE",
+            "gettuple",
+            lambda x: str(list(x) if x else None),
+        )
+        self._set_config_value(
+            section, "LIGHT_DEVICE", "gettuple", lambda x: str(list(x) if x else None)
+        )
+        self._set_config_value(
+            section, "POWER_DEVICE", "gettuple", lambda x: str(list(x) if x else None)
+        )
+        self._set_config_value(
+            section, "SPEED_DEVICE", "gettuple", lambda x: str(list(x) if x else None)
+        )
+        self._set_config_value(
+            section,
+            "TEMPERATURE_DEVICE",
+            "gettuple",
+            lambda x: str(list(x) if x else None),
+        )
+
         if not cf.has_section("IMU"):
             cf.add_section("IMU")
 
@@ -449,6 +513,25 @@ class SettingsNamespace:
         if key in self.config_parser.binder:
             section, option, write_transform = self.config_parser.binder[key]
             self.config_parser[section][option] = write_transform(value)
+
+    # some helpers for ant settings
+    def is_ant_device_enabled(self, name):
+        return getattr(self, f"ANT_{name}_STATUS")
+
+    def get_ant_device(self, name):
+        try:
+            device_id, device_type = getattr(self, f"ANT_{name}_DEVICE")
+        except TypeError:
+            device_id = device_type = None
+        return device_id, device_type
+
+    def set_ant_device(self, name, value):
+        if not isinstance(value, (type(None), tuple)):
+            raise ValueError(f"Incorrect value for ant device: {value}")
+        self.update_setting(f"ANT_{name}_DEVICE", value)
+
+    def set_ant_device_status(self, name, status):
+        self.update_setting(f"ANT_{name}_STATUS", status)
 
 
 settings = SettingsNamespace()

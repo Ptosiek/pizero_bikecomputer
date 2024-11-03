@@ -4,13 +4,14 @@ from datetime import datetime
 
 from logger import app_logger
 from modules.settings import settings
+from .ant_code import AntDeviceType
 from .ant_device import ANT_Device
 
 
 class ANT_Device_Power(ANT_Device):
     ant_config = {
         "interval": (8182, 16364, 32728),
-        "type": 0x0B,
+        "type": AntDeviceType.POWER,
         "transmission_type": 0x00,
         "channel_type": 0x00,  # Channel.Type.BIDIRECTIONAL_RECEIVE,
     }
@@ -54,7 +55,7 @@ class ANT_Device_Power(ANT_Device):
 
     def reset_value(self):
         self.interval = (
-            self.ant_config["interval"][self.config.G_ANT["INTERVAL"]]
+            self.ant_config["interval"][self.ANT_INTERVAL_INDEX]
             / self.ant_config["interval"][-1]
         )
         self.values[0x10]["accumulated_power"] = 0.0

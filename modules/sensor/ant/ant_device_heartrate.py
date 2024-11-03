@@ -1,12 +1,13 @@
 from datetime import datetime
 
+from .ant_code import AntDeviceType
 from .ant_device import ANT_Device
 
 
 class ANT_Device_HeartRate(ANT_Device):
     ant_config = {
         "interval": (8070, 16140, 32280),
-        "type": 0x78,
+        "type": AntDeviceType.HEART_RATE,
         "transmission_type": 0x00,
         "channel_type": 0x00,  # Channel.Type.BIDIRECTIONAL_RECEIVE,
     }

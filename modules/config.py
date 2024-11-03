@@ -30,69 +30,6 @@ class Config:
     G_MANUAL_STATUS = "INIT"
     G_STOPWATCH_STATUS = "INIT"  # with Auto Pause
 
-    # ANT+ setting (overwritten with setting.conf)
-    # [Todo] multiple pairing(2 or more riders), ANT+ ctrl(like edge remote)
-    G_ANT = {
-        # ANT+ interval internal variable: 0:4Hz(0.25s), 1:2Hz(0.5s), 2:1Hz(1.0s)
-        # initialized by settings.ANT_INTERVAL in __init()__
-        "INTERVAL": 2,
-        "STATUS": True,
-        "USE": {
-            "HR": False,
-            "SPD": False,
-            "CDC": False,
-            "PWR": False,
-            "LGT": False,
-            "CTRL": False,
-            "TEMP": False,
-        },
-        "NAME": {
-            "HR": "HeartRate",
-            "SPD": "Speed",
-            "CDC": "Cadence",
-            "PWR": "Power",
-            "LGT": "Light",
-            "CTRL": "Control",
-            "TEMP": "Temperature",
-        },
-        "ID": {
-            "HR": 0,
-            "SPD": 0,
-            "CDC": 0,
-            "PWR": 0,
-            "LGT": 0,
-            "CTRL": 0,
-            "TEMP": 0,
-        },
-        "TYPE": {
-            "HR": 0,
-            "SPD": 0,
-            "CDC": 0,
-            "PWR": 0,
-            "LGT": 0,
-            "CTRL": 0,
-            "TEMP": 0,
-        },
-        "ID_TYPE": {
-            "HR": 0,
-            "SPD": 0,
-            "CDC": 0,
-            "PWR": 0,
-            "LGT": 0,
-            "CTRL": 0,
-            "TEMP": 0,
-        },
-        "TYPES": {
-            "HR": (0x78,),
-            "SPD": (0x79, 0x7B),
-            "CDC": (0x79, 0x7A, 0x0B),
-            "PWR": (0x0B,),
-            "LGT": (0x23,),
-            "CTRL": (0x10,),
-            "TEMP": (0x19,),
-        },
-    }
-
     # Bluetooth tethering
     G_BT_ADDRESSES = {}
     G_BT_USE_ADDRESS = ""
@@ -142,14 +79,6 @@ class Config:
             settings.CURRENT_MAP["use_mbtiles"] = False
 
         check_map_dir()
-
-        # set ant interval. 0:4Hz(0.25s), 1:2Hz(0.5s), 2:1Hz(1.0s)
-        if settings.ANT_INTERVAL == 0.25:
-            self.G_ANT["INTERVAL"] = 0
-        elif settings.ANT_INTERVAL == 0.5:
-            self.G_ANT["INTERVAL"] = 1
-        else:
-            self.G_ANT["INTERVAL"] = 2
 
         # coroutine loop
         self.init_loop()

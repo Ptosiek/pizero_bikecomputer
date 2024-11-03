@@ -2,8 +2,9 @@ from functools import partial
 
 from logger import app_logger
 from modules._pyqt import QtCore, QtWidgets, QtGui
-from modules.constants import MenuLabel
-from modules.settings import ant, settings
+from modules.constants import MenuLabel, ANTDevice
+from modules.sensor.ant.ant_code import AntCode
+from modules.settings import settings
 from .pyqt_menu_widget import MenuWidget, ListWidget, ListItemWidget
 
 
@@ -27,31 +28,40 @@ class SensorMenuWidget(MenuWidget):
 
 
 class ANTMenuWidget(MenuWidget):
-    ORDER = ["HR", "SPD", "CDC", "PWR", "LGT", "CTRL", "TEMP"]
+    items = {
+        ANTDevice.HEART_RATE: "Heart Rate",
+        ANTDevice.SPEED: "Speed",
+        ANTDevice.CADENCE: "Cadence",
+        ANTDevice.POWER: "Power",
+        ANTDevice.LIGHT: "Light",
+        ANTDevice.CONTROL: "Control",
+        ANTDevice.TEMPERATURE: "Temperature",
+    }
 
     def setup_menu(self):
-        button_conf = []
+        self.add_buttons(
+            [(name, "submenu", partial(self.setting_ant, name)) for name in self.items]
+        )
 
-        for antName in self.ORDER:
-            # Name(page_name), button_attribute, connected functions, layout
-            button_conf.append((antName, "submenu", partial(self.setting_ant, antName)))
-        self.add_buttons(button_conf)
-
-        # modify label from antName to self.get_button_state()
-        for antName in self.ORDER:
-            self.buttons[antName].setText(self.get_button_state(antName))
+        for name in self.items:
+            self.buttons[name].setText(self.get_button_state(name))
 
         if not self.config.display.has_touch:
-            self.focus_widget = self.buttons[self.ORDER[0]]
+            self.focus_widget = self.buttons[next(iter(self.items.keys()))]
 
     def get_button_state(self, ant_name):
         status = "OFF"
-        if ant_name in self.config.G_ANT["USE"] and self.config.G_ANT["USE"][ant_name]:
-            status = "{0:05d}".format(self.config.G_ANT["ID"][ant_name])
-        return self.config.G_ANT["NAME"][ant_name] + ": " + status
+        if settings.is_ant_device_enabled(ant_name):
+            device_id, _ = settings.get_ant_device(ant_name)
+
+            if device_id is not None:
+                status = f"{device_id:05d}"
+            else:
+                status = "No dev"
+        return f"{self.items[ant_name]}: {status}"
 
     def setting_ant(self, ant_name):
-        if self.config.G_ANT["USE"][ant_name]:
+        if settings.is_ant_device_enabled(ant_name):
             # disable ANT+ sensor
             self.config.logger.sensor.sensor_ant.disconnect_ant_sensor(ant_name)
         else:
@@ -106,7 +116,9 @@ class ANTListWidget(ListWidget):
         self.timer.start(settings.DRAW_INTERVAL)
 
     def update_display(self):
-        detected_sensors = self.config.logger.sensor.sensor_ant.searcher.getSearchList()
+        detected_sensors = (
+            self.config.logger.sensor.sensor_ant.searcher.get_search_list()
+        )
 
         for ant_id, ant_type_array in detected_sensors.items():
             ant_id_str = f"{ant_id:05d}"
@@ -116,7 +128,7 @@ class ANTListWidget(ListWidget):
                 self.ant_sensor_types[ant_id] = ant_type_array
                 status = ant_type_array[1]
                 status_str = " (connected)" if status else ""
-                sensor_type = ant.TYPE_NAME_MAP[ant_type_array[0]]
+                sensor_type = AntCode.TYPE[ant_type_array[0]]
                 title = f"{sensor_type} {status_str}".strip()
                 ant_item = ANTListItemWidget(self, ant_id_str, title)
 

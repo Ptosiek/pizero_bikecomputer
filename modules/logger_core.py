@@ -11,6 +11,7 @@ import numpy as np
 from crdp import rdp
 
 from logger import app_logger
+from modules.constants import ANTDevice
 from modules.settings import settings
 from modules.utils.cmd import exec_cmd
 from modules.utils.date import datetime_myparser
@@ -378,9 +379,9 @@ class LoggerCore:
         value_message = (
             f"{(pre_lap_avg['speed'] * 3.6):{Speed.value_format}} {Speed.unit}"
         )
-        if self.config.G_ANT["USE"]["HR"]:
+        if settings.is_ant_device_enabled(ANTDevice.HEART_RATE):
             value_message += f", {pre_lap_avg['heart_rate']:{HeartRate.value_format}} {HeartRate.unit}"
-        if self.config.G_ANT["USE"]["PWR"]:
+        if settings.is_ant_device_enabled(ANTDevice.POWER):
             value_message += (
                 f", {pre_lap_avg['power']:{Power.value_format}} {Power.unit}"
             )

@@ -5,13 +5,14 @@ import struct
 from datetime import datetime
 
 from logger import app_logger
+from .ant_code import AntDeviceType
 from .ant_device import ANT_Device
 
 
 class ANT_Device_Light(ANT_Device):
     ant_config = {
         "interval": (4084, 16336, 32672),  # 4084 / 8168 / 16336 / 32672
-        "type": 0x23,
+        "type": AntDeviceType.LIGHT,
         "transmission_type": 0x00,
         "channel_type": 0x00,  # Channel.Type.BIDIRECTIONAL_RECEIVE,
     }
@@ -150,7 +151,7 @@ class ANT_Device_Light(ANT_Device):
                     0xFF,
                     0x5A,
                     0b01001000,
-                    self.config.G_ANT["ID"][self.name],
+                    self.device_id,
                     0x00,
                 ),
             )

@@ -13,7 +13,10 @@ class ANT_Device:
     timeout = 0xFF  # 0xFF #0: disable high priority search mode, 0xFF: infinite search timeout
     values = None
     ant_state = None
+
+    device_id = 0
     name = ""
+
     elements = ()
     stop_cutoff = 60
     structPattern = {
@@ -54,14 +57,25 @@ class ANT_Device:
     ANT_IDLE_INTERVAL_QUICK = 0.01
     ANT_IDLE_INTERVAL_SCAN = 0.20
 
-    def __init__(self, node=None, config=None, values=None, name=""):
+    # set ant interval. 0:4Hz(0.25s), 1:2Hz(0.5s), 2:1Hz(1.0s)
+    # TODO, do not compare float
+    ANT_INTERVAL_INDEX = (
+        0
+        if settings.ANT_INTERVAL == 0.25
+        else (1 if settings.ANT_INTERVAL == 0.5 else 2)
+    )
+
+    def __init__(self, node=None, config=None, values=None, name="", device_id=0):
         self.node = node
         self.config = config
         self.name = name
+        self.device_id = device_id
+
         if values is None:
             self.values = {}
         else:
             self.values = values
+
         self.add_struct_pattern()
         self.init_value()
 
@@ -103,7 +117,7 @@ class ANT_Device:
         pass
 
     def make_channel(self, c_type, ext_assign=None):
-        if self.config.G_ANT["STATUS"] and self.channel is None:
+        if settings.ANT_STATUS and self.channel is None:
             self.channel = self.node.new_channel(c_type, ext_assign=ext_assign)
             app_logger.info(self.name)
             self.channel.on_broadcast_data = self.on_data
@@ -112,16 +126,16 @@ class ANT_Device:
 
     def channel_set_id(self):  # for slave
         self.channel.set_id(
-            self.config.G_ANT["ID"][self.name],
+            self.device_id,
             self.ant_config["type"],
             self.ant_config["transmission_type"],
         )
 
     def ready_connect(self):
-        if self.config.G_ANT["STATUS"]:
+        if settings.ANT_STATUS:
             self.channel_set_id()
             self.channel.set_period(
-                self.ant_config["interval"][self.config.G_ANT["INTERVAL"]]
+                self.ant_config["interval"][self.ANT_INTERVAL_INDEX]
             )
             self.set_timeout()
             self.channel.set_rf_freq(57)
@@ -139,20 +153,20 @@ class ANT_Device:
         pass
 
     def connect(self, isCheck=True, isChange=False):
-        if not self.config.G_ANT["STATUS"]:
+        if not settings.ANT_STATUS:
             return
 
         if isCheck:
-            if not self.config.G_ANT["USE"][self.name]:
+            if not settings.is_ant_device_enabled(self.name):
                 return
         if self.state_check("OPEN"):
             if isChange:
-                self.config.G_ANT["USE"][self.name] = True
+                settings.set_ant_device_status(self.name, True)
             return
         try:
             self.channel.open()
             if isChange:
-                self.config.G_ANT["USE"][self.name] = True
+                settings.set_ant_device_status(self.name, True)
         except:
             pass
 
@@ -160,15 +174,15 @@ class ANT_Device:
         pass
 
     def disconnect(self, isCheck=True, isChange=False):
-        if not self.config.G_ANT["STATUS"]:
+        if not settings.ANT_STATUS:
             return
 
         if isCheck:
-            if not self.config.G_ANT["USE"][self.name]:
+            if settings.is_ant_device_enabled(self.name):
                 return
         if self.state_check("CLOSE"):
             if isChange:
-                self.config.G_ANT["USE"][self.name] = False
+                settings.set_ant_device_status(self.name, False)
             return
         try:
             self.close_extra()
@@ -179,7 +193,7 @@ class ANT_Device:
                 ]
             )  # EVENT_CHANNEL_CLOSED
             if isChange:
-                self.config.G_ANT["USE"][self.name] = False
+                settings.set_ant_device_status(self.name, False)
         except:
             pass
 

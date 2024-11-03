@@ -1,7 +1,20 @@
-# from FitSDK
+from enum import IntEnum
+
+
+# ant device types
+class AntDeviceType(IntEnum):
+    POWER = 0x0B  # Bike Power
+    CONTROL = 0x10
+    TEMPERATURE = 0x19  # Environment
+    LIGHT = 0x23
+    HEART_RATE = 0x78
+    SPEED_AND_CADENCE = 0x79
+    CADENCE = 0x7A
+    SPEED = 0x7B
 
 
 class AntCode:
+    # from FitSDK
     MANUFACTURER = {
         1: "GARMIN",
         2: "garmin_fr405_antfs",
@@ -226,4 +239,15 @@ class AntCode:
         328: "ictrainer",
         329: "absolute_cycling",
         5759: "actigraphcorp",
+    }
+
+    TYPE = {
+        AntDeviceType.POWER: "Power",
+        AntDeviceType.CONTROL: "Control",
+        AntDeviceType.LIGHT: "Light",
+        AntDeviceType.TEMPERATURE: "Temperature",
+        AntDeviceType.HEART_RATE: "HeartRate",
+        AntDeviceType.SPEED_AND_CADENCE: "Speed and Cadence",
+        AntDeviceType.CADENCE: "Cadence",
+        AntDeviceType.SPEED: "Speed",
     }

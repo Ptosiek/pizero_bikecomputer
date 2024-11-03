@@ -4,6 +4,9 @@ from datetime import datetime
 
 import numpy as np
 
+from .constants import ANTDevice
+from .sensor.ant.ant_code import AntDeviceType
+
 _IMPORT_PSUTIL = False
 try:
     import psutil
@@ -53,13 +56,14 @@ class SensorCore:
     average_secs = [3, 30, 60]
     average_values = {"heart_rate": {}, "power": {}}
     process = None
+    # valid period of sensor [sec]
     time_threshold = {
-        "HR": 15,
-        "SPD": 5,
-        "CDC": 3,
-        "PWR": 3,
-        "TEMP": 45,
-    }  # valid period of sensor [sec]
+        ANTDevice.HEART_RATE: 15,
+        ANTDevice.SPEED: 5,
+        ANTDevice.CADENCE: 3,
+        ANTDevice.POWER: 3,
+        ANTDevice.TEMPERATURE: 45,
+    }
     grade_range = 9
     grade_window_size = 5
     brakelight_spd = []
@@ -194,96 +198,151 @@ class SensorCore:
                 now_time = datetime.now()
                 time_profile.append(now_time)
 
-                ant_id_type = self.config.G_ANT["ID_TYPE"]
                 delta = {
-                    "PWR": {0x10: float("inf"), 0x11: float("inf"), 0x12: float("inf")}
+                    ANTDevice.POWER: {
+                        0x10: float("inf"),
+                        0x11: float("inf"),
+                        0x12: float("inf"),
+                    },
+                    ANTDevice.HEART_RATE: float("inf"),
+                    ANTDevice.SPEED: float("inf"),
+                    ANTDevice.CADENCE: float("inf"),
+                    ANTDevice.TEMPERATURE: float("inf"),
                 }
-                for key in ["HR", "SPD", "CDC", "TEMP", "GPS"]:
-                    delta[key] = float("inf")
+
                 # need for ANT+ ID update
-                for key in ["HR", "SPD", "CDC", "PWR", "TEMP"]:
-                    if (
-                        self.config.G_ANT["USE"][key]
-                        and ant_id_type[key] in self.values["ANT+"]
-                    ):
-                        v[key] = self.values["ANT+"][ant_id_type[key]]
+                for key in [
+                    ANTDevice.HEART_RATE,
+                    ANTDevice.SPEED,
+                    ANTDevice.CADENCE,
+                    ANTDevice.POWER,
+                    ANTDevice.TEMPERATURE,
+                ]:
+                    if settings.is_ant_device_enabled(key):
+                        device = settings.get_ant_device(key)
+
+                        if device in self.values["ANT+"]:
+                            v[key] = self.values["ANT+"][device]
 
                 # make intervals from timestamp
-                for key in ["HR", "SPD", "CDC", "TEMP"]:
-                    if not self.config.G_ANT["USE"][key]:
+                for key in [
+                    ANTDevice.HEART_RATE,
+                    ANTDevice.SPEED,
+                    ANTDevice.CADENCE,
+                    ANTDevice.TEMPERATURE,
+                ]:
+                    if not settings.is_ant_device_enabled(key):
                         continue
+
+                    _, device_type = settings.get_ant_device(key)
+
                     if "timestamp" in v[key]:
                         delta[key] = (now_time - v[key]["timestamp"]).total_seconds()
+
                     # override:
                     # cadence from power
-                    if self.config.G_ANT["TYPE"][key] == 0x0B and key == "CDC":
+                    if device_type == AntDeviceType.POWER and key == ANTDevice.CADENCE:
                         for page in [0x12, 0x10]:
                             if not "timestamp" in v[key][page]:
                                 continue
+
                             delta[key] = (
                                 now_time - v[key][page]["timestamp"]
                             ).total_seconds()
                             break
+
                     # speed from power
-                    elif self.config.G_ANT["TYPE"][key] == 0x0B and key == "SPD":
+                    elif device_type == AntDeviceType.POWER and key == ANTDevice.SPEED:
                         if not "timestamp" in v[key][0x11]:
                             continue
+
                         delta[key] = (
                             now_time - v[key][0x11]["timestamp"]
                         ).total_seconds()
+
                 # timestamp(power)
-                if self.config.G_ANT["USE"]["PWR"]:
+                if settings.is_ant_device_enabled(ANTDevice.POWER):
                     for page in [0x12, 0x11, 0x10]:
-                        if not "timestamp" in v["PWR"][page]:
+                        if not "timestamp" in v[ANTDevice.POWER][page]:
                             continue
-                        delta["PWR"][page] = (
-                            now_time - v["PWR"][page]["timestamp"]
+                        delta[ANTDevice.POWER][page] = (
+                            now_time - v[ANTDevice.POWER][page]["timestamp"]
                         ).total_seconds()
                 if "timestamp" in v["GPS"]:
                     delta["GPS"] = (now_time - v["GPS"]["timestamp"]).total_seconds()
 
                 # HeartRate : ANT+
-                if self.config.G_ANT["USE"]["HR"]:
-                    if delta["HR"] < self.time_threshold["HR"]:
-                        hr = v["HR"]["heart_rate"]
+                if settings.is_ant_device_enabled(ANTDevice.HEART_RATE):
+                    if (
+                        delta[ANTDevice.HEART_RATE]
+                        < self.time_threshold[ANTDevice.HEART_RATE]
+                    ):
+                        hr = v[ANTDevice.HEART_RATE]["heart_rate"]
 
                 # Cadence : ANT+
-                if self.config.G_ANT["USE"]["CDC"]:
+                if settings.is_ant_device_enabled(ANTDevice.CADENCE):
                     cdc = 0
+
+                    _, device_type = settings.get_ant_device(ANTDevice.CADENCE)
+
                     # get from cadence or speed&cadence sensor
-                    if self.config.G_ANT["TYPE"]["CDC"] in [0x79, 0x7A]:
-                        if delta["CDC"] < self.time_threshold["CDC"]:
-                            cdc = v["CDC"]["cadence"]
+                    if device_type in [
+                        AntDeviceType.SPEED_AND_CADENCE,
+                        AntDeviceType.CADENCE,
+                    ]:
+                        if (
+                            delta[ANTDevice.CADENCE]
+                            < self.time_threshold[ANTDevice.CADENCE]
+                        ):
+                            cdc = v[ANTDevice.CADENCE]["cadence"]
+
                     # get from powermeter
-                    elif self.config.G_ANT["TYPE"]["CDC"] == 0x0B:
+                    elif device_type == ANTDevice.POWER:
                         for page in [0x12, 0x10]:
-                            if not "timestamp" in v["CDC"][page]:
+                            if not "timestamp" in v[ANTDevice.CADENCE][page]:
                                 continue
-                            if delta["CDC"] < self.time_threshold["CDC"]:
-                                cdc = v["CDC"][page]["cadence"]
+                            if (
+                                delta[ANTDevice.CADENCE]
+                                < self.time_threshold[ANTDevice.CADENCE]
+                            ):
+                                cdc = v[ANTDevice.CADENCE][page]["cadence"]
                                 break
 
                 # Power : ANT+(assumed crank type > wheel type)
-                if self.config.G_ANT["USE"]["PWR"]:
+                if settings.is_ant_device_enabled(ANTDevice.POWER):
                     pwr = 0
                     # page18 > 17 > 16, 16simple is not used
                     for page in [0x12, 0x11, 0x10]:
-                        if delta["PWR"][page] < self.time_threshold["PWR"]:
-                            pwr = v["PWR"][page]["power"]
+                        if (
+                            delta[ANTDevice.POWER][page]
+                            < self.time_threshold[ANTDevice.POWER]
+                        ):
+                            pwr = v[ANTDevice.POWER][page]["power"]
                             break
 
                 # Speed : ANT+(SPD&CDC, (PWR)) > GPS
-                if self.config.G_ANT["USE"]["SPD"]:
+                if settings.is_ant_device_enabled(ANTDevice.SPEED):
                     spd = 0
-                    if self.config.G_ANT["TYPE"]["SPD"] in [0x79, 0x7B]:
-                        if delta["SPD"] < self.time_threshold["SPD"]:
-                            spd = v["SPD"]["speed"]
-                    elif self.config.G_ANT["TYPE"]["SPD"] == 0x0B:
-                        if delta["SPD"] < self.time_threshold["SPD"]:
-                            spd = v["SPD"][0x11]["speed"]
+
+                    _, device_type = settings.get_ant_device(ANTDevice.SPEED)
+                    if device_type in [
+                        AntDeviceType.SPEED_AND_CADENCE,
+                        AntDeviceType.SPEED,
+                    ]:
+                        if (
+                            delta[ANTDevice.SPEED]
+                            < self.time_threshold[ANTDevice.SPEED]
+                        ):
+                            spd = v[ANTDevice.SPEED]["speed"]
+                    elif device_type == AntDeviceType.POWER:
+                        if (
+                            delta[ANTDevice.SPEED]
+                            < self.time_threshold[ANTDevice.SPEED]
+                        ):
+                            spd = v[ANTDevice.SPEED][0x11]["speed"]
                     # complement from GPS speed when I2C acc sensor is available (using moving status)
                     if (
-                        delta["SPD"] > self.time_threshold["SPD"]
+                        delta[ANTDevice.SPEED] > self.time_threshold[ANTDevice.SPEED]
                         and spd == 0
                         and v["I2C"]["m_stat"] == 1
                         and v["GPS"]["speed"] > 0
@@ -294,36 +353,48 @@ class SensorCore:
                     spd = 0
                     if (
                         not np.isnan(v["GPS"]["speed"])
-                        and delta["GPS"] < self.time_threshold["SPD"]
+                        and delta["GPS"] < self.time_threshold[ANTDevice.SPEED]
                     ):
                         spd = v["GPS"]["speed"]
 
                 # Distance: ANT+(SPD, (PWR)) > GPS
-                if self.config.G_ANT["USE"]["SPD"]:
+                if settings.is_ant_device_enabled(ANTDevice.SPEED):
                     # normal speed meter
-                    if self.config.G_ANT["TYPE"]["SPD"] in [0x79, 0x7B]:
-                        if pre_dst["ANT+"] < v["SPD"]["distance"]:
-                            dst_diff["ANT+"] = v["SPD"]["distance"] - pre_dst["ANT+"]
-                        pre_dst["ANT+"] = v["SPD"]["distance"]
-                    elif self.config.G_ANT["TYPE"]["SPD"] == 0x0B:
-                        if pre_dst["ANT+"] < v["SPD"][0x11]["distance"]:
+                    _, device_type = settings.get_ant_device(ANTDevice.SPEED)
+                    if device_type in [
+                        AntDeviceType.SPEED_AND_CADENCE,
+                        AntDeviceType.SPEED,
+                    ]:
+                        if pre_dst["ANT+"] < v[ANTDevice.SPEED]["distance"]:
                             dst_diff["ANT+"] = (
-                                v["SPD"][0x11]["distance"] - pre_dst["ANT+"]
+                                v[ANTDevice.SPEED]["distance"] - pre_dst["ANT+"]
                             )
-                        pre_dst["ANT+"] = v["SPD"][0x11]["distance"]
+                        pre_dst["ANT+"] = v[ANTDevice.SPEED]["distance"]
+                    elif device_type == AntDeviceType.POWER:
+                        if pre_dst["ANT+"] < v[ANTDevice.SPEED][0x11]["distance"]:
+                            dst_diff["ANT+"] = (
+                                v[ANTDevice.SPEED][0x11]["distance"] - pre_dst["ANT+"]
+                            )
+                        pre_dst["ANT+"] = v[ANTDevice.SPEED][0x11]["distance"]
                     dst_diff["USE"] = dst_diff["ANT+"]
                     grade_use["ANT+"] = True
+
                 if "timestamp" in v["GPS"]:
                     if pre_dst["GPS"] < v["GPS"]["distance"]:
                         dst_diff["GPS"] = v["GPS"]["distance"] - pre_dst["GPS"]
                     pre_dst["GPS"] = v["GPS"]["distance"]
-                    if not self.config.G_ANT["USE"]["SPD"] and dst_diff["GPS"] > 0:
+
+                    if (
+                        not settings.is_ant_device_enabled(ANTDevice.SPEED)
+                        and dst_diff["GPS"] > 0
+                    ):
                         dst_diff["USE"] = dst_diff["GPS"]
                         grade_use["GPS"] = True
+
                     # ANT+ sensor is not connected from the beginning of the ride
-                    elif self.config.G_ANT["USE"]["SPD"]:
+                    elif settings.is_ant_device_enabled(ANTDevice.SPEED):
                         if (
-                            delta["SPD"] == np.inf
+                            delta[ANTDevice.SPEED] == np.inf
                             and dst_diff["ANT+"] == 0
                             and dst_diff["GPS"] > 0
                         ):
@@ -332,27 +403,32 @@ class SensorCore:
                             grade_use["GPS"] = True
 
                 # Total Power: ANT+
-                if self.config.G_ANT["USE"]["PWR"]:
+                if settings.is_ant_device_enabled(ANTDevice.POWER):
                     # both type are not exist in same ID(0x12:crank, 0x11:wheel)
                     # if 0x12 or 0x11 exists, never take 0x10
                     for page in [0x12, 0x11, 0x10]:
-                        if "timestamp" in v["PWR"][page]:
+                        if "timestamp" in v[ANTDevice.POWER][page]:
                             if (
                                 pre_ttlwork["ANT+"]
-                                < v["PWR"][page]["accumulated_power"]
+                                < v[ANTDevice.POWER][page]["accumulated_power"]
                             ):
                                 ttlwork_diff = (
-                                    v["PWR"][page]["accumulated_power"]
+                                    v[ANTDevice.POWER][page]["accumulated_power"]
                                     - pre_ttlwork["ANT+"]
                                 )
-                            pre_ttlwork["ANT+"] = v["PWR"][page]["accumulated_power"]
+                            pre_ttlwork["ANT+"] = v[ANTDevice.POWER][page][
+                                "accumulated_power"
+                            ]
                             # never take other powermeter
                             break
 
                 # Temperature : ANT+
-                if self.config.G_ANT["USE"]["TEMP"]:
-                    if delta["TEMP"] < self.time_threshold["TEMP"]:
-                        temperature = v["TEMP"]["temperature"]
+                if settings.is_ant_device_enabled(ANTDevice.TEMPERATURE):
+                    if (
+                        delta[ANTDevice.TEMPERATURE]
+                        < self.time_threshold[ANTDevice.TEMPERATURE]
+                    ):
+                        temperature = v[ANTDevice.TEMPERATURE]["temperature"]
                 elif not np.isnan(v["I2C"]["temperature"]):
                     temperature = v["I2C"]["temperature"]
 
@@ -364,12 +440,15 @@ class SensorCore:
                         if dst_diff[key] > 0:
                             alt_diff[key] = alt - pre_alt[key]
                         pre_alt[key] = alt
-                    if self.config.G_ANT["USE"]["SPD"]:
+                    if settings.is_ant_device_enabled(ANTDevice.SPEED):
                         alt_diff["USE"] = alt_diff["ANT+"]
-                    elif not self.config.G_ANT["USE"]["SPD"] and dst_diff["GPS"] > 0:
+                    elif (
+                        not settings.is_ant_device_enabled(ANTDevice.SPEED)
+                        and dst_diff["GPS"] > 0
+                    ):
                         alt_diff["USE"] = alt_diff["GPS"]
                     # for grade (speed base)
-                    if self.config.G_ANT["USE"]["SPD"]:
+                    if settings.is_ant_device_enabled(ANTDevice.SPEED):
                         if dst_diff["ANT+"] > 0:
                             alt_diff_spd["ANT+"] = alt - pre_alt_spd["ANT+"]
                         pre_alt_spd["ANT+"] = alt
@@ -409,7 +488,7 @@ class SensorCore:
                     glide = pre_glide
 
                 # grade (speed base)
-                if self.config.G_ANT["USE"]["SPD"]:
+                if settings.is_ant_device_enabled(ANTDevice.SPEED):
                     dst_diff_spd["ANT+"] = spd * self.actual_loop_interval
                     for key in ["alt_diff_spd", "dst_diff_spd"]:
                         self.values["integrated"][key][0:-1] = self.values[
@@ -446,11 +525,12 @@ class SensorCore:
                 self.values["integrated"]["glide_ratio"] = glide
                 self.values["integrated"]["temperature"] = temperature
 
-                if self.config.G_ANT["USE"]["PWR"]:
+                if settings.is_ant_device_enabled(ANTDevice.POWER):
                     self.calc_w_prime_balance(pwr)
 
                 for g in self.graph_keys:
                     self.values["integrated"][g][:-1] = self.values["integrated"][g][1:]
+
                 self.values["integrated"]["hr_graph"][-1] = hr
                 self.values["integrated"]["power_graph"][-1] = pwr
                 self.values["integrated"]["w_bal_graph"][-1] = self.values[
@@ -460,9 +540,13 @@ class SensorCore:
                 self.values["integrated"]["altitude_graph"][-1] = v["I2C"]["altitude"]
 
                 # average power, heart_rate
-                if self.config.G_ANT["USE"]["PWR"] and not np.isnan(pwr):
+                if settings.is_ant_device_enabled(ANTDevice.POWER) and not np.isnan(
+                    pwr
+                ):
                     self.get_ave_values("power", pwr)
-                if self.config.G_ANT["USE"]["HR"] and not np.isnan(hr):
+                if settings.is_ant_device_enabled(
+                    ANTDevice.HEART_RATE
+                ) and not np.isnan(hr):
                     self.get_ave_values("heart_rate", hr)
 
                 time_profile.append(datetime.now())
@@ -485,7 +569,7 @@ class SensorCore:
                     # ANT+ speed sensor is available
                     if (
                         np.isnan(v["I2C"]["m_stat"])
-                        or self.config.G_ANT["USE"]["SPD"]
+                        or settings.is_ant_device_enabled(ANTDevice.SPEED)
                         or settings.DUMMY_OUTPUT
                     ):
                         flag_moving = True
@@ -508,7 +592,10 @@ class SensorCore:
                 elif np.isnan(spd) and self.config.G_MANUAL_STATUS == "START":
                     # stop recording if speed is broken
                     if (
-                        (self.config.G_ANT["USE"]["SPD"] or "timestamp" in v["GPS"])
+                        (
+                            settings.is_ant_device_enabled(ANTDevice.SPEED)
+                            or "timestamp" in v["GPS"]
+                        )
                         and self.config.G_STOPWATCH_STATUS == "START"
                         and self.config.logger is not None
                     ):
@@ -630,7 +717,7 @@ class SensorCore:
 
         v = self.values["integrated"]
         pwr_cp_diff = pwr - settings.POWER_CP
-        # Waterworth algorighm
+        # Waterworth algorithm
         if settings.POWER_W_PRIME_ALGORITHM == "WATERWORTH":
             if pwr < settings.POWER_CP:
                 v["w_prime_power_sum"] = v["w_prime_power_sum"] + pwr

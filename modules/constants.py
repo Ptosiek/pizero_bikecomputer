@@ -1,5 +1,7 @@
 from enum import StrEnum
 
+from modules.utils.formatter import HeartRate
+
 
 class MenuLabel(StrEnum):
     ADJUST_ALTITUDE = "Adjust Altitude"
@@ -42,3 +44,18 @@ class MenuLabel(StrEnum):
     WIFI = "Wifi"
     WIND_MAP = "Wind map"
     WIND_MAP_LIST = "Wind map List"
+
+
+# these are 'individual' ant devices as supported by the system
+class ANTDevice(StrEnum):
+    CADENCE = "CADENCE"
+    CONTROL = "CONTROL"
+    HEART_RATE = "HEART_RATE"
+    LIGHT = "LIGHT"
+    POWER = "POWER"
+    SPEED = "SPEED"
+    TEMPERATURE = "TEMPERATURE"
+
+    @classmethod
+    def keys(cls):
+        return list(map(lambda c: c.value, cls))

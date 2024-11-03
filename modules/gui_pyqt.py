@@ -353,18 +353,14 @@ class GUI_PyQt(QtCore.QObject):
                             )
                         )
                         self.main_page.addWidget(self.acc_graph_widget)
-                    elif k == "PERFORMANCE_GRAPH" and self.config.G_ANT["STATUS"]:
+                    elif k == "PERFORMANCE_GRAPH" and settings.ANT_STATUS:
                         self.performance_graph_widget = (
                             pyqt_value_graph.PerformanceGraphWidget(
                                 self.main_page, self.config
                             )
                         )
                         self.main_page.addWidget(self.performance_graph_widget)
-                    elif (
-                        k == "COURSE_PROFILE_GRAPH"
-                        and os.path.exists(settings.COURSE_FILE_PATH)
-                        and settings.COURSE_INDEXING
-                    ):
+                    elif k == "COURSE_PROFILE_GRAPH":
                         self.course_profile_graph_widget = (
                             pyqt_course_profile.CourseProfileGraphWidget(
                                 self.main_page, self.config

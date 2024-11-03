@@ -5,11 +5,13 @@ from datetime import datetime
 import numpy as np
 
 from logger import app_logger
+from modules.constants import ANTDevice
 from modules.settings import settings
 from modules.utils.filters import KalmanFilter, KalmanFilter_pitch
 from modules.utils.geo import get_track_str
 from modules.utils.network import detect_network
 from .sensor import Sensor
+
 
 # I2C
 _SENSOR_I2C = False
@@ -1080,23 +1082,14 @@ class SensorI2C(Sensor):
         # get temperature
         temperature = None
 
-        ant_value = np.nan
-        if (
-            self.config.G_ANT["ID_TYPE"]["TEMP"]
-            in self.config.logger.sensor.values["ANT+"]
-        ):
-            ant_value = self.config.logger.sensor.values["ANT+"][
-                self.config.G_ANT["ID_TYPE"]["TEMP"]
-            ]["temperature"]
-
         # from ANT+ sensor (temp), do not use I2C sensor because of inaccuracy
-        if (
-            self.config.G_ANT["USE"]["TEMP"]
-            and self.config.G_ANT["ID_TYPE"]["TEMP"] != 0
-            and not np.isnan(ant_value)
-        ):
-            temperature = ant_value
-            self.sealevel_temp = 273.15 + ant_value + 0.0065 * alt
+        if settings.is_ant_device_enabled(ANTDevice.TEMPERATURE):
+            device = settings.get_ant_device(ANTDevice.TEMPERATURE)
+            ant_value = self.config.logger.sensor.values["ANT+"][device]["temperature"]
+
+            if not np.isnan(ant_value):
+                temperature = ant_value
+                self.sealevel_temp = 273.15 + ant_value + 0.0065 * alt
 
         self.sealevel_pa = self.values["pressure"] * pow(
             (self.sealevel_temp - 0.0065 * alt) / self.sealevel_temp, -5.257
@@ -1113,8 +1106,10 @@ class SensorI2C(Sensor):
         app_logger.info("update sealevel pressure")
         app_logger.info(f"altitude: {alt} m")
         app_logger.info(f"pressure: {round(self.values['pressure'], 3)} hPa")
+
         if temperature is not None:
             app_logger.info(f"temp: {round(temperature, 1)} C")
+
         app_logger.info(
             f"sealevel temperature: {round(self.sealevel_temp - 273.15, 1)} C"
         )
