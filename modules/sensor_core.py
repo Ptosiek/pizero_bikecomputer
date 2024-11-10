@@ -26,6 +26,7 @@ from modules.items.gps import GPS_AltitudeItemConfig
 from modules.items.i2c import I2C_AltitudeItemConfig
 from modules.settings import settings
 from modules.utils.timer import Timer, log_timers
+from modules.utils.w_prime_balance import calc_w_prime_balance, init_w_prime_balance
 from .sensor.ant.ant_code import AntDeviceType
 from .sensor.gps import SensorGPS
 from .sensor.sensor_ant import SensorANT
@@ -145,14 +146,12 @@ class SensorCore:
     def reset_internal(self):
         self.values["integrated"]["distance"] = 0
         self.values["integrated"]["accumulated_power"] = 0
-        self.values["integrated"]["w_prime_balance"] = settings.POWER_W_PRIME
-        self.values["integrated"]["w_prime_power_sum"] = 0
-        self.values["integrated"]["w_prime_power_count"] = 0
-        self.values["integrated"]["w_prime_t"] = 0
-        self.values["integrated"]["w_prime_sum"] = 0
-        self.values["integrated"]["pwr_mean_under_cp"] = 0
-        self.values["integrated"]["tau"] = (
-            546 * np.exp(-0.01 * (settings.POWER_CP - 0)) + 316
+        self.values["integrated"].update(
+            init_w_prime_balance(
+                settings.POWER_CP,
+                settings.POWER_W_PRIME,
+                settings.POWER_W_PRIME_ALGORITHM,
+            )
         )
 
     async def integrate(self):
@@ -521,7 +520,15 @@ class SensorCore:
                 self.values["integrated"]["temperature"] = temperature
 
                 if settings.is_ant_device_enabled(ANTDevice.POWER):
-                    self.calc_w_prime_balance(pwr)
+                    w_prime_data = calc_w_prime_balance(
+                        pwr,
+                        settings.POWER_CP,
+                        settings.POWER_W_PRIME,
+                        self.values["integrated"],
+                        settings.POWER_W_PRIME_ALGORITHM,
+                        settings.SENSOR_INTERVAL,
+                    )
+                    self.values["integrated"].update(w_prime_data)
 
                 # update performance graph if initialized
                 if performance_graph_widget := self.config.gui.performance_graph_widget:
@@ -713,44 +720,3 @@ class SensorCore:
             self.values["integrated"]["ave_{}_{}s".format(k, sec)] = int(
                 np.mean(self.average_values[k][sec])
             )
-
-    def calc_w_prime_balance(self, pwr):
-        # https://medium.com/critical-powers/comparison-of-wbalance-algorithms-8838173e2c15
-
-        v = self.values["integrated"]
-        pwr_cp_diff = pwr - settings.POWER_CP
-        # Waterworth algorithm
-        if settings.POWER_W_PRIME_ALGORITHM == "WATERWORTH":
-            if pwr < settings.POWER_CP:
-                v["w_prime_power_sum"] = v["w_prime_power_sum"] + pwr
-                v["w_prime_power_count"] = v["w_prime_power_count"] + 1
-                v["pwr_mean_under_cp"] = (
-                    v["w_prime_power_sum"] / v["w_prime_power_count"]
-                )
-                v["tau"] = (
-                    546 * np.exp(-0.01 * (settings.POWER_CP - v["pwr_mean_under_cp"]))
-                    + 316
-                )
-            v["w_prime_sum"] += max(0, pwr_cp_diff) * np.exp(v["w_prime_t"] / v["tau"])
-            v["w_prime_t"] += settings.SENSOR_INTERVAL
-            v["w_prime_balance"] = settings.POWER_W_PRIME - v["w_prime_sum"] * np.exp(
-                -v["w_prime_t"] / v["tau"]
-            )
-
-        # Differential algorithm
-        elif settings.POWER_W_PRIME_ALGORITHM == "DIFFERENTIAL":
-            cp_pwr_diff = -pwr_cp_diff
-            if cp_pwr_diff < 0:
-                # consume
-                v["w_prime_balance"] += cp_pwr_diff
-            else:
-                # recovery
-                v["w_prime_balance"] += (
-                    cp_pwr_diff
-                    * (settings.POWER_W_PRIME - v["w_prime_balance"])
-                    / settings.POWER_W_PRIME
-                )
-
-        v["w_prime_balance_normalized"] = round(
-            v["w_prime_balance"] / settings.POWER_W_PRIME * 100, 1
-        )
