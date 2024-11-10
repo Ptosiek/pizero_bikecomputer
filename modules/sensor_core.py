@@ -4,9 +4,6 @@ from datetime import datetime
 
 import numpy as np
 
-from .constants import ANTDevice
-from .sensor.ant.ant_code import AntDeviceType
-
 _IMPORT_PSUTIL = False
 try:
     import psutil
@@ -19,8 +16,17 @@ from logger import app_logger
 
 app_logger.info("detected sensor modules:")
 
+from modules.constants import ANTDevice
+from modules.items.general import (
+    HeartRateItemConfig,
+    PowerItemConfig,
+    WBalNormItemConfig,
+)
+from modules.items.gps import GPS_AltitudeItemConfig
+from modules.items.i2c import I2C_AltitudeItemConfig
 from modules.settings import settings
 from modules.utils.timer import Timer, log_timers
+from .sensor.ant.ant_code import AntDeviceType
 from .sensor.gps import SensorGPS
 from .sensor.sensor_ant import SensorANT
 from .sensor.sensor_gpio import SensorGPIO
@@ -69,13 +75,6 @@ class SensorCore:
     brakelight_spd = []
     brakelight_spd_range = 4
     brakelight_spd_cutoff = 4  # 4*3.6 = 14.4 [km/h]
-    graph_keys = [
-        "hr_graph",
-        "power_graph",
-        "w_bal_graph",
-        "altitude_gps_graph",
-        "altitude_graph",
-    ]
     diff_keys = [
         "alt_diff",
         "dst_diff",
@@ -93,12 +92,8 @@ class SensorCore:
             self.values["integrated"][key] = np.nan
         self.reset_internal()
 
-        for g in self.graph_keys:
-            self.values["integrated"][g] = [
-                np.nan
-            ] * settings.PERFORMANCE_GRAPH_DISPLAY_RANGE
         for d in self.diff_keys:
-            self.values["integrated"][d] = [np.nan] * self.grade_range
+            self.values["integrated"][d] = np.full(self.grade_range, np.nan)
         self.brakelight_spd = [0] * self.brakelight_spd_range
         self.values["integrated"]["CPU_MEM"] = ""
 
@@ -528,16 +523,23 @@ class SensorCore:
                 if settings.is_ant_device_enabled(ANTDevice.POWER):
                     self.calc_w_prime_balance(pwr)
 
-                for g in self.graph_keys:
-                    self.values["integrated"][g][:-1] = self.values["integrated"][g][1:]
+                # update performance graph if initialized
+                if performance_graph_widget := self.config.gui.performance_graph_widget:
+                    performance_graph_widget.update_value(PowerItemConfig.name, pwr)
+                    performance_graph_widget.update_value(HeartRateItemConfig.name, hr)
+                    performance_graph_widget.update_value(
+                        WBalNormItemConfig.name,
+                        self.values["integrated"]["w_prime_balance_normalized"],
+                    )
 
-                self.values["integrated"]["hr_graph"][-1] = hr
-                self.values["integrated"]["power_graph"][-1] = pwr
-                self.values["integrated"]["w_bal_graph"][-1] = self.values[
-                    "integrated"
-                ]["w_prime_balance_normalized"]
-                self.values["integrated"]["altitude_gps_graph"][-1] = v["GPS"]["alt"]
-                self.values["integrated"]["altitude_graph"][-1] = v["I2C"]["altitude"]
+                # update altitude graph if initialized
+                if altitude_graph_widget := self.config.gui.altitude_graph_widget:
+                    altitude_graph_widget.update_value(
+                        I2C_AltitudeItemConfig.name, v["I2C"]["altitude"]
+                    )
+                    altitude_graph_widget.update_value(
+                        GPS_AltitudeItemConfig.name, v["GPS"]["alt"]
+                    )
 
                 # average power, heart_rate
                 if settings.is_ant_device_enabled(ANTDevice.POWER) and not np.isnan(

@@ -8,6 +8,8 @@ from .pyqt_item import Item
 
 
 class ScreenWidget(QtWidgets.QWidget):
+    DRAW_INTERVAL = settings.DRAW_INTERVAL
+
     config = None
     layout_class = QtWidgets.QGridLayout
     item_layout = None
@@ -73,7 +75,7 @@ class ScreenWidget(QtWidgets.QWidget):
 
     # call from on_change_main_page in gui_pyqt.py
     def start(self):
-        self.timer.start(settings.DRAW_INTERVAL)
+        self.timer.start(self.DRAW_INTERVAL)
 
     # call from on_change_main_page in gui_pyqt.py
     def stop(self):

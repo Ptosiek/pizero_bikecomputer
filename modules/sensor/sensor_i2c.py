@@ -111,10 +111,6 @@ class SensorI2C(Sensor):
         "MAG": "",
     }
 
-    # for graph
-    graph_values = {}
-    graph_keys = ("g_acc",)
-
     # for LP filter
     pre_value = {}
     # for modify magnetic north
@@ -410,10 +406,6 @@ class SensorI2C(Sensor):
 
         self.values["fixed_pitch"] = 0
         self.values["fixed_roll"] = 0
-
-        self.graph_values = {}
-        for g in self.graph_keys:
-            self.graph_values[g] = np.full((3, settings.ACC_TIME_RANGE), np.nan)
 
         # for moving status
         self.mov_window_size = int(2 / settings.I2C_INTERVAL) + 1
@@ -947,13 +939,9 @@ class SensorI2C(Sensor):
             # LP filter
             self.lp_filter("modified_pitch", 6)
 
-        # put into graph
-        for g in self.graph_keys:
-            if g not in self.graph_values:
-                continue
-            self.graph_values[g][:, 0:-1] = self.graph_values[g][:, 1:]
-            # self.graph_values[g][:, -1] = self.values['acc_graph']
-            self.graph_values[g][:, -1] = np.array(
+        # update acc graph if initialized
+        if acc_graph_widget := self.config.gui.acc_graph_widget:
+            acc_graph_widget.update_value(
                 [
                     self.values["acc_graph"][X],
                     self.values["acc_graph"][Y],

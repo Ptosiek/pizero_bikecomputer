@@ -191,13 +191,14 @@ class SettingsNamespace:
     # for keeping on course seconds
     GPS_KEEP_ON_COURSE_CUTOFF = int(60 / GPS_INTERVAL)  # [s]
 
+    # Acceleration graph
+    ACC_GRAPH_DISPLAY_RANGE = int(1 * 60 / (REALTIME_GRAPH_INTERVAL / 1000))  # [s]
+    # AltitudeGraph
+    ALTITUDE_GRAPH_DISPLAY_RANGE = int(5 * 60 / SENSOR_INTERVAL)  # [s]
     # PerformanceGraph:
-    # 1st: POWER
-    # 2nd: HR or W_BAL
-    PERFORMANCE_GRAPH_DISPLAY_ITEM = ("Power", "W'bal")
+    # Power | Heart Rate | W'bal(Norm)
+    PERFORMANCE_GRAPH_DISPLAY_ITEM = ("Power", "W'bal(Norm)")  # 2 elements max
     PERFORMANCE_GRAPH_DISPLAY_RANGE = int(5 * 60 / SENSOR_INTERVAL)  # [s]
-    # Acceleration graph (AccelerationGraphWidget)
-    ACC_TIME_RANGE = int(1 * 60 / (REALTIME_GRAPH_INTERVAL / 1000))  # [s]
 
     # gross average speed (in setting.conf)
     GROSS_AVG_SPEED = 15  # [km/h]
