@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "pizero-bikecomputer-v2"
+version = "0.1.0"
+description = ""
+authors = ["Ptosiek <16878205+Ptosiek@users.noreply.github.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+aiohttp = "3.10.10"
+aiofiles = "24.1.0"
+numpy = "1.26.4"
+oyaml = "1.0"
+pillow = "11.0.0"
+pyqtgraph= "0.13.7"
+qasync = "0.24.0"
+timezonefinder = "6.5.4"
+
+# optional
+bluez-peripheral = {version = "0.1.7", optional = true}
+dbus-next = {version = "0.2.3", optional = true}
+# gps3 = {version = "0.33.3", optional = true}  # cyclic ref
+pa1010d = {version = "0.0.4", optional = true}
+polyline = {version = "2.0.0", optional = true}
+# smbus = {version = "1.1.post2", optional = true}  # not supporting PEP 517 build
+crdp = {git = "https://github.com/hishizuka/crdp.git"}
+
+[tool.poetry.extras]
+dbus-next = ["dbus-next"]
+gadgetbridge = ["bluez-peripheral"]
+gps_i2c = ["pa1010d", "smbus"]
+polyline = ["polyline"]
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^4.0.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

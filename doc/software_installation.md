@@ -86,7 +86,7 @@ Assume Serial interface is on and login shell is off in raspi-config and GPS dev
 
 ```
 $ sudo apt install gpsd gpsd-clients
-$ sudo pip3 install gps3 timezonefinder 
+$ sudo pip3 install gps3 timezonefinder
 $ sudo cp install/etc/default/gpsd /etc/default/gpsd
 $ sudo systemctl enable gpsd
 ```
@@ -110,7 +110,7 @@ Check with [pa1010d example program](https://github.com/pimoroni/pa1010d-python/
 $ sudo apt install libusb-1.0-0 python3-usb
 $ sudo pip3 install git+https://github.com/hishizuka/openant.git
 ```
- 
+
 
 ### Display
 
@@ -147,11 +147,11 @@ $ sudo pip3 install adafruit-circuitpython-bmp280
 | [Sparkfun](https://www.sparkfun.com/) | [BMP581](https://www.sparkfun.com/products/20170) | None |
 | [Adafruit](https://www.adafruit.com) | [LPS33HW](https://www.adafruit.com/product/4414) | adafruit-circuitpython-lps35hw |
 | [Strawberry Linux](https://strawberry-linux.com) | [LPS33HW](https://strawberry-linux.com/catalog/items?code=12133) | None |
-| [DFRobot](https://www.dfrobot.com) | [BMX160+BMP388](https://www.dfrobot.com/product-1928.html) | BMX160(*1) | 
+| [DFRobot](https://www.dfrobot.com) | [BMX160+BMP388](https://www.dfrobot.com/product-1928.html) | BMX160(*1) |
 | [Adafruit](https://www.adafruit.com) | [LSM6DS33 + LIS3MDL](https://www.adafruit.com/product/4485) | adafruit-circuitpython-lsm6ds adafruit-circuitpython-lis3mdl |
 | [Sparkfun](https://www.sparkfun.com/) | [ISM330DHCX + MMC5983MA ](https://www.sparkfun.com/products/19895) | adafruit-circuitpython-lsm6ds |
-| [Adafruit](https://www.adafruit.com) | [LSM9DS1](https://www.adafruit.com/product/4634) | adafruit-circuitpython-lsm9ds1 | 
-| [Adafruit](https://www.adafruit.com) | [BNO055](https://www.adafruit.com/product/4646) | adafruit-circuitpython-bno055(*2) | 
+| [Adafruit](https://www.adafruit.com) | [LSM9DS1](https://www.adafruit.com/product/4634) | adafruit-circuitpython-lsm9ds1 |
+| [Adafruit](https://www.adafruit.com) | [BNO055](https://www.adafruit.com/product/4646) | adafruit-circuitpython-bno055(*2) |
 | [Adafruit](https://www.adafruit.com) | [VCNL4040](https://www.adafruit.com/product/4161) | adafruit-circuitpython-vcnl4040 |
 | [ozzmaker](https://ozzmaker.com) | [Berry GPS IMU v4](https://ozzmaker.com/product/berrygps-imu/) | adafruit-circuitpython-lsm6ds adafruit-circuitpython-lis3mdl |
 | [GPS PIE](https://gps-pie.com/) | [GPS PIE](https://gps-pie.com/) | adafruit-circuitpython-bno055(*2) |
@@ -244,7 +244,7 @@ $ sudo systemctl start pizero_bikecomputer.service
 
 <img width="400" alt="screen01" src="https://user-images.githubusercontent.com/12926652/206077256-f8bda5e5-e4a3-4c39-a7ff-ea343067756c.png">
 
-The buttons at the bottom of the screen are assigned the following functions from left to right. 
+The buttons at the bottom of the screen are assigned the following functions from left to right.
 
 | Button | Short press | Long press |
 |:-|:-|:-|
@@ -435,7 +435,7 @@ Right side
 <img width="400" alt="menu-02-sensors" src="https://user-images.githubusercontent.com/12926652/206076191-4b8a4084-64a0-443b-a434-f6c6b4d51e2a.png">
 
 - ANT+ Sensors
-  - Pairing with ANT+ sensors. 
+  - Pairing with ANT+ sensors.
   - You need to install the ANT+ library and to set [ANT section](#ant-section) of setting.conf with `status = True`.
   - The pairing setting is saved in setting.conf when a sensor is connected, so it will be automatically connected next time you start the program.
 - Wheel Size
@@ -461,7 +461,7 @@ Right side
 ### Upload Activity
 
 Uploads the most recent activity record file(.fit) created by the reset operation after the power is turned on.
- 
+
 <img width="400" alt="menu-04-upload_activity" src="https://user-images.githubusercontent.com/12926652/206076198-55803175-ef4c-4f9b-9408-b44dbe98b1b3.png">
 
 - Ride with GPS
@@ -489,7 +489,7 @@ RainViewer
 
 気象庁降水ナウキャスト(Japan)
 
-<img src ="https://user-images.githubusercontent.com/12926652/205563333-549cf4dc-abbd-4392-9233-b8391687e0bc.png" width=400/> 
+<img src ="https://user-images.githubusercontent.com/12926652/205563333-549cf4dc-abbd-4392-9233-b8391687e0bc.png" width=400/>
 
 #### Wind map
 
@@ -528,7 +528,7 @@ If ANT+ powermeter is available, set both parameters are used in W'balance (%). 
 - IP Address
   - Show IP address. This can be used for ssh access while tethering a smartphone.
 - GadgetBridge
-  - Recieve notifications and GPS location from a smartphone. Install [GadgetBridge](https://gadgetbridge.org) Android app and toggle on.
+  - Receive notifications and GPS location from a smartphone. Install [GadgetBridge](https://gadgetbridge.org) Android app and toggle on.
   - `dbus-next` and `bluez-peripheral` packages, which can be installed with the `pip3` command, is required.
   - GadgetBridge app settings
     - Enable all permissions.
@@ -587,7 +587,7 @@ Set the value before starting the program. If the value is set during running, i
 map.yaml entry
 
   sample_mbtile:
-    url: 
+    url:
     use_mbtiles: true
 ```
 
@@ -707,7 +707,7 @@ To download the map in advance, run the program manually with the --demo option.
 $ python3 pizero_bikecomputer.py --demo
 ```
 
-Press the left button to move to the map screen and leave it for a while. The current position will move along the course and download the required area of the map. 
+Press the left button to move to the map screen and leave it for a while. The current position will move along the course and download the required area of the map.
 
 
 [Back to README.md](../README.md)
