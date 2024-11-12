@@ -229,6 +229,10 @@ class SettingsNamespace:
     RAIN_OVERLAY_MAP_CONFIG = RAIN_OVERLAY_MAP_CONFIG
     WIND_OVERLAY_MAP_CONFIG = WIND_OVERLAY_MAP_CONFIG
 
+    # BLUETOOTH
+    BT_AUTO_TETHERING = False
+    BT_TETHERING_DEVICE = None
+
     # ANT
     ANT_STATUS = False  # global switch
     # individual switches
@@ -394,6 +398,14 @@ class SettingsNamespace:
 
         self._set_config_value(section, "CP", "getint")
         self._set_config_value(section, "W_PRIME", "getint")
+
+        if not cf.has_section("BT"):
+            cf.add_section("BT")
+
+        section = cf["BT"]
+
+        self._set_config_value(section, "AUTO_TETHERING", "getboolean")
+        self._set_config_value(section, "TETHERING_DEVICE")
 
         if not cf.has_section("ANT"):
             cf.add_section("ANT")

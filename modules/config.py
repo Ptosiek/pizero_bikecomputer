@@ -30,10 +30,6 @@ class Config:
     G_MANUAL_STATUS = "INIT"
     G_STOPWATCH_STATUS = "INIT"  # with Auto Pause
 
-    # Bluetooth tethering
-    G_BT_ADDRESSES = {}
-    G_BT_USE_ADDRESS = ""
-
     #######################
     # class objects       #
     #######################
@@ -129,24 +125,26 @@ class Config:
         self.network = Network(self)
 
         # bluetooth
-        if settings.IS_RASPI:
-            await self.gui.set_boot_status("initialize bluetooth modules...")
+        await self.gui.set_boot_status("initialize bluetooth modules...")
 
-            from modules.helper.bt_pan import (
-                BTPanDbus,
-                BTPanDbusNext,
-                HAS_DBUS_NEXT,
-                HAS_DBUS,
-            )
+        try:
+            from modules.helper.bt_pan import BTPan  # noqa
 
-            if HAS_DBUS_NEXT:
-                self.bt_pan = BTPanDbusNext()
-            elif HAS_DBUS:
-                self.bt_pan = BTPanDbus()
-            if HAS_DBUS_NEXT or HAS_DBUS:
-                is_available = await self.bt_pan.check_dbus()
-                if is_available:
-                    self.G_BT_ADDRESSES = await self.bt_pan.find_bt_pan_devices()
+            self.bt_pan = BTPan()
+            is_available = await self.bt_pan.check_dbus()
+
+            if is_available:
+                await self.bt_pan.find_bt_pan_devices()
+        except ImportError:
+            app_logger.warning("bluetooth not initialized")
+
+        # resume BT tethering on start
+        if settings.BT_TETHERING_DEVICE and settings.BT_AUTO_TETHERING:
+            res = await self.bt_pan.bluetooth_tethering(settings.BT_TETHERING_DEVICE)
+
+            if not res:
+                await self.gui.set_boot_status("[BT] conn. failed...")
+                await asyncio.sleep(1)
 
         # logger, sensor
         await self.gui.set_boot_status("initialize sensor...")
@@ -176,15 +174,6 @@ class Config:
 
         if settings.HEADLESS:
             asyncio.create_task(self.keyboard_check())
-
-        # resume BT
-        if settings.IS_RASPI:
-            self.G_BT_USE_ADDRESS = self.state.get_value(
-                "G_BT_USE_ADDRESS", self.G_BT_USE_ADDRESS
-            )
-            # resume BT tethering
-            if self.G_BT_USE_ADDRESS:
-                await self.bluetooth_tethering()
 
         delta = t.stop()
         self.boot_time += delta
@@ -443,20 +432,6 @@ class Config:
         status = {}
         status["Wifi"], status["Bluetooth"] = self.get_wifi_bt_status()
         exec_cmd(onoff_cmd[key][status[key]])
-
-    async def bluetooth_tethering(self, disconnect=False):
-        if not settings.IS_RASPI or not self.G_BT_USE_ADDRESS or not self.bt_pan:
-            return
-
-        if not disconnect:
-            res = await self.bt_pan.connect_tethering(
-                self.G_BT_ADDRESSES[self.G_BT_USE_ADDRESS]
-            )
-        else:
-            res = await self.bt_pan.disconnect_tethering(
-                self.G_BT_ADDRESSES[self.G_BT_USE_ADDRESS]
-            )
-        return bool(res)
 
     @staticmethod
     def get_courses():

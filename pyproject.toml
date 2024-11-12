@@ -27,7 +27,7 @@ polyline = {version = "2.0.0", optional = true}
 crdp = {git = "https://github.com/hishizuka/crdp.git"}
 
 [tool.poetry.extras]
-dbus-next = ["dbus-next"]
+dbus = ["dbus-next"]
 gadgetbridge = ["bluez-peripheral"]
 gps_i2c = ["pa1010d", "smbus"]
 polyline = ["polyline"]

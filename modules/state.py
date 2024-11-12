@@ -14,7 +14,7 @@ class AppState:
         try:
             with open(self.pickle_file, "rb") as f:
                 self.values = pickle.load(f)
-        except FileNotFoundError:
+        except (FileNotFoundError, ModuleNotFoundError):
             self.values = {}
 
     def set_value(self, key, value, force_apply=False):

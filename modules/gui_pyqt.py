@@ -31,6 +31,7 @@ from modules._pyqt import (
     Signal,
     qasync,
 )
+from modules.pyqt.menu.pyqt_menu_widget import ConnectivityMenuWidget
 from modules.settings import settings
 from modules.utils.timer import Timer, log_timers
 
@@ -141,7 +142,7 @@ class GUI_PyQt(QtCore.QObject):
             signal.signal(signal.SIGINT, self.quit_by_ctrl_c)
             signal.signal(signal.SIGQUIT, self.quit_by_ctrl_c)
             signal.signal(signal.SIGHUP, self.quit_by_ctrl_c)
-        except:
+        except:  # noqa
             pass
 
         self.init_window()
@@ -282,6 +283,8 @@ class GUI_PyQt(QtCore.QObject):
                 (MenuLabel.ANT_SENSORS, ANTMenuWidget),
                 (MenuLabel.ANT_DETAIL, ANTListWidget),
                 (MenuLabel.ADJUST_ALTITUDE, AdjustAltitudeWidget),
+                (MenuLabel.CONNECTIVITY, ConnectivityMenuWidget),
+                (MenuLabel.BT_TETHERING_DEVICE, BluetoothTetheringListWidget),
                 (MenuLabel.COURSES, CoursesMenuWidget),
                 (MenuLabel.COURSES_LIST, CourseListWidget),
                 (MenuLabel.COURSE_DETAIL, CourseDetailWidget),
@@ -298,7 +301,6 @@ class GUI_PyQt(QtCore.QObject):
                 (MenuLabel.W_PRIME_BALANCE, AdjustWPrimeBalanceWidget),
                 (MenuLabel.SYSTEM, SystemMenuWidget),
                 (MenuLabel.NETWORK, NetworkMenuWidget),
-                (MenuLabel.BT_TETHERING, BluetoothTetheringListWidget),
                 (MenuLabel.DEBUG, DebugMenuWidget),
                 (MenuLabel.DEBUG_LOG, DebugLogViewerWidget),
             ]

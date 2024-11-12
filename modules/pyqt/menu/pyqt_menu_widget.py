@@ -1,6 +1,5 @@
 from functools import partial
 
-from logger import app_logger
 from modules._pyqt import (
     QT_ALIGN_LEFT,
     QT_KEY_SPACE,
@@ -14,6 +13,7 @@ from modules._pyqt import (
 )
 from modules.constants import MenuLabel
 from modules.pyqt.components import icons, topbar
+from modules.settings import settings
 
 from .pyqt_menu_button import MenuButton
 
@@ -175,6 +175,11 @@ class TopMenuWidget(MenuWidget):
                 partial(self.change_page, MenuLabel.SENSORS),
             ),
             (
+                MenuLabel.CONNECTIVITY,
+                "submenu",
+                partial(self.change_page, MenuLabel.CONNECTIVITY),
+            ),
+            (
                 MenuLabel.COURSES,
                 "submenu",
                 partial(self.change_page, MenuLabel.COURSES),
@@ -287,7 +292,7 @@ class ListWidget(MenuWidget):
 class ListDetailLabel(QtWidgets.QLabel):
     @property
     def STYLES(self):
-        return f"""
+        return """
           border-bottom: 1px solid #AAAAAA;
           padding-bottom: 2%;
           padding-left: 20%;
@@ -368,6 +373,66 @@ class ListItemWidget(QtWidgets.QWidget):
 
         if self.detail:
             self.resize_label(self.detail_label, int(short_side_length * 0.4))
+
+
+class ConnectivityMenuWidget(MenuWidget):
+    def setup_menu(self):
+        button_conf = (
+            (
+                MenuLabel.BT_AUTO_TETHERING,
+                "toggle",
+                partial(self.bt_auto_tethering, True),
+            ),
+            (
+                MenuLabel.BT_TETHERING_DEVICE,
+                "submenu",
+                partial(self.change_page, MenuLabel.BT_TETHERING_DEVICE),
+            ),
+            (MenuLabel.GADGETBRIDGE, "toggle", self.onoff_ble_uart_service),
+            (MenuLabel.GET_LOCATION, "toggle", self.onoff_gadgetbridge_gps),
+        )
+        self.add_buttons(button_conf)
+
+        if not self.config.bt_pan or not self.config.bt_pan.devices:
+            self.buttons[MenuLabel.BT_TETHERING_DEVICE].disable()
+
+        if self.config.ble_uart is None:
+            self.buttons[MenuLabel.GADGETBRIDGE].disable()
+            self.buttons[MenuLabel.GET_LOCATION].disable()
+
+        self.bt_auto_tethering(change=False)
+
+    def preprocess(self):
+        # initialize toggle button status
+        if self.config.ble_uart:
+            status = self.config.ble_uart.status
+            self.buttons[MenuLabel.GADGETBRIDGE].change_toggle(status)
+            self.buttons[MenuLabel.GET_LOCATION].change_toggle(
+                self.config.ble_uart.gps_status
+            )
+            self.buttons[MenuLabel.GET_LOCATION].onoff_button(status)
+
+    def bt_auto_tethering(self, change=True):
+        if change:
+            new_value = not settings.BT_AUTO_TETHERING
+            settings.update_setting("BT_AUTO_TETHERING", new_value)
+            # self.config.state.set_value("BT_AUTO_TETHERING", new_value, force_apply=True)
+
+        self.buttons[MenuLabel.BT_AUTO_TETHERING].change_toggle(
+            settings.BT_AUTO_TETHERING
+        )
+
+    @qasync.asyncSlot()
+    async def onoff_ble_uart_service(self):
+        status = await self.config.ble_uart.on_off_uart_service()
+        self.buttons[MenuLabel.GADGETBRIDGE].change_toggle(status)
+        self.buttons[MenuLabel.GET_LOCATION].onoff_button(status)
+        self.config.state.set_value("GB", status, force_apply=True)
+
+    def onoff_gadgetbridge_gps(self):
+        status = self.config.ble_uart.on_off_gadgetbridge_gps()
+        self.buttons[MenuLabel.GET_LOCATION].change_toggle(status)
+        self.config.state.set_value("GB_gps", status, force_apply=True)
 
 
 class UploadActivityMenuWidget(MenuWidget):

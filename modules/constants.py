@@ -1,15 +1,15 @@
 from enum import StrEnum
 
-from modules.utils.formatter import HeartRate
-
 
 class MenuLabel(StrEnum):
     ADJUST_ALTITUDE = "Adjust Altitude"
     ANT_DETAIL = "ANT+ Detail"
     ANT_SENSORS = "ANT+ Sensors"
     BLUETOOTH = "Bluetooth"
-    BT_TETHERING = "BT Tethering"
+    BT_AUTO_TETHERING = "BT Auto Tethering"
+    BT_TETHERING_DEVICE = "BT Tethering"
     CANCEL_COURSE = "Cancel Course"
+    CONNECTIVITY = "Connectivity"
     COURSE_DETAIL = "Course Detail"
     COURSES_LIST = "Courses List"
     COURSES = "Courses"
