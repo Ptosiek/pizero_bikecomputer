@@ -1,6 +1,4 @@
-import datetime
-import io
-import sqlite3
+from datetime import datetime, timedelta
 
 import numpy as np
 from PIL import Image
@@ -21,7 +19,9 @@ from modules.utils.map import (
     get_lon_lat_from_tile_xy,
     get_tilexy_and_xy_in_tile,
     remove_maptiles,
+    with_map,
 )
+from modules.utils.mbutils import check_mbtiles_image, get_mbtiles_image
 from modules.utils.timer import Timer, log_timers
 from .pyqt_base_map import BaseMapWidget
 
@@ -61,7 +61,7 @@ class MapWidget(BaseMapWidget):
     y_mod = 1.22  # 31/25 at Tokyo(N35)
     pre_zoomlevel = {}
 
-    drawn_tile = {}
+    drawn_tiles = {}
     existing_tiles = {}
 
     zoom_delta_from_tilesize = 0
@@ -146,11 +146,11 @@ class MapWidget(BaseMapWidget):
         self.reset_map()
 
         # self.load_course()
-        t = datetime.datetime.utcnow()
+        t = datetime.utcnow()
         self.get_track()  # heavy when resume
         if len(self.tracks_lon):
             app_logger.info(
-                f"resume_track(init): {(datetime.datetime.utcnow() - t).total_seconds():.3f} sec"
+                f"resume_track(init): {(datetime.utcnow() - t).total_seconds():.3f} sec"
             )
 
         # map
@@ -177,7 +177,7 @@ class MapWidget(BaseMapWidget):
 
     def reset_map(self):
         # adjust zoom level for large tiles
-        zoom_delta_from_tilesize = int(settings.CURRENT_MAP["tile_size"] / 256) - 1
+        zoom_delta_from_tilesize = int(settings.CURRENT_MAP.tile_size / 256) - 1
         self.zoomlevel += self.zoom_delta_from_tilesize - zoom_delta_from_tilesize
         self.zoom_delta_from_tilesize = zoom_delta_from_tilesize
 
@@ -192,7 +192,7 @@ class MapWidget(BaseMapWidget):
             settings.RAIN_OVERLAY_MAP,
             settings.WIND_OVERLAY_MAP,
         ]:
-            self.drawn_tile[key] = {}
+            self.drawn_tiles[key] = {}
             self.existing_tiles[key] = {}
             self.pre_zoomlevel[key] = np.nan
 
@@ -508,13 +508,11 @@ class MapWidget(BaseMapWidget):
 
         # map
         drawn_main_map = await self.draw_map_tile_by_overlay(
-            settings.MAP_CONFIG,
-            settings.MAP,
+            settings.CURRENT_MAP,
             self.zoomlevel,
             p0,
             p1,
             overlay=False,
-            use_mbtiles=settings.CURRENT_MAP.get("use_mbtiles", False),
         )
 
         await self.overlay_heatmap(drawn_main_map, p0, p1)
@@ -529,227 +527,201 @@ class MapWidget(BaseMapWidget):
             drawn_main_map,
             p0,
             p1,
-            settings.HEATMAP_OVERLAY_MAP_CONFIG,
-            settings.HEATMAP_OVERLAY_MAP,
+            settings.HEATMAP_OVERLAY_MAP_CONFIG[settings.HEATMAP_OVERLAY_MAP],
         )
 
     async def overlay_rainmap(self, drawn_main_map, p0, p1):
         if not self.use_rain_overlay_map:
             return
 
-        map_config = settings.RAIN_OVERLAY_MAP_CONFIG
-        map_name = settings.RAIN_OVERLAY_MAP
+        map_info = settings.RAIN_OVERLAY_MAP_CONFIG[settings.RAIN_OVERLAY_MAP]
 
-        if self.update_overlay_basetime(map_config, map_name):
+        if self.update_overlay_basetime(map_info):
             # basetime update
-            if map_config[map_name]["time_format"] == "unix_timestamp":
-                basetime_str = str(int(map_config[map_name]["nowtime"].timestamp()))
-            else:
-                basetime_str = map_config[map_name]["nowtime"].strftime(
-                    map_config[map_name]["time_format"]
-                )
+            basetime_str = map_info.format_current_time()
 
-            map_config[map_name]["basetime"] = basetime_str
-            map_config[map_name]["validtime"] = map_config[map_name]["basetime"]
+            map_info.basetime = basetime_str
+            map_info.validtime = basetime_str
 
             # re-draw from settings.MAP
             return
 
-        await self.overlay_map(drawn_main_map, p0, p1, map_config, map_name)
+        await self.overlay_map(drawn_main_map, p0, p1, map_info)
 
     async def overlay_windmap(self, drawn_main_map, p0, p1):
         if not self.use_wind_overlay_map:
             return
 
-        map_config = settings.WIND_OVERLAY_MAP_CONFIG
-        map_name = settings.WIND_OVERLAY_MAP
+        map_info = settings.WIND_OVERLAY_MAP_CONFIG[settings.WIND_OVERLAY_MAP]
 
-        if self.update_overlay_basetime(map_config, map_name):
-            basetime_str = map_config[map_name]["nowtime"].strftime(
-                map_config[map_name]["time_format"]
-            )
-            map_config[map_name]["basetime"] = basetime_str
-            map_config[map_name]["validtime"] = map_config[map_name]["basetime"]
+        if self.update_overlay_basetime(map_info):
+            basetime_str = map_info.format_current_time()
+            map_info.basetime = basetime_str
+            map_info.validtime = basetime_str
 
             # re-draw from settings.MAP
             return
 
-        await self.overlay_map(drawn_main_map, p0, p1, map_config, map_name)
+        await self.overlay_map(drawn_main_map, p0, p1, map_info)
 
-    def update_overlay_basetime(self, map_config, map_name):
-        config = map_config[map_name]
-
+    def update_overlay_basetime(self, map_info):
         # update basetime
-        nowtime = config["nowtime_func"]()
-        delta_minutes = nowtime.minute % config["time_interval"]
-        delta_seconds = delta_minutes * 60 + nowtime.second
-        delta_seconds_cutoff = config["update_minutes"] * 60 + 15
+        current_time = map_info.current_time_func()
+        delta_minutes = current_time.minute % map_info.time_interval
+
+        delta_seconds = delta_minutes * 60 + current_time.second
+        delta_seconds_cutoff = map_info.update_minutes * 60 + 15
 
         if delta_seconds < delta_seconds_cutoff:
-            delta_minutes = delta_minutes + config["time_interval"]
+            delta_minutes = delta_minutes + map_info.time_interval
 
-        nowtime_mod = (nowtime + datetime.timedelta(minutes=-delta_minutes)).replace(
-            second=0, microsecond=0
-        )
+        current_time += timedelta(minutes=-delta_minutes)
+        current_time = current_time.replace(second=0, microsecond=0)
 
-        if config["nowtime"] != nowtime_mod:
+        if map_info.current_time != current_time:
             # clear tile
-            self.drawn_tile[settings.MAP] = {}
-            self.drawn_tile[map_name] = {}
-            self.existing_tiles[map_name] = {}
-            self.pre_zoomlevel[map_name] = np.nan
-            remove_maptiles(map_name)
+            self.drawn_tiles[settings.MAP] = {}
+            self.drawn_tiles[map_info.name] = {}
+            self.existing_tiles[map_info.name] = {}
+            self.pre_zoomlevel[map_info.name] = np.nan
+            remove_maptiles(map_info.name)
 
-            config["nowtime"] = nowtime_mod
+            map_info.current_time = current_time
             return True
 
         return False
 
-    async def overlay_map(self, drawn_main_map, p0, p1, map_config, map_name):
+    async def overlay_map(self, drawn_main_map, p0, p1, map_info):
+        map_name = map_info.name
+
         if drawn_main_map:
-            self.drawn_tile[map_name] = {}
+            self.drawn_tiles[map_name] = {}
 
         z = (
             self.zoomlevel
-            + int(settings.CURRENT_MAP["tile_size"] / map_config[map_name]["tile_size"])
+            + int(settings.CURRENT_MAP.tile_size / map_info.tile_size)
             - 1
         )
         # supported zoom levels
-        if (
-            map_config[map_name]["min_zoomlevel"]
-            <= z
-            <= map_config[map_name]["max_zoomlevel"]
-        ):
-            await self.draw_map_tile_by_overlay(
-                map_config, map_name, z, p0, p1, overlay=True
-            )
+        if map_info.min_zoomlevel <= z <= map_info.max_zoomlevel:
+            await self.draw_map_tile_by_overlay(map_info, z, p0, p1, overlay=True)
         # above maximum zoom level: expand max zoomlevel tiles
-        elif z > map_config[map_name]["max_zoomlevel"]:
+        elif z > map_info.max_zoomlevel:
             await self.draw_map_tile_by_overlay(
-                map_config, map_name, z, p0, p1, overlay=True, expand=True
+                map_info, z, p0, p1, overlay=True, expand=True
             )
         else:
             self.pre_zoomlevel[map_name] = z
 
     async def draw_map_tile_by_overlay(
         self,
-        map_config,
-        map_name,
+        map_info,
         z,
         p0,
         p1,
         overlay=False,
         expand=False,
-        use_mbtiles=False,
     ):
-        tile_size = map_config[map_name]["tile_size"]
+        map_name = map_info.name
+        tile_size = map_info.tile_size
 
         # specify tile range and zoomlevel
         # z: current zoomlevel from map widget
         # z_draw: actual zoomlevel of map tile (for overlay map tiles which have limited zoomlevel)
         # tile_x, tile_y: tile range in zoomlevel z
         z_draw, z_conv_factor, tile_x, tile_y = self.init_draw_map(
-            map_config, map_name, z, p0, p1, expand, tile_size
+            map_info, z, p0, p1, expand
         )
 
-        if not use_mbtiles:
-            # prepare tiles for download
-            tiles = self.get_tiles_for_drawing(tile_x, tile_y, z_conv_factor, expand)
-
-            # download
-            if z not in self.existing_tiles[map_name]:
-                self.existing_tiles[map_name][z_draw] = {}
-
-            await self.download_tiles(tiles, map_config, map_name, z_draw)
-
-        # tile check
-        if use_mbtiles:
-            self.con = sqlite3.connect(
-                f"file:./maptile/{map_name}.mbtiles?mode=ro", uri=True
-            )
-            self.cur = self.con.cursor()
-
-        draw_flag, add_keys, expand_keys = self.check_drawn_tile(
-            use_mbtiles, map_name, z, z_draw, z_conv_factor, tile_x, tile_y, expand
-        )
-
-        self.pre_zoomlevel[map_name] = z
-
-        if not draw_flag:
-            if use_mbtiles:
-                self.cur.close()
-                self.con.close()
-            return False
-
-        # draw only the necessary tiles
-        w_h = int(tile_size / z_conv_factor) if expand else 0
-        for keys in add_keys:
-            x, y = keys[0:2] if not expand else expand_keys[keys][0:2]
-            img_file = self.get_image_file(use_mbtiles, map_name, z_draw, x, y)
-            if not expand:
-                imgarray = np.rot90(
-                    np.asarray(Image.open(img_file).convert("RGBA")), -1
-                )
-            else:
-                x_start, y_start = (
-                    int(w_h * expand_keys[keys][2]),
-                    int(w_h * expand_keys[keys][3]),
-                )
-                imgarray = np.rot90(
-                    np.asarray(
-                        Image.open(img_file)
-                        .crop((x_start, y_start, x_start + w_h, y_start + w_h))
-                        .convert("RGBA")
-                    ),
-                    -1,
+        with with_map(map_info) as cursor:
+            if not cursor:
+                # prepare tiles for download
+                tiles = self.get_tiles_for_drawing(
+                    tile_x, tile_y, z_conv_factor, expand
                 )
 
-            imgitem = pg.ImageItem(imgarray)
+                # download
+                if z not in self.existing_tiles[map_name]:
+                    self.existing_tiles[map_name][z_draw] = {}
 
-            if overlay:
-                imgitem.setCompositionMode(QT_COMPOSITION_MODE_DARKEN)
+                await self.download_tiles(tiles, map_info, z_draw)
 
-            imgarray_min_x, imgarray_max_y = get_lon_lat_from_tile_xy(
-                z, keys[0], keys[1]
-            )
-            imgarray_max_x, imgarray_min_y = get_lon_lat_from_tile_xy(
-                z, keys[0] + 1, keys[1] + 1
+            draw_flag, add_keys, expand_keys = self.check_drawn_tiles(
+                map_info, z, z_draw, z_conv_factor, tile_x, tile_y, expand
             )
 
-            self.plot.addItem(imgitem)
-            imgitem.setZValue(-100)
-            imgitem.setRect(
-                pg.QtCore.QRectF(
-                    imgarray_min_x,
-                    get_mod_lat(imgarray_min_y),
-                    imgarray_max_x - imgarray_min_x,
-                    get_mod_lat(imgarray_max_y) - get_mod_lat(imgarray_min_y),
-                )
-            )
+            self.pre_zoomlevel[map_name] = z
 
-        if use_mbtiles:
-            self.cur.close()
-            self.con.close()
+            if draw_flag:
+                # draw only the necessary tiles
+                w_h = int(tile_size / z_conv_factor) if expand else 0
 
-        return True
+                for keys in add_keys:
+                    x, y = keys[0:2] if not expand else expand_keys[keys][0:2]
+                    img_file = self.get_image_file(map_info, z_draw, x, y)
+
+                    if not expand:
+                        imgarray = np.rot90(
+                            np.asarray(Image.open(img_file).convert("RGBA")), -1
+                        )
+                    else:
+                        x_start, y_start = (
+                            int(w_h * expand_keys[keys][2]),
+                            int(w_h * expand_keys[keys][3]),
+                        )
+                        imgarray = np.rot90(
+                            np.asarray(
+                                Image.open(img_file)
+                                .crop((x_start, y_start, x_start + w_h, y_start + w_h))
+                                .convert("RGBA")
+                            ),
+                            -1,
+                        )
+
+                    imgitem = pg.ImageItem(imgarray)
+
+                    if overlay:
+                        imgitem.setCompositionMode(QT_COMPOSITION_MODE_DARKEN)
+
+                    imgarray_min_x, imgarray_max_y = get_lon_lat_from_tile_xy(
+                        z, keys[0], keys[1]
+                    )
+                    imgarray_max_x, imgarray_min_y = get_lon_lat_from_tile_xy(
+                        z, keys[0] + 1, keys[1] + 1
+                    )
+
+                    self.plot.addItem(imgitem)
+                    imgitem.setZValue(-100)
+                    imgitem.setRect(
+                        pg.QtCore.QRectF(
+                            imgarray_min_x,
+                            get_mod_lat(imgarray_min_y),
+                            imgarray_max_x - imgarray_min_x,
+                            get_mod_lat(imgarray_max_y) - get_mod_lat(imgarray_min_y),
+                        )
+                    )
+
+        return draw_flag
 
     @staticmethod
-    def init_draw_map(map_config, map_name, z, p0, p1, expand, tile_size):
+    def init_draw_map(map_info, z, p0, p1, expand):
         z_draw = z
         z_conv_factor = 1
+
         if expand:
-            if z > map_config[map_name]["max_zoomlevel"]:
-                z_draw = map_config[map_name]["max_zoomlevel"]
-            elif z < map_config[map_name]["min_zoomlevel"]:
-                z_draw = map_config[map_name]["min_zoomlevel"]
-            # z_draw = min(z, map_config[map_name]['max_zoomlevel'])
+            if z > map_info.max_zoomlevel:
+                z_draw = map_info.max_zoomlevel
+            elif z < map_info.min_zoomlevel:
+                z_draw = map_info.min_zoomlevel
+            # z_draw = min(z, map_info.max_zoomlevel)
             z_conv_factor = 2 ** (z - z_draw)
 
         # tile range
-        t0 = get_tilexy_and_xy_in_tile(z, p0["x"], p0["y"], tile_size)
-        t1 = get_tilexy_and_xy_in_tile(z, p1["x"], p1["y"], tile_size)
+        t0 = get_tilexy_and_xy_in_tile(z, p0["x"], p0["y"], map_info.tile_size)
+        t1 = get_tilexy_and_xy_in_tile(z, p1["x"], p1["y"], map_info.tile_size)
         tile_x = sorted([t0[0], t1[0]])
         tile_y = sorted([t0[1], t1[1]])
+
         return z_draw, z_conv_factor, tile_x, tile_y
 
     @staticmethod
@@ -779,91 +751,89 @@ class MapWidget(BaseMapWidget):
 
         return tiles
 
-    async def download_tiles(self, tiles, map_config, map_name, z_draw):
-        download_tile = []
+    async def download_tiles(self, tiles, map_info, z_draw):
+        tiles_to_download = []
+
         for tile in tiles:
-            filename = get_maptile_filename(map_name, z_draw, *tile)
+            filename = get_maptile_filename(map_info.name, z_draw, *tile)
             key = "{0}-{1}".format(*tile)
 
             if filename.exists() and filename.stat().st_size > 0:
-                self.existing_tiles[map_name][z_draw][key] = True
+                self.existing_tiles[map_info.name][z_draw][key] = True
                 continue
 
             # download is in progress
-            if key in self.existing_tiles[map_name][z_draw]:
+            if key in self.existing_tiles[map_info.name][z_draw]:
                 continue
 
             # entry to download tiles
-            self.existing_tiles[map_name][z_draw][key] = False
-            download_tile.append(tile)
+            self.existing_tiles[map_info.name][z_draw][key] = False
+            tiles_to_download.append(tile)
 
         # start downloading
-        if len(download_tile):
-            if not await self.config.network.download_maptile(
-                map_config, map_name, z_draw, download_tile, additional_download=True
+        if len(tiles_to_download):
+            if not await self.config.network.download_maptiles(
+                map_info,
+                z_draw,
+                tiles_to_download,
+                additional_download=True,
             ):
                 # failed to put queue, then retry
-                for tile in download_tile:
+                for tile in tiles_to_download:
                     key = "{0}-{1}".format(*tile)
-                    if key in self.existing_tiles[map_name][z_draw]:
-                        self.existing_tiles[map_name][z_draw].pop(key)
+                    if key in self.existing_tiles[map_info.name][z_draw]:
+                        self.existing_tiles[map_info.name][z_draw].pop(key)
 
-    def check_drawn_tile(
-        self, use_mbtiles, map_name, z, z_draw, z_conv_factor, tile_x, tile_y, expand
+    def check_drawn_tiles(
+        self, map_info, z, z_draw, z_conv_factor, tile_x, tile_y, expand
     ):
         draw_flag = False
         add_keys = {}
         expand_keys = {}
 
-        if z not in self.drawn_tile[map_name] or self.pre_zoomlevel[map_name] != z:
-            self.drawn_tile[map_name][z] = {}
+        map_name = map_info.name
+        map_drawn_tiles = self.drawn_tiles[map_name]
+
+        if z not in map_drawn_tiles or self.pre_zoomlevel[map_name] != z:
+            map_drawn_tiles[z] = {}
 
         for i in range(tile_x[0], tile_x[1] + 1):
             for j in range(tile_y[0], tile_y[1] + 1):
-                drawn_tile_key = "{0}-{1}".format(i, j)
+                drawn_tile_key = f"{i}-{j}"
                 exist_tile_key = (i, j)
                 pixel_x = x_start = pixel_y = y_start = 0
+
                 if expand:
                     pixel_x, x_start = divmod(i, z_conv_factor)
                     pixel_y, y_start = divmod(j, z_conv_factor)
                     exist_tile_key = (pixel_x, pixel_y)
 
-                if drawn_tile_key not in self.drawn_tile[map_name][
-                    z
-                ] and self.check_tile(use_mbtiles, map_name, z_draw, exist_tile_key):
-                    self.drawn_tile[map_name][z][drawn_tile_key] = True
+                if drawn_tile_key not in map_drawn_tiles[z] and self.check_tile(
+                    map_info, z_draw, exist_tile_key
+                ):
+                    map_drawn_tiles[z][drawn_tile_key] = True
                     add_keys[(i, j)] = True
                     draw_flag = True
+
                     if expand:
                         expand_keys[(i, j)] = (pixel_x, pixel_y, x_start, y_start)
 
         return draw_flag, add_keys, expand_keys
 
-    def check_tile(self, use_mbtiles, map_name, z_draw, key):
-        cond = False
-        if not use_mbtiles:
+    def check_tile(self, map_info, z_draw, key):
+        if map_info.mbtiles:
+            return check_mbtiles_image(map_info.cursor, key[0], key[1], z_draw)
+        else:
             exist_tile_key = "{0}-{1}".format(*key)  # (z_draw, i, j)
-            if (exist_tile_key, True) in self.existing_tiles[map_name][z_draw].items():
-                cond = True
-        else:
-            sql = (
-                f"select count(*) from tiles where "
-                f"zoom_level={z_draw} and tile_column={key[0]} and tile_row={2**z_draw - 1 - key[1]}"
-            )
-            if (self.cur.execute(sql).fetchone())[0] == 1:
-                cond = True
-        return cond
+            return (exist_tile_key, True) in self.existing_tiles[map_info.name][
+                z_draw
+            ].items()
 
-    def get_image_file(self, use_mbtiles, map_name, z_draw, x, y):
-        if not use_mbtiles:
-            img_file = get_maptile_filename(map_name, z_draw, x, y)
+    def get_image_file(self, map_info, z_draw, x, y):
+        if map_info.mbtiles:
+            return get_mbtiles_image(map_info.cursor, x, y, z_draw)
         else:
-            sql = (
-                f"select tile_data from tiles where "
-                f"zoom_level={z_draw} and tile_column={x} and tile_row={2**z_draw - 1 - y}"
-            )
-            img_file = io.BytesIO((self.cur.execute(sql).fetchone())[0])
-        return img_file
+            return get_maptile_filename(map_info.name, z_draw, x, y)
 
     def draw_scale(self, x_start, y_start):
         # draw scale at left bottom
@@ -948,7 +918,7 @@ class MapWidget(BaseMapWidget):
         if np.isnan(x) or np.isnan(y):
             return np.nan, np.nan
 
-        tile_size = settings.CURRENT_MAP["tile_size"]
+        tile_size = settings.CURRENT_MAP.tile_size
 
         tile_x, tile_y, _, _ = get_tilexy_and_xy_in_tile(
             self.zoomlevel,

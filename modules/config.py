@@ -67,12 +67,6 @@ class Config:
         if not Path(settings.LAYOUT_FILE).exists():
             shutil.copy(Path("layouts") / "layout-cycling.yaml", settings.LAYOUT_FILE)
 
-        if (
-            settings.CURRENT_MAP.get("use_mbtiles")
-            and not (settings.MAPTILE_DIR / f"{settings.MAP}.mbtiles").exists()
-        ):
-            settings.CURRENT_MAP["use_mbtiles"] = False
-
         check_map_dir()
 
         # coroutine loop

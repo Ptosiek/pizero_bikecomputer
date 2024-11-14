@@ -579,7 +579,6 @@ Set the value before starting the program. If the value is set during running, i
   - Set the map.
   - The `G_MAP_CONFIG` in modules/config.py provides some preset definitions.
   - `wikimedia`: An example map of a full-color map. [https://maps.wikimedia.org/](https://maps.wikimedia.org/)
-  - (obsolete) `toner`: A map for monochrome colors. [http://maps.stamen.com/toner/](http://maps.stamen.com/toner/)
   - You can add a map URL to map.yaml. Specify the URL in tile format (tile coordinates by [x, y] and zoom level by [z]). And The map name is set to this setting `map`.
   - Also, you can set raster mbtiles mapsets generated from [mb-util](https://github.com/mapbox/mbutil). It is sqlite3 db packed with raster maptile images. The definition in map.yaml is following with sample mbtile map named `sample_mbtile` placed at `maptile/sample_mbtile.mbtiles`.
 
@@ -587,8 +586,7 @@ Set the value before starting the program. If the value is set during running, i
 map.yaml entry
 
   sample_mbtile:
-    url:
-    use_mbtiles: true
+    mbtiles: sample_mbtile.mbtiles
 ```
 
 #### ANT+ section

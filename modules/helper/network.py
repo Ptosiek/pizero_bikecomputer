@@ -54,43 +54,35 @@ class Network:
                     await settings.DOWNLOAD_QUEUE.put(q)
 
     # tiles functions
-    async def download_maptile(
-        self, map_config, map_name, z, tiles, additional_download=False
-    ):
-        if not detect_network() or map_config[map_name]["url"] is None:
+    async def download_maptiles(self, map_info, z, tiles, additional_download=False):
+        if not detect_network() or not map_info.url:
             return False
 
-        map_settings = map_config[map_name]
         urls = []
         save_paths = []
         request_header = {}
         additional_var = {}
 
-        if map_config in [
-            settings.RAIN_OVERLAY_MAP_CONFIG,
-            settings.WIND_OVERLAY_MAP_CONFIG,
-        ]:
-            if map_settings["basetime"] is None or map_settings["validtime"] is None:
+        if map_info.time_based:
+            if not map_info.basetime or not map_info.validtime:
                 return False
 
-            additional_var["basetime"] = map_settings["basetime"]
-            additional_var["validtime"] = map_settings["validtime"]
+            additional_var["basetime"] = map_info.basetime
+            additional_var["validtime"] = map_info.validtime
 
         # make header
-        if map_settings.get("referer"):
-            request_header["Referer"] = map_settings["referer"]
+        if map_info.referer:
+            request_header["Referer"] = map_info.referer
 
-        if map_settings.get("user_agent"):
+        if map_info.user_agent:
             request_header["User-Agent"] = settings.PRODUCT
 
         for tile in tiles:
-            p = settings.MAPTILE_DIR / map_name / str(z) / str(tile[0])
+            p = settings.MAPTILE_DIR / map_info.name / str(z) / str(tile[0])
             p.mkdir(parents=True, exist_ok=True)
 
-            url = map_settings["url"].format(
-                z=z, x=tile[0], y=tile[1], **additional_var
-            )
-            save_path = get_maptile_filename(map_name, z, *tile)
+            url = map_info.url.format(z=z, x=tile[0], y=tile[1], **additional_var)
+            save_path = get_maptile_filename(map_info.name, z, *tile)
             urls.append(url)
             save_paths.append(save_path)
 
@@ -104,18 +96,12 @@ class Network:
 
             max_zoom_cond = True
 
-            if (
-                "max_zoomlevel" in map_settings
-                and z + 1 >= map_settings["max_zoomlevel"]
-            ):
+            if z + 1 >= map_info.max_zoomlevel:
                 max_zoom_cond = False
 
             min_zoom_cond = True
 
-            if (
-                "min_zoomlevel" in map_settings
-                and z - 1 <= map_settings["min_zoomlevel"]
-            ):
+            if z - 1 <= map_info.min_zoomlevel:
                 min_zoom_cond = False
 
             for tile in tiles:
@@ -123,21 +109,24 @@ class Network:
                     for i in range(2):
                         p = (
                             settings.MAPTILE_DIR
-                            / map_name
+                            / map_info.name
                             / str(z + 1)
                             / str(2 * tile[0] + i)
                         )
                         p.mkdir(parents=True, exist_ok=True)
 
                         for j in range(2):
-                            url = map_settings["url"].format(
+                            url = map_info.url.format(
                                 z=z + 1,
                                 x=2 * tile[0] + i,
                                 y=2 * tile[1] + j,
                                 **additional_var,
                             )
                             save_path = get_maptile_filename(
-                                map_name, z + 1, 2 * tile[0] + i, 2 * tile[1] + j
+                                map_info.name,
+                                z + 1,
+                                2 * tile[0] + i,
+                                2 * tile[1] + j,
                             )
                             additional_urls.append(url)
                             additional_save_paths.append(save_path)
@@ -148,13 +137,13 @@ class Network:
                 if min_zoom_cond:
                     p = (
                         settings.MAPTILE_DIR
-                        / map_name
+                        / map_info.name
                         / str(z - 1)
                         / str(int(tile[0] / 2))
                     )
                     p.mkdir(parents=True, exist_ok=True)
 
-                    zoomout_url = map_settings["url"].format(
+                    zoomout_url = map_info.url.format(
                         z=z - 1,
                         x=int(tile[0] / 2),
                         y=int(tile[1] / 2),
@@ -164,7 +153,10 @@ class Network:
                         additional_urls.append(zoomout_url)
                         additional_save_paths.append(
                             get_maptile_filename(
-                                map_name, z - 1, int(tile[0] / 2), int(tile[1] / 2)
+                                map_info.name,
+                                z - 1,
+                                int(tile[0] / 2),
+                                int(tile[1] / 2),
                             )
                         )
 

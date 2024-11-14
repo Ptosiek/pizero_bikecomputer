@@ -1,12 +1,7 @@
 # map list example (z:zoom, x:tile_x, y:tile_y)
-# original map(example is "toner") is called from setting.conf -> GENERAL -> map
 
-# toner: 
-#   url: https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}.png?api_key=YOUR_API_KEY
-
-#toner_2x: 
-#  url: https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}@2x.png?api_key=YOUR_API_KEY
-#  tile_size: 512
+toner:
+  url: https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}.png?api_key=YOUR_API_KEY
 
 openstreetmap:
   url: https://tile.openstreetmap.org/{z}/{x}/{y}.png

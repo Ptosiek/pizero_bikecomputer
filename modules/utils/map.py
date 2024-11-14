@@ -1,7 +1,31 @@
 import math
 import shutil
+from contextlib import contextmanager
 
 from modules.settings import settings
+from .mbutils import connect_mbtiles
+
+
+@contextmanager
+def with_map(map_info):
+    # Initialize the connection only if the flag is True
+    connection = None
+    cursor = None
+    try:
+        if map_info.mbtiles:
+            connection, cursor = connect_mbtiles(map_info.mbtiles)
+            map_info.connection = connection
+            map_info.cursor = connection.cursor()
+        yield cursor  # Yield the cursor or None if no connection is made
+    except Exception as e:
+        print(f"Error: {e}")
+        raise
+    finally:
+        if connection:
+            map_info.cursor.close()
+            map_info.connection.close()
+            del map_info.cursor
+            del map_info.connection
 
 
 def check_map_dir():
@@ -12,7 +36,7 @@ def check_map_dir():
     ):
         (settings.MAPTILE_DIR / p).mkdir(parents=True, exist_ok=True)
 
-    if not settings.CURRENT_MAP.get("use_mbtiles"):
+    if not settings.CURRENT_MAP.mbtiles:
         (settings.MAPTILE_DIR / settings.MAP).mkdir(parents=True, exist_ok=True)
 
 

@@ -18,7 +18,7 @@ from .maps import (
     RAIN_OVERLAY_MAP_CONFIG,
     WIND_OVERLAY_MAP_CONFIG,
 )
-from .maps.utils import MapDict
+from .maps.utils import MapInfo
 
 _IS_RASPI = False
 UNIT_ID = 0x1A2B3C4D
@@ -299,7 +299,7 @@ class SettingsNamespace:
         self.load_settings_from_file(SETTINGS_FILE)
 
         # cli
-        self.hand_cli_arguments()
+        self.handle_cli_arguments()
 
     def _set_config_value(
         self,
@@ -342,7 +342,7 @@ class SettingsNamespace:
             write_transform,
         )
 
-    def hand_cli_arguments(self):
+    def handle_cli_arguments(self):
         parser = argparse.ArgumentParser()
         parser.add_argument("-f", "--fullscreen", action="store_true", default=False)
         parser.add_argument("-d", "--debug", action="store_true", default=False)
@@ -511,7 +511,19 @@ class SettingsNamespace:
                 if map_dict is None:
                     return
 
-                self.MAP_CONFIG.update({k: MapDict(v) for k, v in map_dict.items()})
+                for k, v in map_dict.items():
+                    # do not load mbtiles file if not present
+                    if v.get("mbtiles"):
+                        path = self.MAPTILE_DIR / v["mbtiles"]
+
+                        if path.exists():
+                            self.MAP_CONFIG.update(
+                                {k: MapInfo(**{**v, "name": k, "mbtiles": path})}
+                            )
+                        else:
+                            app_logger.warning(f"Could not load {path}, file not found")
+                    else:
+                        self.MAP_CONFIG.update({k: MapInfo(**v, name=k)})
         except FileNotFoundError:
             pass
 
