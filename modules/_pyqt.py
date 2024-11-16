@@ -1,5 +1,7 @@
 import os
 
+os.environ["QT_PLUGIN_PATH"] = "qt_plugins"
+
 __all__ = [
     "QtCore",
     "QtWidgets",
@@ -79,9 +81,11 @@ QT_WA_TRANSPARENT_FOR_MOUSE_EVENTS = (
 )
 
 # for draw_display
-QT_FORMAT_RGB888 = QtGui.QImage.Format.Format_RGB888
+QT_FORMAT_ARGB32_PREMULTIPLIED = QtGui.QImage.Format.Format_ARGB32_Premultiplied
 
 QT_FORMAT_MONO = QtGui.QImage.Format.Format_Mono
+
+QT_FORMAT_RGB888 = QtGui.QImage.Format.Format_RGB888
 
 QT_COMPOSITION_MODE_SOURCEIN = QtGui.QPainter.CompositionMode.CompositionMode_SourceIn
 

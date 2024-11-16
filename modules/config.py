@@ -14,7 +14,6 @@ from modules.utils.cmd import (
     is_running_as_service,
 )
 from modules.settings import settings
-from modules.utils.map import check_map_dir
 from modules.utils.timer import Timer
 
 BOOT_FILE = "/boot/config.txt"
@@ -65,9 +64,10 @@ class Config:
 
         # layout file
         if not Path(settings.LAYOUT_FILE).exists():
-            shutil.copy(Path("layouts") / "layout-cycling.yaml", settings.LAYOUT_FILE)
-
-        check_map_dir()
+            default_layout = (
+                "layout-vertical.yaml" if settings.VERTICAL else "layout.yaml"
+            )
+            shutil.copy(Path("layouts") / default_layout, settings.LAYOUT_FILE)
 
         # coroutine loop
         self.init_loop()
@@ -115,7 +115,7 @@ class Config:
         from modules.helper.network import Network
 
         self.api = Api(self)
-        self.network = Network(self)
+        self.network = Network(settings.DOWNLOAD_QUEUE)
 
         # bluetooth
         await self.gui.set_boot_status("initialize bluetooth modules...")

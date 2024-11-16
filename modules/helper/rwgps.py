@@ -56,23 +56,29 @@ class RWGPS:
         params = self.get_params
 
         if not with_privacy_code:
-            urls = [
-                f"{BASE_URL}/routes/{route_id}.json",
-                f"{BASE_URL}/routes/{route_id}/hover_preview.png",
-            ]
-            save_paths = [
-                settings.RWGS_ROUTE_DOWNLOAD_DIR / f"course-{route_id}.json",
-                settings.RWGS_ROUTE_DOWNLOAD_DIR / f"preview-{route_id}.png",
-            ]
+            urls_with_path = (
+                (
+                    f"{BASE_URL}/routes/{route_id}.json",
+                    settings.RWGS_ROUTE_DOWNLOAD_DIR / f"course-{route_id}.json",
+                ),
+                (
+                    f"{BASE_URL}/routes/{route_id}/hover_preview.png",
+                    settings.RWGS_ROUTE_DOWNLOAD_DIR / f"preview-{route_id}.png",
+                ),
+            )
         else:
-            urls = [
-                f"{BASE_URL}/routes/{route_id}/elevation_profile.jpg",
-                f"{BASE_URL}/routes/{route_id}.tcx",
-            ]
-            save_paths = [
-                settings.RWGS_ROUTE_DOWNLOAD_DIR / f"elevation_profile-{route_id}.jpg",
-                settings.RWGS_ROUTE_DOWNLOAD_DIR / f"course-{route_id}.tcx",
-            ]
+            urls_with_path = (
+                (
+                    f"{BASE_URL}/routes/{route_id}/elevation_profile.jpg",
+                    settings.RWGS_ROUTE_DOWNLOAD_DIR
+                    / f"elevation_profile-{route_id}.jpg",
+                ),
+                (
+                    f"{BASE_URL}/routes/{route_id}.tcx",
+                    settings.RWGS_ROUTE_DOWNLOAD_DIR / f"course-{route_id}.tcx",
+                ),
+            )
+
             privacy_code = self.get_route_privacycode(route_id)
 
             if privacy_code:
@@ -80,8 +86,7 @@ class RWGPS:
 
         await settings.DOWNLOAD_QUEUE.put(
             {
-                "urls": urls,
-                "save_paths": save_paths,
+                "urls_with_path": urls_with_path,
                 "params": params,
             }
         )

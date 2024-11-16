@@ -1,11 +1,17 @@
 # map list example (z:zoom, x:tile_x, y:tile_y)
 
+# PMtiles example
+# pl:
+#  url: http://localhost:8080/pl/{z}/{x}/{y}.mvt
+#  tile_size: 512
+#  max_zoom_level: 15
+
 toner:
   url: https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}.png?api_key=YOUR_API_KEY
 
 openstreetmap:
   url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
-  user_agent: true
+  user_agent: Pizero Bikecomputer
 
 # need API key
 opencyclemap:

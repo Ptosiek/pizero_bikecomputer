@@ -1,6 +1,7 @@
 /extlib/*
 /logs/
 /screenshots/
+/maptiles/
 /maptiles/*
 /courses/.current
 /courses/ridewithgps/*

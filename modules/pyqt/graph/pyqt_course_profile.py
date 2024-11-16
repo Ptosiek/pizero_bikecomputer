@@ -4,6 +4,7 @@ from modules._pyqt import QtGui, pg, qasync
 from modules.pyqt.graph.pyqtgraph.CourseProfileGraphItem import CourseProfileGraphItem
 from modules.utils.timer import Timer
 from .pyqt_base_map import BaseMapWidget
+from .pyqt_map_button import MapButtonLabel
 
 
 class CourseProfileGraphWidget(BaseMapWidget):
@@ -33,12 +34,12 @@ class CourseProfileGraphWidget(BaseMapWidget):
 
         if self.config.display.has_touch:
             # zoom
-            self.layout.addWidget(self.buttons["zoomdown"], 0, 0)
-            self.layout.addWidget(self.buttons["lock"], 1, 0)
-            self.layout.addWidget(self.buttons["zoomup"], 2, 0)
+            self.layout.addWidget(self.buttons[MapButtonLabel.ZOOM_OUT], 0, 0)
+            self.layout.addWidget(self.buttons[MapButtonLabel.LOCK], 1, 0)
+            self.layout.addWidget(self.buttons[MapButtonLabel.ZOOM_IN], 2, 0)
             # arrow
-            self.layout.addWidget(self.buttons["left"], 0, 2)
-            self.layout.addWidget(self.buttons["right"], 1, 2)
+            self.layout.addWidget(self.buttons[MapButtonLabel.LEFT], 0, 2)
+            self.layout.addWidget(self.buttons[MapButtonLabel.RIGHT], 1, 2)
 
         self.climb_detail = pg.TextItem(color=(0, 0, 0), anchor=(1.0, 1.0))
         self.climb_detail.setZValue(100)
@@ -126,7 +127,7 @@ class CourseProfileGraphWidget(BaseMapWidget):
             self.course_loaded = True
 
         if self.zoom == self.max_zoom:
-            await self.zoom_plus()
+            await self.zoom_in()
             return
 
         # remove current position for reloading

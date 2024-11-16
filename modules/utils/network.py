@@ -1,11 +1,12 @@
 import asyncio
 import socket
+from pathlib import Path
 
 import aiohttp
 import aiofiles
+import aiofiles.os
 
 from logger import app_logger
-from modules.settings import settings
 
 
 def detect_network():
@@ -22,6 +23,8 @@ async def download_file(session, url, save_path, headers, params):
     try:
         async with session.get(url, headers=headers, params=params) as dl_file:
             if dl_file.status == 200:
+                await aiofiles.os.makedirs(Path(save_path).parent, exist_ok=True)
+
                 async with aiofiles.open(save_path, mode="wb") as f:
                     await f.write(await dl_file.read())
                 return True
@@ -37,11 +40,12 @@ async def download_file(session, url, save_path, headers, params):
         return False
 
 
-async def download_files(urls, save_paths, headers=None, params=None):
+async def download_files(urls_with_path, headers=None, params=None, max_concurrency=-1):
     tasks = []
-    async with asyncio.Semaphore(settings.COROUTINE_SEM):
+
+    async with asyncio.Semaphore(max_concurrency):
         async with aiohttp.ClientSession() as session:
-            for url, save_path in zip(urls, save_paths):
+            for url, save_path in urls_with_path:
                 tasks.append(download_file(session, url, save_path, headers, params))
             res = await asyncio.gather(*tasks)
     return res

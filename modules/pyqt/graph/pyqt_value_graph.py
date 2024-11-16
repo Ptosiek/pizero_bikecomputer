@@ -1,6 +1,5 @@
 import numpy as np
 
-from logger import app_logger
 from modules._pyqt import pg, qasync
 from modules.items.i2c import (
     I2C_AccXItemConfig,

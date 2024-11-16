@@ -2,7 +2,6 @@ from functools import partial
 
 from modules.constants import MenuLabel
 from modules.settings import settings
-from modules.utils.map import check_map_dir
 from .pyqt_menu_widget import MenuWidget, ListWidget
 
 
@@ -32,8 +31,6 @@ class MapListWidget(ListWidget):
 
     async def button_func_extra(self):
         settings.update_setting("MAP", self.selected_item.title_label.text())
-        # reset map
-        check_map_dir()
         self.config.gui.map_widget.reset_map()
 
 
@@ -41,11 +38,11 @@ class MapOverlayMenuWidget(MenuWidget):
     def setup_menu(self):
         button_conf = (
             # Name(page_name), button_attribute, connected functions
-            (MenuLabel.HEATMAP, "toggle", partial(self.onoff_map, "Heatmap")),
+            (MenuLabel.HEAT_MAP, "toggle", partial(self.onoff_map, "Heat map")),
             (
-                MenuLabel.HEATMAP_LIST,
+                MenuLabel.HEAT_MAP_LIST,
                 "submenu",
-                partial(self.change_page, MenuLabel.HEATMAP_LIST),
+                partial(self.change_page, MenuLabel.HEAT_MAP_LIST),
             ),
             (MenuLabel.RAIN_MAP, "toggle", partial(self.onoff_map, "Rain map")),
             (
@@ -62,7 +59,7 @@ class MapOverlayMenuWidget(MenuWidget):
         )
         self.add_buttons(button_conf)
 
-        self.buttons[MenuLabel.HEATMAP_LIST].disable()
+        self.buttons[MenuLabel.HEAT_MAP_LIST].disable()
         self.buttons[MenuLabel.RAIN_MAP_LIST].disable()
         self.buttons[MenuLabel.WIND_MAP_LIST].disable()
 
@@ -79,17 +76,15 @@ class MapOverlayMenuWidget(MenuWidget):
 
 
 class HeatmapListWidget(ListWidget):
-    settings = settings.HEATMAP_OVERLAY_MAP_CONFIG
+    settings = settings.HEAT_OVERLAY_MAP_CONFIG
 
     def get_default_value(self):
-        return settings.HEATMAP_OVERLAY_MAP
+        return settings.HEAT_OVERLAY_MAP
 
     async def button_func_extra(self):
         settings.update_setting(
-            "HEATMAP_OVERLAY_MAP", self.selected_item.title_label.text()
+            "HEAT_OVERLAY_MAP", self.selected_item.title_label.text()
         )
-        # reset map
-        check_map_dir()
         self.config.gui.map_widget.reset_map()
 
 
@@ -103,8 +98,6 @@ class RainmapListWidget(ListWidget):
         settings.update_setting(
             "RAIN_OVERLAY_MAP", self.selected_item.title_label.text()
         )
-        # reset map
-        check_map_dir()
         self.config.gui.map_widget.reset_map()
 
 
@@ -118,6 +111,4 @@ class WindmapListWidget(ListWidget):
         settings.update_setting(
             "WIND_OVERLAY_MAP", self.selected_item.title_label.text()
         )
-        # reset map
-        check_map_dir()
         self.config.gui.map_widget.reset_map()

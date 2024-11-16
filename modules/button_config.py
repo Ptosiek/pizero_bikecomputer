@@ -59,15 +59,15 @@ class Button_Config:
             },
             "MAP": {
                 5: ("scroll_prev", ""),
-                6: ("map_zoom_minus", ""),
+                6: ("map_zoom_out", ""),
                 16: ("scroll_next", "enter_menu"),
-                24: ("map_zoom_plus", "change_map_overlays"),
+                24: ("map_zoom_in", "change_map_overlays"),
             },
             "COURSE_PROFILE": {
                 5: ("scroll_prev", ""),
-                6: ("map_zoom_minus", ""),
+                6: ("map_zoom_out", ""),
                 16: ("scroll_next", "enter_menu"),
-                24: ("map_zoom_plus", ""),
+                24: ("map_zoom_in", ""),
             },
         },
         "Pirate_Audio_old": {
@@ -91,15 +91,15 @@ class Button_Config:
             },
             "MAP": {
                 5: ("scroll_prev", ""),
-                6: ("map_zoom_minus", ""),
+                6: ("map_zoom_out", ""),
                 16: ("scroll_next", "enter_menu"),
-                20: ("map_zoom_plus", "change_map_overlays"),
+                20: ("map_zoom_in", "change_map_overlays"),
             },
             "COURSE_PROFILE": {
                 5: ("scroll_prev", ""),
-                6: ("map_zoom_minus", ""),
+                6: ("map_zoom_out", ""),
                 16: ("scroll_next", "enter_menu"),
-                20: ("map_zoom_plus", ""),
+                20: ("map_zoom_in", ""),
             },
         },
         "Display_HAT_Mini": {
@@ -123,15 +123,15 @@ class Button_Config:
             },
             "MAP": {
                 5: ("scroll_prev", ""),
-                6: ("map_zoom_minus", ""),
+                6: ("map_zoom_out", ""),
                 16: ("scroll_next", "enter_menu"),
-                24: ("map_zoom_plus", "change_map_overlays"),
+                24: ("map_zoom_in", "change_map_overlays"),
             },
             "COURSE_PROFILE": {
                 5: ("scroll_prev", ""),
-                6: ("map_zoom_minus", ""),
+                6: ("map_zoom_out", ""),
                 16: ("scroll_next", "enter_menu"),
-                24: ("map_zoom_plus", ""),
+                24: ("map_zoom_in", ""),
             },
         },
         "DFRobot_RPi_Display": {
@@ -162,30 +162,30 @@ class Button_Config:
             },
             "MAP": {
                 "A": ("scroll_prev", ""),
-                "B": ("map_zoom_minus", ""),
+                "B": ("map_zoom_out", ""),
                 "C": ("change_mode", ""),
-                "D": ("map_zoom_plus", ""),
+                "D": ("map_zoom_in", ""),
                 "E": ("scroll_next", "enter_menu"),
             },
             "MAP_1": {
                 "A": ("map_move_x_minus", ""),
-                "B": ("map_move_y_minus", "map_zoom_minus"),
+                "B": ("map_move_y_minus", "map_zoom_out"),
                 "C": ("change_mode", "map_change_move"),
-                "D": ("map_move_y_plus", "map_zoom_plus"),
+                "D": ("map_move_y_plus", "map_zoom_in"),
                 "E": ("map_move_x_plus", ""),
             },
             "COURSE_PROFILE": {
                 "A": ("scroll_prev", ""),
-                "B": ("map_zoom_minus", ""),
+                "B": ("map_zoom_out", ""),
                 "C": ("change_mode", ""),
-                "D": ("map_zoom_plus", ""),
+                "D": ("map_zoom_in", ""),
                 "E": ("scroll_next", "enter_menu"),
             },
             "COURSE_PROFILE_1": {
                 "A": ("map_move_x_minus", ""),
-                "B": ("map_zoom_minus", ""),
+                "B": ("map_zoom_out", ""),
                 "C": ("change_mode", ""),
-                "D": ("map_zoom_plus", ""),
+                "D": ("map_zoom_in", ""),
                 "E": ("map_move_x_plus", ""),
             },
         },
@@ -208,18 +208,18 @@ class Button_Config:
             },
             "MAP": {
                 "PAGE": ("scroll_prev", "scroll_next"),
-                "CUSTOM": ("change_mode", "map_zoom_minus"),
-                "LAP": ("map_zoom_plus",),
+                "CUSTOM": ("change_mode", "map_zoom_out"),
+                "LAP": ("map_zoom_in",),
             },
             "MAP_1": {
                 "PAGE": ("", ""),  # go along the route / back along the route
-                "CUSTOM": ("change_mode", "map_zoom_minus"),
-                "LAP": ("map_zoom_plus",),
+                "CUSTOM": ("change_mode", "map_zoom_out"),
+                "LAP": ("map_zoom_in",),
             },
             "COURSE_PROFILE": {
                 "PAGE": ("scroll_prev", "scroll_next"),
-                "CUSTOM": ("change_mode", "map_zoom_minus"),
-                "LAP": ("map_zoom_plus",),
+                "CUSTOM": ("change_mode", "map_zoom_out"),
+                "LAP": ("map_zoom_in",),
             },
             "COURSE_PROFILE_1": {
                 "PAGE": ("", ""),  # go along the route / back along the route

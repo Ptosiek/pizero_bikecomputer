@@ -149,6 +149,8 @@ class GUI_PyQt(QtCore.QObject):
 
     def init_window(self):
         self.app = QtWidgets.QApplication(sys.argv)
+        self.app.setApplicationName(settings.PRODUCT)
+
         self.config.loop = qasync.QEventLoop(self.app)
         self.config.loop.set_debug(True)
         self.config.init_loop(call_from_gui=True)
@@ -292,7 +294,7 @@ class GUI_PyQt(QtCore.QObject):
                 (MenuLabel.MAP, MapMenuWidget),
                 (MenuLabel.SELECT_MAP, MapListWidget),
                 (MenuLabel.MAP_OVERLAY, MapOverlayMenuWidget),
-                (MenuLabel.HEATMAP_LIST, HeatmapListWidget),
+                (MenuLabel.HEAT_MAP_LIST, HeatmapListWidget),
                 (MenuLabel.RAIN_MAP_LIST, RainmapListWidget),
                 (MenuLabel.WIND_MAP_LIST, WindmapListWidget),
                 (MenuLabel.PROFILE, ProfileWidget),
@@ -559,32 +561,30 @@ class GUI_PyQt(QtCore.QObject):
         self.config.button_config.change_mode()
 
     def map_move_x_plus(self):
-        self.map_method("move_x_plus")
+        self.map_signal("signal_move_x_plus")
 
     def map_move_x_minus(self):
-        self.map_method("move_x_minus")
+        self.map_signal("signal_move_x_minus")
 
     def map_move_y_plus(self):
-        self.map_method("move_y_plus")
+        self.map_signal("signal_move_y_plus")
 
     def map_move_y_minus(self):
-        self.map_method("move_y_minus")
+        self.map_signal("signal_move_y_minus")
 
     def map_change_move(self):
-        self.map_method("change_move")
+        self.map_signal("signal_change_move")
 
-    def map_zoom_plus(self):
-        self.map_method("zoom_plus")
+    def map_zoom_in(self):
+        self.map_signal("signal_zoom_int")
 
-    def map_zoom_minus(self):
-        self.map_method("zoom_minus")
+    def map_zoom_out(self):
+        self.map_signal("signal_zoom_out")
 
-    def map_method(self, mode):
+    def map_signal(self, signal: str):
         w = self.main_page.widget(self.main_page.currentIndex())
-        if w == self.map_widget:
-            eval("w.signal_" + mode + ".emit()")
-        elif w == self.course_profile_graph_widget:
-            eval("w.signal_" + mode + ".emit()")
+        if w in [self.map_widget, self.course_profile_graph_widget]:
+            getattr(w, signal).emit()
 
     def reset_course(self):
         self.map_widget.reset_course()

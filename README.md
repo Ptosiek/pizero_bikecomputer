@@ -133,17 +133,17 @@ USB dongle is required if using ANT+ sensors.
 
 ## Maps and navigations
 
-| Specs | Support | Detail |
-|:-|:-|:-|
-| GPS module | Yes | UART GPS module(via GPSd) and I2C GPS are supported. |
-| Positioning from smartphones | Yes | Using the Android app [GadgetBridge](https://gadgetbridge.org). |
-| Map | Yes | Support raster map tile format like OSM (z/x/y.png or jpg). So, offline map is available with local caches. Also, raster .mbtile format is supported. |
-| Course on the map| Yes | Local file(.tcx), or cloud course from Ride with GPS with internet connection. |
-| Search route | Yes | Google Directions API |
-| Course profile | Yes |  |
-| Detect climbs | Yes | Like Garmin ClimbPro. Only climbs on the course, not detect nearby climbs. |
-| Cuesheet | Yes | Use course points included in course files(.tcx). |
-| Map overlay | Yes | Heatmap (Strava / Ride with GPS) and weather(rain / wind). |
+| Specs                        | Support | Detail                                                                                                                          |
+|:-----------------------------|:-|:--------------------------------------------------------------------------------------------------------------------------------|
+| GPS module                   | Yes | UART GPS module(via GPSd) and I2C GPS are supported.                                                                            |
+| Positioning from smartphones | Yes | Using the Android app [GadgetBridge](https://gadgetbridge.org).                                                                 |
+| Map                          | Yes | Support raster map tile format like OSM (z/x/y.(png|jpg) or raster mbtiles).<br/> Support .mvt/.pbf format through QtPBFImagePlugin and pmtiles. |
+| Course on the map            | Yes | Local file(.tcx), or cloud course from Ride with GPS with internet connection.                                                  |
+| Search route                 | Yes | Google Directions API                                                                                                           |
+| Course profile               | Yes |                                                                                                                                 |
+| Detect climbs                | Yes | Like Garmin ClimbPro. Only climbs on the course, not detect nearby climbs.                                                      |
+| Cuesheet                     | Yes | Use course points included in course files(.tcx).                                                                               |
+| Map overlay                  | Yes | Heatmap (Strava / Ride with GPS) and weather(rain / wind).                                                                      |
 
 ### Map example
 
@@ -151,9 +151,9 @@ USB dongle is required if using ANT+ sensors.
 
 <img width="400" alt="map-01" src="https://user-images.githubusercontent.com/12926652/206341071-5f9bee00-d959-489b-832a-9b4bf7fe2279.png"> <img width="400" alt="map-02" src="https://user-images.githubusercontent.com/12926652/206341086-7935cfbd-8ed3-4068-9f2b-93f676a8932a.png">
 
-#### Heatmap overlay
+#### Heat map overlay
 
-RWGPS heatmap
+RWGPS heat map
 
 #### Weather map overlay
 

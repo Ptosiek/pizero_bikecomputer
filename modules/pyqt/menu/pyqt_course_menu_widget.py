@@ -72,7 +72,7 @@ class CoursesMenuWidget(MenuWidget):
 
     def onoff_course_cancel_button(self):
         status = self.config.logger.course.is_set
-        self.buttons["Cancel Course"].onoff_button(status)
+        self.buttons[MenuLabel.CANCEL_COURSE].onoff_button(status)
 
     def cancel_course(self):
         self.config.logger.reset_course(delete_course_file=True)

@@ -574,17 +574,9 @@ Set the value before starting the program. If the value is set during running, i
   - Place the fonts in `fonts/` folder.
 - `map`
   - Set the map.
-  - The `G_MAP_CONFIG` in modules/config.py provides some preset definitions.
-  - `wikimedia`: An example map of a full-color map. [https://maps.wikimedia.org/](https://maps.wikimedia.org/)
-  - You can add a map URL to map.yaml. Specify the URL in tile format (tile coordinates by [x, y] and zoom level by [z]). And The map name is set to this setting `map`.
-  - Also, you can set raster mbtiles mapsets generated from [mb-util](https://github.com/mapbox/mbutil). It is sqlite3 db packed with raster maptile images. The definition in map.yaml is following with sample mbtile map named `sample_mbtile` placed at `maptile/sample_mbtile.mbtiles`.
+  - Settings/maps provides some preset definitions.
+  - To use a map from map.yml, just set the key representing the mapping.
 
-```
-map.yaml entry
-
-  sample_mbtile:
-    mbtiles: sample_mbtile.mbtiles
-```
 
 #### ANT+ section
 
@@ -655,11 +647,11 @@ MAIN:
   STATUS: true
   LAYOUT:
     Power: [0, 0, 1, 2]
-    HR: [0, 2]
+    Heart Rate: [0, 2]
     Speed: [1, 0]
-    Cad.: [1, 1]
+    Cadence: [1, 1]
     Timer: [1, 2]
-    Dist.: [2, 0]
+    Distance: [2, 0]
     Work: [2, 1]
     Ascent: [2, 2]
 ```
@@ -668,7 +660,7 @@ MAIN:
 - `STATUS`: Show this screen or not.
   - Set the boolean value of `true` or `false` of yaml format.
 - `LAYOUT`: Specify the position of each element.
-  - Each element is defined in modules/gui_congig.py under `G_ITEM_DEF`. You can also add your own variables to the modules/gui_congig.py file.
+  - Each element is defined in modules/items. Use the name attribute
   - The position is set up in the form of [Y, X], with the top left as the origin [0, 0], the right as the positive direction of the X axis, and the bottom as the positive direction of the Y axis. The implementation is the coordinate system of QGridLayout.
   - If you want to merge multiple cells, the third argument should be the bottom Y coordinate + 1, and the fourth argument should be the right X coordinate + 1. For example, `Power: [0, 0, 1, 2]` merges the [0, 0] cell with the right next [0, 1] cell.
 
@@ -687,6 +679,26 @@ openstreetmap:
   - Set the tile URL. Tile coordinates X, Y, and zoom Z should be listed with `{x}`, `{y}`, and `{z}`.
 - Line 3: Copyright.
   - Set the copyright required for the map.
+
+- You can use raster mbtiles mapsets generated from [mb-util](https://github.com/mapbox/mbutil). It is sqlite3 db packed with raster maptile images. The definition in map.yaml is following with sample mbtile map named `sample_mbtile` placed at `maptile/sample_mbtile.mbtiles`.
+
+  ```
+  map.yaml example
+
+    sample_mbtile:
+      mbtiles: sample_mbtile.mbtiles
+  ```
+
+- .pbf/.mvt files are supported through QtPBFImagePlugin. This means you can also get the data from a pmtiles server.
+  To enable .mvt format support:
+  - Build https://github.com/tumic0/QtPBFImagePlugin, or use an existing package for https://build.opensuse.org/project/show/home:tumic:QtPBFImagePlugin (untested)
+  - If you built yourself the library, you can make it available by copying the libpbf.so under qt_plugins/imageformats.
+  - You will also need to add one style: https://github.com/tumic0/QtPBFImagePlugin#Styles
+    If you are using pmtiles, the style is derived from Tilezen, in order for the plugin to work get:
+    https://github.com/tumic0/QtPBFImagePlugin-styles/blob/master/Tilezen/apollo-bright/style.json
+    and copy it under
+    ~/.local/share/Pizero Bikecomputer/style/style.json
+    (If you have changed settings.PRODUCT, change the path accordingly.)
 
 ### config.py
 

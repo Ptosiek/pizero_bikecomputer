@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta
 
 import numpy as np
-from PIL import Image
 
 from logger import app_logger
-from modules._pyqt import QT_COMPOSITION_MODE_DARKEN, pg, qasync
+from modules._pyqt import pg, qasync
 from modules.pyqt.pyqt_cuesheet_widget import CueSheetWidget
 from modules.pyqt.graph.pyqtgraph.CoursePlotItem import CoursePlotItem
+from modules.pyqt.utils import load_tile
 from modules.settings import settings
 from modules.utils.geo import (
     calc_y_mod,
@@ -15,15 +15,13 @@ from modules.utils.geo import (
     get_width_distance,
 )
 from modules.utils.map import (
-    get_maptile_filename,
+    connected_map,
+    get_geo_area,
     get_lon_lat_from_tile_xy,
-    get_tilexy_and_xy_in_tile,
-    remove_maptiles,
-    with_map,
 )
-from modules.utils.mbutils import check_mbtiles_image, get_mbtiles_image
 from modules.utils.timer import Timer, log_timers
 from .pyqt_base_map import BaseMapWidget
+from .pyqt_map_button import MapButtonLabel
 
 
 class MapWidget(BaseMapWidget):
@@ -59,18 +57,18 @@ class MapWidget(BaseMapWidget):
     arrow_direction_angle_unit_half = arrow_direction_angle_unit / 2
 
     y_mod = 1.22  # 31/25 at Tokyo(N35)
-    pre_zoomlevel = {}
+    pre_zoom_level = {}
 
     drawn_tiles = {}
     existing_tiles = {}
 
-    zoom_delta_from_tilesize = 0
-    auto_zoomlevel = None
-    auto_zoomlevel_diff = 2  # auto_zoomlevel = zoomlevel + auto_zoomlevel_diff
-    auto_zoomlevel_back = None
+    zoom_delta_from_tile_size = 0
+    auto_zoom_level = None
+    auto_zoom_level_diff = 2  # auto_zoom_level = zoom_level + auto_zoom_level_diff
+    auto_zoom_level_back = None
 
     # overlays
-    use_heatmap_overlay_map = False
+    use_heat_overlay_map = False
     use_rain_overlay_map = False
     use_wind_overlay_map = False
 
@@ -158,14 +156,14 @@ class MapWidget(BaseMapWidget):
 
         if self.config.display.has_touch:
             # zoom
-            self.layout.addWidget(self.buttons["zoomdown"], 0, 0)
-            self.layout.addWidget(self.buttons["lock"], 1, 0)
-            self.layout.addWidget(self.buttons["zoomup"], 2, 0)
+            self.layout.addWidget(self.buttons[MapButtonLabel.ZOOM_OUT], 0, 0)
+            self.layout.addWidget(self.buttons[MapButtonLabel.LOCK], 1, 0)
+            self.layout.addWidget(self.buttons[MapButtonLabel.ZOOM_IN], 2, 0)
             # arrow
-            self.layout.addWidget(self.buttons["left"], 0, 2)
-            self.layout.addWidget(self.buttons["up"], 1, 2)
-            self.layout.addWidget(self.buttons["down"], 2, 2)
-            self.layout.addWidget(self.buttons["right"], 3, 2)
+            self.layout.addWidget(self.buttons[MapButtonLabel.LEFT], 0, 2)
+            self.layout.addWidget(self.buttons[MapButtonLabel.UP], 1, 2)
+            self.layout.addWidget(self.buttons[MapButtonLabel.DOWN], 2, 2)
+            self.layout.addWidget(self.buttons[MapButtonLabel.RIGHT], 3, 2)
 
         # cue sheet and instruction
         self.init_cuesheet_and_instruction()
@@ -177,24 +175,24 @@ class MapWidget(BaseMapWidget):
 
     def reset_map(self):
         # adjust zoom level for large tiles
-        zoom_delta_from_tilesize = int(settings.CURRENT_MAP.tile_size / 256) - 1
-        self.zoomlevel += self.zoom_delta_from_tilesize - zoom_delta_from_tilesize
-        self.zoom_delta_from_tilesize = zoom_delta_from_tilesize
+        zoom_delta_from_tile_size = int(settings.CURRENT_MAP.tile_size / 256) - 1
+        self.zoom_level += self.zoom_delta_from_tile_size - zoom_delta_from_tile_size
+        self.zoom_delta_from_tile_size = zoom_delta_from_tile_size
 
-        if self.zoomlevel < 1:
-            self.zoomlevel = 1
+        if self.zoom_level < 1:
+            self.zoom_level = 1
 
-        self.auto_zoomlevel = self.zoomlevel + self.auto_zoomlevel_diff
+        self.auto_zoom_level = self.zoom_level + self.auto_zoom_level_diff
 
         for key in [
             settings.MAP,
-            settings.HEATMAP_OVERLAY_MAP,
+            settings.HEAT_OVERLAY_MAP,
             settings.RAIN_OVERLAY_MAP,
             settings.WIND_OVERLAY_MAP,
         ]:
             self.drawn_tiles[key] = {}
             self.existing_tiles[key] = {}
-            self.pre_zoomlevel[key] = np.nan
+            self.pre_zoom_level[key] = np.nan
 
     def init_cuesheet_and_instruction(self):
         # init cuesheet_widget
@@ -218,20 +216,21 @@ class MapWidget(BaseMapWidget):
 
     # override for long press
     def switch_lock(self):
-        if self.buttons["lock"].isDown():
-            if self.buttons["lock"]._state == 0:
-                self.buttons["lock"]._state = 1
+        button = self.buttons[MapButtonLabel.LOCK]
+        if button.isDown():
+            if button._state == 0:
+                button._state = 1
             else:
-                self.button_press_count["lock"] += 1
+                self.button_press_count[MapButtonLabel.LOCK] += 1
                 # long press
                 if (
-                    self.button_press_count["lock"]
+                    self.button_press_count[MapButtonLabel.LOCK]
                     == self.config.button_config.G_BUTTON_LONG_PRESS
                 ):
                     self.change_move()
-        elif self.buttons["lock"]._state == 1:
-            self.buttons["lock"]._state = 0
-            self.button_press_count["lock"] = 0
+        elif button._state == 1:
+            button._state = 0
+            self.button_press_count[MapButtonLabel.LOCK] = 0
         # short press
         else:
             super().switch_lock()
@@ -509,32 +508,32 @@ class MapWidget(BaseMapWidget):
         # map
         drawn_main_map = await self.draw_map_tile_by_overlay(
             settings.CURRENT_MAP,
-            self.zoomlevel,
+            self.zoom_level,
             p0,
             p1,
             overlay=False,
         )
 
-        await self.overlay_heatmap(drawn_main_map, p0, p1)
-        await self.overlay_rainmap(drawn_main_map, p0, p1)
-        await self.overlay_windmap(drawn_main_map, p0, p1)
+        await self.overlay_heat_map(drawn_main_map, p0, p1)
+        await self.overlay_rain_map(drawn_main_map, p0, p1)
+        await self.overlay_wind_map(drawn_main_map, p0, p1)
 
-    async def overlay_heatmap(self, drawn_main_map, p0, p1):
-        if not self.use_heatmap_overlay_map:
+    async def overlay_heat_map(self, drawn_main_map, p0, p1):
+        if not self.use_heat_overlay_map:
             return
 
         await self.overlay_map(
             drawn_main_map,
             p0,
             p1,
-            settings.HEATMAP_OVERLAY_MAP_CONFIG[settings.HEATMAP_OVERLAY_MAP],
+            settings.CURRENT_HEAT_MAP,
         )
 
-    async def overlay_rainmap(self, drawn_main_map, p0, p1):
+    async def overlay_rain_map(self, drawn_main_map, p0, p1):
         if not self.use_rain_overlay_map:
             return
 
-        map_info = settings.RAIN_OVERLAY_MAP_CONFIG[settings.RAIN_OVERLAY_MAP]
+        map_info = settings.CURRENT_RAIN_MAP
 
         if self.update_overlay_basetime(map_info):
             # basetime update
@@ -548,11 +547,11 @@ class MapWidget(BaseMapWidget):
 
         await self.overlay_map(drawn_main_map, p0, p1, map_info)
 
-    async def overlay_windmap(self, drawn_main_map, p0, p1):
+    async def overlay_wind_map(self, drawn_main_map, p0, p1):
         if not self.use_wind_overlay_map:
             return
 
-        map_info = settings.WIND_OVERLAY_MAP_CONFIG[settings.WIND_OVERLAY_MAP]
+        map_info = settings.CURRENT_WIND_MAP
 
         if self.update_overlay_basetime(map_info):
             basetime_str = map_info.format_current_time()
@@ -583,8 +582,8 @@ class MapWidget(BaseMapWidget):
             self.drawn_tiles[settings.MAP] = {}
             self.drawn_tiles[map_info.name] = {}
             self.existing_tiles[map_info.name] = {}
-            self.pre_zoomlevel[map_info.name] = np.nan
-            remove_maptiles(map_info.name)
+            self.pre_zoom_level[map_info.name] = np.nan
+            map_info.remove_tiles()
 
             map_info.current_time = current_time
             return True
@@ -598,20 +597,20 @@ class MapWidget(BaseMapWidget):
             self.drawn_tiles[map_name] = {}
 
         z = (
-            self.zoomlevel
+            self.zoom_level
             + int(settings.CURRENT_MAP.tile_size / map_info.tile_size)
             - 1
         )
         # supported zoom levels
-        if map_info.min_zoomlevel <= z <= map_info.max_zoomlevel:
+        if map_info.min_zoom_level <= z <= map_info.max_zoom_level:
             await self.draw_map_tile_by_overlay(map_info, z, p0, p1, overlay=True)
-        # above maximum zoom level: expand max zoomlevel tiles
-        elif z > map_info.max_zoomlevel:
+        # above maximum zoom level: expand max zoom level tiles
+        elif z > map_info.max_zoom_level:
             await self.draw_map_tile_by_overlay(
                 map_info, z, p0, p1, overlay=True, expand=True
             )
         else:
-            self.pre_zoomlevel[map_name] = z
+            self.pre_zoom_level[map_name] = z
 
     async def draw_map_tile_by_overlay(
         self,
@@ -625,15 +624,15 @@ class MapWidget(BaseMapWidget):
         map_name = map_info.name
         tile_size = map_info.tile_size
 
-        # specify tile range and zoomlevel
-        # z: current zoomlevel from map widget
-        # z_draw: actual zoomlevel of map tile (for overlay map tiles which have limited zoomlevel)
-        # tile_x, tile_y: tile range in zoomlevel z
-        z_draw, z_conv_factor, tile_x, tile_y = self.init_draw_map(
-            map_info, z, p0, p1, expand
+        # specify tile range and zoom level
+        # z: current zoom level from map widget
+        # z_draw: actual zoom level of map tile (for overlay map tiles which have limited zoom level)
+        # tile_x, tile_y: tile range in zoom level z
+        z_draw, z_conv_factor, tile_x, tile_y = map_info.init_draw_map(
+            z, p0, p1, expand
         )
 
-        with with_map(map_info) as cursor:
+        with connected_map(map_info) as cursor:
             if not cursor:
                 # prepare tiles for download
                 tiles = self.get_tiles_for_drawing(
@@ -650,49 +649,38 @@ class MapWidget(BaseMapWidget):
                 map_info, z, z_draw, z_conv_factor, tile_x, tile_y, expand
             )
 
-            self.pre_zoomlevel[map_name] = z
+            self.pre_zoom_level[map_name] = z
 
             if draw_flag:
                 # draw only the necessary tiles
                 w_h = int(tile_size / z_conv_factor) if expand else 0
 
-                for keys in add_keys:
-                    x, y = keys[0:2] if not expand else expand_keys[keys][0:2]
-                    img_file = self.get_image_file(map_info, z_draw, x, y)
+                for key in add_keys:
+                    x, y = key[0:2] if not expand else expand_keys[key][0:2]
+                    img_file = map_info.get_image_file(z_draw, x, y)
+                    crop = None
 
-                    if not expand:
-                        imgarray = np.rot90(
-                            np.asarray(Image.open(img_file).convert("RGBA")), -1
-                        )
-                    else:
-                        x_start, y_start = (
-                            int(w_h * expand_keys[keys][2]),
-                            int(w_h * expand_keys[keys][3]),
-                        )
-                        imgarray = np.rot90(
-                            np.asarray(
-                                Image.open(img_file)
-                                .crop((x_start, y_start, x_start + w_h, y_start + w_h))
-                                .convert("RGBA")
-                            ),
-                            -1,
+                    if expand:
+                        # x_start, y_start, w_h, w_h
+                        crop = (
+                            int(w_h * expand_keys[key][2]),
+                            int(w_h * expand_keys[key][3]),
+                            w_h,
+                            w_h,
                         )
 
-                    imgitem = pg.ImageItem(imgarray)
-
-                    if overlay:
-                        imgitem.setCompositionMode(QT_COMPOSITION_MODE_DARKEN)
+                    img_item = load_tile(img_file, z_draw, crop, overlay)
 
                     imgarray_min_x, imgarray_max_y = get_lon_lat_from_tile_xy(
-                        z, keys[0], keys[1]
+                        z, key[0], key[1]
                     )
                     imgarray_max_x, imgarray_min_y = get_lon_lat_from_tile_xy(
-                        z, keys[0] + 1, keys[1] + 1
+                        z, key[0] + 1, key[1] + 1
                     )
 
-                    self.plot.addItem(imgitem)
-                    imgitem.setZValue(-100)
-                    imgitem.setRect(
+                    self.plot.addItem(img_item)
+                    img_item.setZValue(-100)
+                    img_item.setRect(
                         pg.QtCore.QRectF(
                             imgarray_min_x,
                             get_mod_lat(imgarray_min_y),
@@ -702,27 +690,6 @@ class MapWidget(BaseMapWidget):
                     )
 
         return draw_flag
-
-    @staticmethod
-    def init_draw_map(map_info, z, p0, p1, expand):
-        z_draw = z
-        z_conv_factor = 1
-
-        if expand:
-            if z > map_info.max_zoomlevel:
-                z_draw = map_info.max_zoomlevel
-            elif z < map_info.min_zoomlevel:
-                z_draw = map_info.min_zoomlevel
-            # z_draw = min(z, map_info.max_zoomlevel)
-            z_conv_factor = 2 ** (z - z_draw)
-
-        # tile range
-        t0 = get_tilexy_and_xy_in_tile(z, p0["x"], p0["y"], map_info.tile_size)
-        t1 = get_tilexy_and_xy_in_tile(z, p1["x"], p1["y"], map_info.tile_size)
-        tile_x = sorted([t0[0], t1[0]])
-        tile_y = sorted([t0[1], t1[1]])
-
-        return z_draw, z_conv_factor, tile_x, tile_y
 
     @staticmethod
     def get_tiles_for_drawing(tile_x, tile_y, z_conv_factor, expand):
@@ -755,34 +722,32 @@ class MapWidget(BaseMapWidget):
         tiles_to_download = []
 
         for tile in tiles:
-            filename = get_maptile_filename(map_info.name, z_draw, *tile)
-            key = "{0}-{1}".format(*tile)
+            filename = map_info.get_tile_filename(z_draw, *tile)
 
             if filename.exists() and filename.stat().st_size > 0:
-                self.existing_tiles[map_info.name][z_draw][key] = True
+                self.existing_tiles[map_info.name][z_draw][tile] = True
                 continue
 
             # download is in progress
-            if key in self.existing_tiles[map_info.name][z_draw]:
+            if tile in self.existing_tiles[map_info.name][z_draw]:
                 continue
 
             # entry to download tiles
-            self.existing_tiles[map_info.name][z_draw][key] = False
+            self.existing_tiles[map_info.name][z_draw][tile] = False
             tiles_to_download.append(tile)
 
         # start downloading
         if len(tiles_to_download):
-            if not await self.config.network.download_maptiles(
-                map_info,
+            if not await map_info.download_tiles(
+                settings.DOWNLOAD_QUEUE,
                 z_draw,
                 tiles_to_download,
                 additional_download=True,
             ):
                 # failed to put queue, then retry
                 for tile in tiles_to_download:
-                    key = "{0}-{1}".format(*tile)
-                    if key in self.existing_tiles[map_info.name][z_draw]:
-                        self.existing_tiles[map_info.name][z_draw].pop(key)
+                    if tile in self.existing_tiles[map_info.name][z_draw]:
+                        self.existing_tiles[map_info.name][z_draw].pop(tile)
 
     def check_drawn_tiles(
         self, map_info, z, z_draw, z_conv_factor, tile_x, tile_y, expand
@@ -794,7 +759,7 @@ class MapWidget(BaseMapWidget):
         map_name = map_info.name
         map_drawn_tiles = self.drawn_tiles[map_name]
 
-        if z not in map_drawn_tiles or self.pre_zoomlevel[map_name] != z:
+        if z not in map_drawn_tiles or self.pre_zoom_level[map_name] != z:
             map_drawn_tiles[z] = {}
 
         for i in range(tile_x[0], tile_x[1] + 1):
@@ -822,18 +787,9 @@ class MapWidget(BaseMapWidget):
 
     def check_tile(self, map_info, z_draw, key):
         if map_info.mbtiles:
-            return check_mbtiles_image(map_info.cursor, key[0], key[1], z_draw)
+            return map_info.check_mbtiles_image(key[0], key[1], z_draw)
         else:
-            exist_tile_key = "{0}-{1}".format(*key)  # (z_draw, i, j)
-            return (exist_tile_key, True) in self.existing_tiles[map_info.name][
-                z_draw
-            ].items()
-
-    def get_image_file(self, map_info, z_draw, x, y):
-        if map_info.mbtiles:
-            return get_mbtiles_image(map_info.cursor, x, y, z_draw)
-        else:
-            return get_maptile_filename(map_info.name, z_draw, x, y)
+            return self.existing_tiles[map_info.name][z_draw].get(key, False)
 
     def draw_scale(self, x_start, y_start):
         # draw scale at left bottom
@@ -863,7 +819,7 @@ class MapWidget(BaseMapWidget):
         if scale_label >= 1000:
             scale_label = int(scale_label / 1000)
             scale_unit = "km"
-        self.scale_text.setPlainText(f"{scale_label}{scale_unit}\n(z{self.zoomlevel})")
+        self.scale_text.setPlainText(f"{scale_label}{scale_unit}\n(z{self.zoom_level})")
         self.scale_text.setPos((scale_x1 + scale_x2) / 2, scale_y2)
 
     async def update_cuesheet_and_instruction(
@@ -895,45 +851,26 @@ class MapWidget(BaseMapWidget):
         self.plot.addItem(self.instruction)
 
         if auto_zoom:
-            delta = self.zoom_delta_from_tilesize
-            # print(self.zoomlevel, self.cuesheet_widget.cuesheet[0].dist_num, self.auto_zoomlevel_back)
+            delta = self.zoom_delta_from_tile_size
             if cue.dist_num < 1000:
                 if (
-                    self.auto_zoomlevel_back is None
-                    and self.zoomlevel < self.auto_zoomlevel - delta
+                    self.auto_zoom_level_back is None
+                    and self.zoom_level < self.auto_zoom_level - delta
                 ):
-                    self.auto_zoomlevel_back = self.zoomlevel
-                    self.zoomlevel = self.auto_zoomlevel - delta
-                    # print("zoom in",  self.auto_zoomlevel_back, self.zoomlevel)
+                    self.auto_zoom_level_back = self.zoom_level
+                    self.zoom_level = self.auto_zoom_level - delta
             else:
                 if (
-                    self.auto_zoomlevel_back is not None
-                    and self.zoomlevel == self.auto_zoomlevel - delta
+                    self.auto_zoom_level_back is not None
+                    and self.zoom_level == self.auto_zoom_level - delta
                 ):
-                    self.zoomlevel = self.auto_zoomlevel_back
-                    # print("zoom out", self.auto_zoomlevel_back, self.zoomlevel)
-                self.auto_zoomlevel_back = None
+                    self.zoom_level = self.auto_zoom_level_back
+                self.auto_zoom_level_back = None
 
     def get_geo_area(self, x, y):
-        if np.isnan(x) or np.isnan(y):
-            return np.nan, np.nan
-
-        tile_size = settings.CURRENT_MAP.tile_size
-
-        tile_x, tile_y, _, _ = get_tilexy_and_xy_in_tile(
-            self.zoomlevel,
-            x,
-            y,
-            tile_size,
-        )
-        pos_x0, pos_y0 = get_lon_lat_from_tile_xy(self.zoomlevel, tile_x, tile_y)
-        pos_x1, pos_y1 = get_lon_lat_from_tile_xy(
-            self.zoomlevel, tile_x + 1, tile_y + 1
-        )
-        return (
-            abs(pos_x1 - pos_x0) / tile_size * self.width(),
-            abs(pos_y1 - pos_y0) / tile_size * self.height(),
-        )
+        return get_geo_area(
+            x, y, self.zoom_level, settings.CURRENT_MAP.tile_size
+        ) * np.array((self.width(), self.height()))
 
     def get_arrow_angle_index(self, angle):
         return (
@@ -945,9 +882,9 @@ class MapWidget(BaseMapWidget):
         )
 
     def toggle_overlay(self, overlay_type):
-        if overlay_type == "Heatmap":
-            status = not self.use_heatmap_overlay_map
-            self.use_heatmap_overlay_map = status
+        if overlay_type == "Heat map":
+            status = not self.use_heat_overlay_map
+            self.use_heat_overlay_map = status
         elif overlay_type == "Rain map":
             status = not self.use_rain_overlay_map
             self.use_rain_overlay_map = status
@@ -956,3 +893,21 @@ class MapWidget(BaseMapWidget):
             self.use_wind_overlay_map = status
         self.reset_map()
         return status
+
+    @qasync.asyncSlot()
+    async def zoom_in(self):
+        await super().zoom_in()
+
+        if self.zoom_level == settings.CURRENT_MAP.max_zoom_level:
+            self.buttons[MapButtonLabel.ZOOM_IN].setEnabled(False)
+        if self.zoom_level == settings.CURRENT_MAP.min_zoom_level + 1:
+            self.buttons[MapButtonLabel.ZOOM_OUT].setEnabled(True)
+
+    @qasync.asyncSlot()
+    async def zoom_out(self):
+        await super().zoom_out()
+
+        if self.zoom_level == settings.CURRENT_MAP.min_zoom_level:
+            self.buttons[MapButtonLabel.ZOOM_OUT].setEnabled(False)
+        if self.zoom_level == settings.CURRENT_MAP.max_zoom_level - 1:
+            self.buttons[MapButtonLabel.ZOOM_IN].setEnabled(True)

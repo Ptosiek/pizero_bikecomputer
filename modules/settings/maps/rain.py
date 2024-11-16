@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from .utils import MapInfo
+from modules.utils.map import MapInfo
 
 
 class RainMap(StrEnum):
@@ -11,10 +11,9 @@ class RainMap(StrEnum):
 RAIN_OVERLAY_MAP_CONFIG = {
     # worldwide rain tile
     RainMap.RAINVIEWER: MapInfo(
-        name=RainMap.RAINVIEWER.value,
         url="https://tilecache.rainviewer.com/v2/radar/{basetime}/256/{z}/{x}/{y}/6/1_1.png",
-        max_zoomlevel=18,
-        min_zoomlevel=1,
+        max_zoom_level=18,
+        min_zoom_level=1,
         current_time_func=datetime.now,  # local?
         basetime=None,
         validtime=None,

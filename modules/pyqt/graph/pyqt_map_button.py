@@ -1,3 +1,5 @@
+from enum import Enum, auto
+
 from modules._pyqt import QtWidgets, QtCore
 from modules.pyqt.components.icons import (
     ZoomInIcon,
@@ -11,6 +13,16 @@ from modules.pyqt.components.icons import (
     DirectionsIcon,
     MapLayersIcon,
 )
+
+
+class MapButtonLabel(Enum):
+    LOCK = auto()
+    ZOOM_IN = auto()
+    ZOOM_OUT = auto()
+    LEFT = auto()
+    RIGHT = auto()
+    UP = auto()
+    DOWN = auto()
 
 
 class MapButton(QtWidgets.QPushButton):

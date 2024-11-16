@@ -12,13 +12,13 @@ import numpy as np
 
 from logger import app_logger
 
+from modules.utils.map import MapInfo
 from .maps import (
     MAP_CONFIG,
-    HEATMAP_OVERLAY_MAP_CONFIG,
+    HEAT_OVERLAY_MAP_CONFIG,
     RAIN_OVERLAY_MAP_CONFIG,
     WIND_OVERLAY_MAP_CONFIG,
 )
-from .maps.utils import MapInfo
 
 _IS_RASPI = False
 UNIT_ID = 0x1A2B3C4D
@@ -136,8 +136,7 @@ class SettingsNamespace:
     LOG_WRITE_CSV = True
     LOG_WRITE_FIT = True
 
-    # asyncio semaphore and queues
-    COROUTINE_SEM = 100
+    # asyncio queue
     DOWNLOAD_QUEUE = asyncio.Queue()
 
     # for map dummy center: Tokyo station in Japan
@@ -222,13 +221,13 @@ class SettingsNamespace:
 
     # default maps
     MAP = "wikimedia"  # settings.conf
-    HEATMAP_OVERLAY_MAP = "rwg_heatmap"
+    HEAT_OVERLAY_MAP = "rwg_heatmap"
     RAIN_OVERLAY_MAP = "rainviewer"
     WIND_OVERLAY_MAP = "openportguide"
 
     MAP_CONFIG = MAP_CONFIG
 
-    HEATMAP_OVERLAY_MAP_CONFIG = HEATMAP_OVERLAY_MAP_CONFIG
+    HEAT_OVERLAY_MAP_CONFIG = HEAT_OVERLAY_MAP_CONFIG
     RAIN_OVERLAY_MAP_CONFIG = RAIN_OVERLAY_MAP_CONFIG
     WIND_OVERLAY_MAP_CONFIG = WIND_OVERLAY_MAP_CONFIG
 
@@ -278,7 +277,35 @@ class SettingsNamespace:
 
     @property
     def CURRENT_MAP(self):
-        return self.MAP_CONFIG[self.MAP]
+        map_ = self.MAP_CONFIG[self.MAP]
+        # make sure root_dir and name is set
+        map_.root_dir = self.MAPTILE_DIR
+        map_.name = self.MAP
+        return map_
+
+    @property
+    def CURRENT_HEAT_MAP(self):
+        map_ = self.HEAT_OVERLAY_MAP_CONFIG[self.HEAT_OVERLAY_MAP]
+        # make sure root_dir and name is set
+        map_.root_dir = self.MAPTILE_DIR
+        map_.name = self.HEAT_OVERLAY_MAP
+        return map_
+
+    @property
+    def CURRENT_RAIN_MAP(self):
+        map_ = self.RAIN_OVERLAY_MAP_CONFIG[self.RAIN_OVERLAY_MAP]
+        # make sure root_dir and name is set
+        map_.root_dir = self.MAPTILE_DIR
+        map_.name = self.RAIN_OVERLAY_MAP
+        return map_
+
+    @property
+    def CURRENT_WIND_MAP(self):
+        map_ = self.WIND_OVERLAY_MAP_CONFIG[self.WIND_OVERLAY_MAP]
+        # make sure root_dir and name is set
+        map_.root_dir = self.MAPTILE_DIR
+        map_.name = self.WIND_OVERLAY_MAP
+        return map_
 
     @property
     def WHEEL_CIRCUMFERENCE_M(self):
@@ -518,12 +545,12 @@ class SettingsNamespace:
 
                         if path.exists():
                             self.MAP_CONFIG.update(
-                                {k: MapInfo(**{**v, "name": k, "mbtiles": path})}
+                                {k: MapInfo(**{**v, "mbtiles": path})}
                             )
                         else:
                             app_logger.warning(f"Could not load {path}, file not found")
                     else:
-                        self.MAP_CONFIG.update({k: MapInfo(**v, name=k)})
+                        self.MAP_CONFIG.update({k: MapInfo(**v)})
         except FileNotFoundError:
             pass
 
