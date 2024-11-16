@@ -1,4 +1,3 @@
-import os
 import sqlite3
 import signal
 import shutil
@@ -97,7 +96,7 @@ class LoggerCore:
                 settings.LOGGING_INTERVAL,
                 settings.LOGGING_INTERVAL,
             )
-        except:
+        except:  # noqa
             # for windows
             traceback.print_exc()
 
@@ -387,7 +386,9 @@ class LoggerCore:
             )
 
         self.config.gui.show_popup_multiline(
-            lap_message, value_message, timeout=10  # [s]
+            lap_message,
+            value_message,
+            timeout=10,  # [s]
         )
         self.config.display.screen_flash_short()
 
@@ -437,7 +438,7 @@ class LoggerCore:
 
         start_date_local = start_date.astimezone().strftime("%Y-%m-%d_%H-%M-%S")
 
-        filename = os.path.join(settings.LOG_DIR, start_date_local)
+        filename = settings.LOG_DIR / start_date_local
         fit_text = f"Write fit({self.logger_fit.mode}):"
         csv_text = f"Write csv{' ' * (len(self.logger_fit.mode) + 2)}:"
 
@@ -931,7 +932,7 @@ class LoggerCore:
             self.short_log_available = True
         # get values from copied db when initial execution or migration from short_log to db in logging
         else:
-            db_file = settings.LOG_DB + ".tmp"
+            db_file = settings.LOG_DB.with_name(settings.LOG_DB.name + "~tmp")
             shutil.copy(settings.LOG_DB, db_file)
 
             query = (
@@ -959,7 +960,7 @@ class LoggerCore:
 
             cur.close()
             con.close()
-            os.remove(db_file)
+            db_file.unlink()
             self.short_log_available = True
 
         # print("lat_raw", len(lat_raw))
@@ -975,7 +976,7 @@ class LoggerCore:
                 )
                 lat = lat_raw[cond]
                 lon = lon_raw[cond]
-            except:
+            except:  # noqa
                 lat = lat_raw
                 lon = lon_raw
 

@@ -1,13 +1,12 @@
 import datetime
 import io
-import os
 import sqlite3
 
 import numpy as np
 from PIL import Image
 
 from logger import app_logger
-from modules._pyqt import QT_COMPOSITION_MODE_DARKEN, QtCore, pg, qasync
+from modules._pyqt import QT_COMPOSITION_MODE_DARKEN, pg, qasync
 from modules.pyqt.pyqt_cuesheet_widget import CueSheetWidget
 from modules.pyqt.graph.pyqtgraph.CoursePlotItem import CoursePlotItem
 from modules.settings import settings
@@ -692,8 +691,9 @@ class MapWidget(BaseMapWidget):
                     np.asarray(Image.open(img_file).convert("RGBA")), -1
                 )
             else:
-                x_start, y_start = int(w_h * expand_keys[keys][2]), int(
-                    w_h * expand_keys[keys][3]
+                x_start, y_start = (
+                    int(w_h * expand_keys[keys][2]),
+                    int(w_h * expand_keys[keys][3]),
                 )
                 imgarray = np.rot90(
                     np.asarray(
@@ -785,7 +785,7 @@ class MapWidget(BaseMapWidget):
             filename = get_maptile_filename(map_name, z_draw, *tile)
             key = "{0}-{1}".format(*tile)
 
-            if os.path.exists(filename) and os.path.getsize(filename) > 0:
+            if filename.exists() and filename.stat().st_size > 0:
                 self.existing_tiles[map_name][z_draw][key] = True
                 continue
 

@@ -1,4 +1,3 @@
-import os
 import re
 import shutil
 
@@ -15,7 +14,7 @@ from modules.utils.timer import Timer, log_timers
 
 POLYLINE_DECODER = False
 try:
-    import polyline
+    import polyline  # noqa
 
     POLYLINE_DECODER = True
 except ImportError:
@@ -144,14 +143,14 @@ class Course:
         if self.course_points:
             self.course_points.reset()
 
-        if delete_course_file and os.path.exists(settings.COURSE_FILE_PATH):
-            os.remove(settings.COURSE_FILE_PATH)
+        if delete_course_file and settings.COURSE_FILE_PATH.exists():
+            settings.COURSE_FILE_PATH.unlink()
 
     def load(self, file=None):
         # if file is given, copy it to settings.COURSE_FILE_PATH firsthand, we are loading a new course
         if file:
-            _, ext = os.path.splitext(file)
             shutil.copy(file, settings.COURSE_FILE_PATH)
+            # _, ext = os.path.splitext(file)
             # shutil.copy2(file, settings.COURSE_FILE_PATH)
             # if ext:
             #    os.setxattr(
@@ -169,7 +168,7 @@ class Course:
 
         with timers[0]:
             # get loader based on the extension
-            if os.path.exists(settings.COURSE_FILE_PATH):
+            if settings.COURSE_FILE_PATH.exists():
                 # get file extension in order to find the correct loader
                 # extension was set in custom attributes as the current course is always
                 # loaded from '.current'

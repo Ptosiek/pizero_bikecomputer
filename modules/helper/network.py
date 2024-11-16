@@ -1,8 +1,6 @@
-import os
-import datetime
 import asyncio
-import traceback
 import concurrent
+import datetime
 
 from logger import app_logger
 from modules.settings import settings
@@ -86,7 +84,8 @@ class Network:
             request_header["User-Agent"] = settings.PRODUCT
 
         for tile in tiles:
-            os.makedirs(f"maptile/{map_name}/{z}/{tile[0]}/", exist_ok=True)
+            p = settings.MAPTILE_DIR / map_name / str(z) / str(tile[0])
+            p.mkdir(parents=True, exist_ok=True)
 
             url = map_settings["url"].format(
                 z=z, x=tile[0], y=tile[1], **additional_var
@@ -122,10 +121,14 @@ class Network:
             for tile in tiles:
                 if max_zoom_cond:
                     for i in range(2):
-                        os.makedirs(
-                            f"maptile/{map_name}/{z + 1}/{2 * tile[0] + i}",
-                            exist_ok=True,
+                        p = (
+                            settings.MAPTILE_DIR
+                            / map_name
+                            / str(z + 1)
+                            / str(2 * tile[0] + i)
                         )
+                        p.mkdir(parents=True, exist_ok=True)
+
                         for j in range(2):
                             url = map_settings["url"].format(
                                 z=z + 1,
@@ -143,10 +146,14 @@ class Network:
                     continue
 
                 if min_zoom_cond:
-                    os.makedirs(
-                        f"maptile/{map_name}/{z - 1}/{int(tile[0] / 2)}",
-                        exist_ok=True,
+                    p = (
+                        settings.MAPTILE_DIR
+                        / map_name
+                        / str(z - 1)
+                        / str(int(tile[0] / 2))
                     )
+                    p.mkdir(parents=True, exist_ok=True)
+
                     zoomout_url = map_settings["url"].format(
                         z=z - 1,
                         x=int(tile[0] / 2),

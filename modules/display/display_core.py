@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 from logger import app_logger
 from modules.settings import settings
@@ -95,13 +95,13 @@ class Display:
 
 
 def detect_display():
-    hatdir = "/proc/device-tree/hat"
-    product_file = f"{hatdir}/product"
-    vendor_file = f"{hatdir}/vendor"
-    if os.path.exists(product_file) and os.path.exists(vendor_file):
-        with open(product_file) as f:
+    hatdir = Path("/proc/device-tree/hat")
+    product_file = hatdir / "product"
+    vendor_file = hatdir / "vendor"
+    if product_file.exists() and vendor_file.exists():
+        with product_file.open() as f:
             p = f.read()
-        with open(vendor_file) as f:
+        with vendor_file.open() as f:
             v = f.read()
         app_logger.info(f"{product_file}: {p}")
         app_logger.info(f"{vendor_file}: {v}")

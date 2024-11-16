@@ -1,8 +1,8 @@
 import asyncio
 import datetime
-import os
 import signal
 import sys
+from pathlib import Path
 
 import numpy as np
 import oyaml as yaml
@@ -475,7 +475,7 @@ class GUI_PyQt(QtCore.QObject):
         if settings.FONT_FILE:
             # use full path as macOS is not allowing relative paths
             res = QtGui.QFontDatabase.addApplicationFont(
-                os.path.join(os.getcwd(), "fonts", settings.FONT_FILE)
+                Path.cwd() / "fonts" / settings.FONT_FILE
             )
             if res != -1:
                 font_name = QtGui.QFontDatabase.applicationFontFamilies(res)[0]
@@ -618,7 +618,7 @@ class GUI_PyQt(QtCore.QObject):
         filename = date.strftime("%Y-%m-%d_%H-%M-%S.png")
         app_logger.info(f"screenshot: {filename}")
         p = self.stack_widget.grab()
-        p.save(os.path.join(settings.SCREENSHOT_DIR, filename), "png")
+        p.save(settings.SCREENSHOT_DIR / filename, "png")
 
     def change_start_stop_button(self, status):
         if self.button_box_widget is not None:

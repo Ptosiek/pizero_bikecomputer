@@ -1,24 +1,30 @@
 import math
-import os
 import shutil
 
 from modules.settings import settings
 
 
 def check_map_dir():
-    os.makedirs(os.path.join("maptile", settings.HEATMAP_OVERLAY_MAP), exist_ok=True)
-    os.makedirs(os.path.join("maptile", settings.RAIN_OVERLAY_MAP), exist_ok=True)
-    os.makedirs(os.path.join("maptile", settings.WIND_OVERLAY_MAP), exist_ok=True)
+    for p in (
+        settings.HEATMAP_OVERLAY_MAP,
+        settings.RAIN_OVERLAY_MAP,
+        settings.WIND_OVERLAY_MAP,
+    ):
+        (settings.MAPTILE_DIR / p).mkdir(parents=True, exist_ok=True)
 
     if not settings.CURRENT_MAP.get("use_mbtiles"):
-        os.makedirs(os.path.join("maptile", settings.MAP), exist_ok=True)
+        (settings.MAPTILE_DIR / settings.MAP).mkdir(parents=True, exist_ok=True)
 
 
 def get_maptile_filename(map_name, z, x, y, basetime=None, validtime=None):
+    p = settings.MAPTILE_DIR / map_name
+
     if basetime and validtime:
-        return f"maptile/{map_name}/{basetime}/{validtime}/{z}/{x}/{y}.png"
-    else:
-        return f"maptile/{map_name}/{z}/{x}/{y}.png"
+        p = p / str(basetime) / str(validtime)
+
+    p = p / str(z) / str(x) / str(y)
+
+    return p.with_suffix(".png")
 
 
 def get_lon_lat_from_tile_xy(z, x, y):
@@ -46,9 +52,10 @@ def get_tilexy_and_xy_in_tile(z, x, y, tile_size):
 
 
 def remove_maptiles(map_name):
-    path = os.path.join("maptile", map_name)
-    if os.path.exists(path):
-        files = os.listdir(path)
-        dirs = [f for f in files if os.path.isdir(os.path.join(path, f))]
+    path = settings.MAPTILE_DIR / map_name
+
+    if path.exists():
+        dirs = [d for d in path.iterdir() if d.is_dir()]
+        # Remove each subdirectory
         for d in dirs:
-            shutil.rmtree(os.path.join(path, d))
+            shutil.rmtree(d)

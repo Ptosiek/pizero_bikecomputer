@@ -1,4 +1,3 @@
-import os
 import re
 from collections import defaultdict
 
@@ -30,7 +29,7 @@ class TcxLoader:
 
     @classmethod
     def load_file(cls, file):
-        if not os.path.exists(file):
+        if not file.exists():
             return None, None
         app_logger.info(f"[{cls.__name__}]: loading {file}")
 
@@ -45,7 +44,7 @@ class TcxLoader:
         }
         course_points = defaultdict(lambda: np.array([]))
 
-        with open(file, "r", encoding="utf-8_sig") as f:
+        with file.open("r", encoding="utf-8_sig") as f:
             tcx = f.read()
 
             match_name = patterns["name"].search(tcx)

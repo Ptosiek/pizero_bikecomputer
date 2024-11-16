@@ -1,4 +1,3 @@
-import os
 import shutil
 from collections import namedtuple
 
@@ -86,10 +85,10 @@ class CoursesMenuWidget(MenuWidget):
 
     async def load_tcx_route(self, filename):
         self.cancel_course()
-        course_file = os.path.join(
-            settings.COURSE_DIR, filename[: filename.lower().find(".tcx") + 4]
+        course_file = (
+            settings.COURSE_DIR / filename[: filename.lower().find(".tcx") + 4]
         )
-        shutil.move(os.path.join(settings.COURSE_DIR, filename), course_file)
+        shutil.move(settings.COURSE_DIR / filename, course_file)
         self.set_new_course(course_file)
         self.config.gui.show_forced_message("Loading succeeded!")
 
@@ -338,7 +337,7 @@ class CourseDetailWidget(MenuWidget):
             QtWidgets.QWidget, MenuLabel.COURSES_LIST
         )
         widget.set_course(
-            os.path.join(settings.RWGS_ROUTE_DOWNLOAD_DIR, f"course-{self.list_id}.tcx")
+            settings.RWGS_ROUTE_DOWNLOAD_DIR / f"course-{self.list_id}.tcx"
         )
 
     def draw_images(self, draw_map_image=True, draw_profile_image=True):
@@ -346,11 +345,9 @@ class CourseDetailWidget(MenuWidget):
             return False
 
         if draw_map_image:
-            filename = os.path.join(
-                settings.RWGS_ROUTE_DOWNLOAD_DIR, f"preview-{self.list_id}.png"
-            )
+            filename = settings.RWGS_ROUTE_DOWNLOAD_DIR / f"preview-{self.list_id}.png"
 
-            if not os.path.exists(filename):
+            if not filename.exists():
                 return
 
             im = Image.open(filename).convert("RGBA")
@@ -373,9 +370,9 @@ class CourseDetailWidget(MenuWidget):
             self.map_image.setPixmap(QtGui.QPixmap.fromImage(ImageQt.ImageQt(im)))
 
         if draw_profile_image:
-            filename = os.path.join(
-                settings.RWGS_ROUTE_DOWNLOAD_DIR,
-                f"elevation_profile-{self.list_id}.jpg",
+            filename = (
+                settings.RWGS_ROUTE_DOWNLOAD_DIR
+                / f"elevation_profile-{self.list_id}.jpg"
             )
 
             im = Image.open(filename).convert("RGBA")

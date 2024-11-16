@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 from modules._pyqt import (
     QT_COMPOSITION_MODE_SOURCEIN,
@@ -16,9 +16,7 @@ class _QIconWithPath(QtGui.QIcon):
     path = ""
 
     def __init__(self, color=None):
-        # changing color will work only on svg file
-        _, ext = os.path.splitext(self.path)
-        if color and ext == ".svg":
+        if color and Path(self.path).suffix == ".svg":
             img = QtGui.QPixmap(self.path)
             qp = QtGui.QPainter(img)
             qp.setCompositionMode(QT_COMPOSITION_MODE_SOURCEIN)

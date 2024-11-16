@@ -1,8 +1,8 @@
 import logging
-import os
 import re
 import sys
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from logging.handlers import RotatingFileHandler
 
@@ -31,29 +31,36 @@ class CustomRotatingFileHandler(RotatingFileHandler):
             self.stream.close()
             self.stream = None
             # remove file older than one month (30 days)
-            base_filename_no_ext, ext = os.path.splitext(self.baseFilename)
-            regex = rf"{base_filename_no_ext}-(.*?){ext}"
+            base_path = Path(self.baseFilename)
+
+            regex = rf"{base_path.stem}-(.*?){base_path.suffix}"
             cut_out_date = datetime.now() - timedelta(days=30)
-            for root, dirs, files in os.walk(os.path.dirname(self.baseFilename)):
-                for file in files:
-                    f = os.path.join(root, file)
-                    match = re.match(regex, f)
+
+            for file in base_path.parent.rglob(
+                "*"
+            ):  # Use `rglob` for recursive search or `glob` for current dir only
+                if file.is_file():
+                    match = re.match(
+                        regex, file.name
+                    )  # Use file.name for matching the filename
                     if match:
                         try:
                             date = datetime.strptime(match.group(1), datetime_format)
                             if date < cut_out_date:
-                                os.remove(f)
+                                file.unlink()  # Delete the file
                         except Exception:
-                            # not our file ? keep it
+                            # If parsing fails, ignore and move on
                             pass
 
             # we can't get the creation date of the file easily, so use the mt_time
             # e.g. last log time of the file instead
-            last_date = datetime.fromtimestamp(int(os.stat(self.baseFilename).st_mtime))
+            last_date = datetime.fromtimestamp(base_path.stat().st_mtime).strftime(
+                datetime_format
+            )
 
             self.rotate(
                 self.baseFilename,
-                f"{base_filename_no_ext}-{last_date.strftime(datetime_format)}{ext}",
+                base_path.with_name(f"{base_path.stem}-{last_date}{base_path.suffix}"),
             )
         if not self.delay:
             self.stream = self._open()

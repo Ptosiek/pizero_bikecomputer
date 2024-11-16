@@ -1,5 +1,4 @@
 import json
-import os
 
 import aiofiles
 
@@ -28,34 +27,27 @@ class RWGPS:
     @staticmethod
     def check_files(route_id, first_download=False):
         save_paths = [
-            os.path.join(settings.RWGS_ROUTE_DOWNLOAD_DIR, f"course-{route_id}.json"),
-            os.path.join(settings.RWGS_ROUTE_DOWNLOAD_DIR, f"preview-{route_id}.png"),
+            settings.RWGS_ROUTE_DOWNLOAD_DIR / f"course-{route_id}.json",
+            settings.RWGS_ROUTE_DOWNLOAD_DIR / f"preview-{route_id}.png",
         ]
 
         if not first_download:
             save_paths += [
-                os.path.join(
-                    settings.RWGS_ROUTE_DOWNLOAD_DIR,
-                    f"elevation_profile-{route_id}.jpg",
-                ),
-                os.path.join(
-                    settings.RWGS_ROUTE_DOWNLOAD_DIR, f"course-{route_id}.tcx"
-                ),
+                settings.RWGS_ROUTE_DOWNLOAD_DIR / f"elevation_profile-{route_id}.jpg",
+                settings.RWGS_ROUTE_DOWNLOAD_DIR / f"course-{route_id}.tcx",
             ]
 
         for filename in save_paths:
-            if not os.path.exists(filename) or os.path.getsize(filename) == 0:
+            if not filename.exists() or not filename.stat().st_size:
                 return False
 
         return True
 
     @staticmethod
     def get_route_privacycode(route_id):
-        filename = os.path.join(
-            settings.RWGS_ROUTE_DOWNLOAD_DIR, f"course-{route_id}.json"
-        )
+        filename = settings.RWGS_ROUTE_DOWNLOAD_DIR / f"course-{route_id}.json"
 
-        with open(filename, "r") as json_file:
+        with filename.open() as json_file:
             json_contents = json.load(json_file)
 
             return json_contents["route"].get("privacy_code", None)
@@ -69,12 +61,8 @@ class RWGPS:
                 f"{BASE_URL}/routes/{route_id}/hover_preview.png",
             ]
             save_paths = [
-                os.path.join(
-                    settings.RWGS_ROUTE_DOWNLOAD_DIR, f"course-{route_id}.json"
-                ),
-                os.path.join(
-                    settings.RWGS_ROUTE_DOWNLOAD_DIR, f"preview-{route_id}.png"
-                ),
+                settings.RWGS_ROUTE_DOWNLOAD_DIR / f"course-{route_id}.json",
+                settings.RWGS_ROUTE_DOWNLOAD_DIR / f"preview-{route_id}.png",
             ]
         else:
             urls = [
@@ -82,13 +70,8 @@ class RWGPS:
                 f"{BASE_URL}/routes/{route_id}.tcx",
             ]
             save_paths = [
-                os.path.join(
-                    settings.RWGS_ROUTE_DOWNLOAD_DIR,
-                    f"elevation_profile-{route_id}.jpg",
-                ),
-                os.path.join(
-                    settings.RWGS_ROUTE_DOWNLOAD_DIR, f"course-{route_id}.tcx"
-                ),
+                settings.RWGS_ROUTE_DOWNLOAD_DIR / f"elevation_profile-{route_id}.jpg",
+                settings.RWGS_ROUTE_DOWNLOAD_DIR / f"course-{route_id}.tcx",
             ]
             privacy_code = self.get_route_privacycode(route_id)
 

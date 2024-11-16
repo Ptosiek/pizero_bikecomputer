@@ -1,10 +1,9 @@
 import asyncio
 import json
 import logging
-import os
 import shutil
 from datetime import datetime
-from glob import glob
+from pathlib import Path
 
 from logger import CustomRotatingFileHandler, app_logger
 from modules.button_config import Button_Config
@@ -53,11 +52,11 @@ class Config:
         self.state = AppState()
 
         # make sure all folders exist
-        os.makedirs(settings.SCREENSHOT_DIR, exist_ok=True)
-        os.makedirs(settings.LOG_DIR, exist_ok=True)
+        settings.SCREENSHOT_DIR.mkdir(exist_ok=True)
+        settings.LOG_DIR.mkdir(exist_ok=True)
 
         if settings.LOG_DEBUG_FILE:
-            delay = not os.path.exists(settings.LOG_DEBUG_FILE)
+            delay = not Path(settings.LOG_DEBUG_FILE).exists()
             fh = CustomRotatingFileHandler(settings.LOG_DEBUG_FILE, delay=delay)
             fh.doRollover()
             fh_formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
@@ -65,12 +64,12 @@ class Config:
             app_logger.addHandler(fh)
 
         # layout file
-        if not os.path.exists(settings.LAYOUT_FILE):
-            default_layout_file = os.path.join("layouts", "layout-cycling.yaml")
-            shutil.copy(default_layout_file, settings.LAYOUT_FILE)
+        if not Path(settings.LAYOUT_FILE).exists():
+            shutil.copy(Path("layouts") / "layout-cycling.yaml", settings.LAYOUT_FILE)
 
-        if settings.CURRENT_MAP.get("use_mbtiles") and not os.path.exists(
-            os.path.join("maptile", f"{settings.MAP}.mbtiles")
+        if (
+            settings.CURRENT_MAP.get("use_mbtiles")
+            and not (settings.MAPTILE_DIR / f"{settings.MAP}.mbtiles").exists()
         ):
             settings.CURRENT_MAP["use_mbtiles"] = False
 
@@ -436,8 +435,8 @@ class Config:
     @staticmethod
     def get_courses():
         dirs = sorted(
-            glob(os.path.join(settings.COURSE_DIR, "*.tcx")),
-            key=lambda f: os.stat(f).st_mtime,
+            Path(settings.COURSE_DIR).glob("*.tcx"),
+            key=lambda f: f.stat().st_mtime,
             reverse=True,
         )
 
@@ -466,9 +465,9 @@ class Config:
         return [
             {
                 "path": f,
-                "name": os.path.basename(f),
+                "name": f.stem,
                 # **get_course_info(f)
             }
             for f in dirs
-            if os.path.isfile(f) and f != settings.COURSE_FILE_PATH
+            if f.is_file() and f != settings.COURSE_FILE_PATH
         ]

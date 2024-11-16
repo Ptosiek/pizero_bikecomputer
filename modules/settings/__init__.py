@@ -2,7 +2,7 @@ import argparse
 import asyncio
 import json
 import logging
-import os
+from pathlib import Path
 
 import yaml
 from configparser import ConfigParser
@@ -22,7 +22,7 @@ from .maps.utils import MapDict
 
 _IS_RASPI = False
 UNIT_ID = 0x1A2B3C4D
-SETTINGS_FILE = "setting.conf"
+SETTINGS_FILE = Path("setting.conf")
 
 
 try:
@@ -45,9 +45,9 @@ try:
             if line[0:8] == "Hardware":
                 unit = (line.split(":")[1]).replace(" ", "").strip()
 
-    model_path = "/proc/device-tree/model"
-    if model == "" and os.path.exists(model_path):
-        with open(model_path, "r") as f:
+    model_path = Path("/proc/device-tree/model")
+    if model == "" and model_path.exists():
+        with model_path.open() as f:
             model = f.read().replace("\x00", "").strip()
 
 except ImportError:
@@ -128,9 +128,9 @@ class SettingsNamespace:
     GUI_MODE = "PyQt"
 
     # log setting
-    LOG_DIR = "log"
-    LOG_DB = os.path.join(LOG_DIR, "log.db")
-    LOG_DEBUG_FILE = os.path.join(LOG_DIR, "debug.log")
+    LOG_DIR = Path("logs")
+    LOG_DB = LOG_DIR / "log.db"
+    LOG_DEBUG_FILE = LOG_DIR / "debug.log"
 
     # log format switch
     LOG_WRITE_CSV = True
@@ -152,16 +152,19 @@ class SettingsNamespace:
     MAP_LIST = "map.yaml"
 
     # screenshot dir
-    SCREENSHOT_DIR = "screenshots"
+    SCREENSHOT_DIR = Path("screenshots")
 
     # ANT Null value
     ANT_NULLVALUE = np.nan
 
     # courses
-    COURSE_DIR = "courses"
-    COURSE_FILE_PATH = os.path.join(COURSE_DIR, ".current")
+    COURSE_DIR = Path("courses")
+    COURSE_FILE_PATH = COURSE_DIR / ".current"
     CUESHEET_DISPLAY_ON_MAP = True
     CUESHEET_SCROLL = False
+
+    # tiles
+    MAPTILE_DIR = Path("maptiles")
 
     # Graph color by slope
     CLIMB_DISTANCE_CUTOFF = 0.3  # [km]
@@ -271,7 +274,7 @@ class SettingsNamespace:
     # Ride with GPS
     RWGPS_APIKEY = "pizero_bikecomputer"
     RWGPS_TOKEN = ""
-    RWGS_ROUTE_DOWNLOAD_DIR = os.path.join(COURSE_DIR, "ridewithgps")
+    RWGS_ROUTE_DOWNLOAD_DIR = COURSE_DIR / "ridewithgps"
 
     @property
     def CURRENT_MAP(self):
@@ -357,7 +360,7 @@ class SettingsNamespace:
             self.update_setting("FULLSCREEN", True)
         if args.demo:
             self.update_setting("DUMMY_OUTPUT", True)
-        if args.layout and os.path.exists(args.layout):
+        if args.layout and Path(args.layout).exists():
             self.update_setting("LAYOUT_FILE", args.layout)
         if args.headless:
             self.update_setting("HEADLESS", True)
@@ -367,7 +370,7 @@ class SettingsNamespace:
     def load_settings_from_file(self, filename):
         cf = self.config_parser
 
-        if os.path.exists(filename):
+        if filename.exists():
             cf.read(filename)
 
         section = cf[cf.default_section]
@@ -513,7 +516,7 @@ class SettingsNamespace:
             pass
 
     def save(self):
-        with open(SETTINGS_FILE, "w") as file:
+        with SETTINGS_FILE.open("w") as file:
             self.config_parser.write(file)
 
     # should be only called on user action (or on init)
