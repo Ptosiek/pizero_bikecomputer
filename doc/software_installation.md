@@ -42,7 +42,7 @@ Assume Python version 3 environment. Version 2 is not supported.
 
 ```
 $ git clone https://github.com/hishizuka/pizero_bikecomputer.git
-$ pip3 install PyQt5 numpy pyqtgraph cython oyaml pillow polyline aiohttp aiofiles qasync
+$ pip3 install PyQt6 numpy pyqtgraph cython oyaml pillow polyline aiohttp aiofiles qasync
 $ pip3 install git+https://github.com/hishizuka/crdp.git
 
 # mac
@@ -53,14 +53,11 @@ $ sudo apt install sqlite3 libsqlite3-dev
 $ cd pizero_bikecomputer
 ```
 
-Note:
-Pyqt version 5.15.0 in macOS has [a qpushbutton issue](https://bugreports.qt.io/browse/QTBUG-84852), so installing newest version(5.15.1~) is recommended.
-
 ## Raspberry Pi OS
 
 Raspberry Pi OS (32-bit) with desktop is recommended.
 
-The program works with Raspberry Pi OS (32-bit) Lite, but missing libraries will need to be installed. Especially installing python3-pyqt5 with `apt` command will also installs massive libraries of desktop software, so building PyQt5 package is recommended.
+The program works with Raspberry Pi OS (32-bit) Lite, but missing libraries will need to be installed. Especially installing python3-pyqt6 with `apt` command will also install massive libraries of desktop software, so building PyQt6 package is recommended.
 
 Here is [my setup guide in Japanese](https://qiita.com/hishi/items/8bdfd9d72fa8fe2e7573).
 
@@ -72,7 +69,7 @@ Install in the home directory of default user "pi". Also, your Raspberry Pi is c
 ```
 $ cd
 $ git clone https://github.com/hishizuka/pizero_bikecomputer.git
-$ sudo apt install python3-pip cython3 cmake gawk python3-numpy python3-pyqt5 python3-pyqtgraph sqlite3 libsqlite3-dev libatlas-base-dev python3-aiohttp python3-aiofiles python3-smbus python3-rpi.gpio python3-psutil python3-pil
+$ sudo apt install python3-pip cython3 cmake gawk python3-numpy python3-pyqt6 python3-pyqtgraph sqlite3 libsqlite3-dev libatlas-base-dev python3-aiohttp python3-aiofiles python3-smbus python3-rpi.gpio python3-psutil python3-pil
 $ sudo pip3 install oyaml sip polyline qasync dbus-next bluez-peripheral
 $ sudo pip3 install git+https://github.com/hishizuka/crdp.git
 $ cd pizero_bikecomputer
@@ -118,7 +115,7 @@ Assume SPI interface is on in raspi-config.
 
 #### MIP Reflective color LCD module and Adafruit SHARP Memory Display Breakout
 
-You can use python3-pyqt5 package. Don't need building Qt.
+You can use python3-pyqt6 package. Don't need building Qt.
 
 ```
 $ sudo apt install python3-pigpio

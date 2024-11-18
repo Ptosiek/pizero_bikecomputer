@@ -73,9 +73,9 @@ Daily update [at twitter (@pi0bikecomputer)](https://twitter.com/pi0bikecomputer
   - Pi Zero Bikecomputer uses same libraries as for standard Linux.
     - [Python](https://www.python.org)
     - [numpy](https://numpy.org)
-    - [PyQt5](https://pypi.org/project/PyQt5/) and [PyQtGraph](http://www.pyqtgraph.org)
+    - [PyQt6](https://pypi.org/project/PyQt6/) and [PyQtGraph](http://www.pyqtgraph.org)
     - [GPSd](https://gpsd.gitlab.io/gpsd/index.html) for GPS modules.
-    - [CircuitPython](https://learn.adafruit.com/welcome-to-circuitpython/what-is-circuitpython) libraries for some I2C sensors. 
+    - [CircuitPython](https://learn.adafruit.com/welcome-to-circuitpython/what-is-circuitpython) libraries for some I2C sensors.
   - So, you can run in cross platform environments such as Raspberry Pi OS, some Linux, macOS and Windows.
 
 - Good balance between battery life and performance
@@ -163,7 +163,7 @@ RWGPS heatmap
 
 In Japan, [気象庁降水ナウキャスト](https://www.jma.go.jp/bosai/nowc/)(rain) and [SCW](https://supercweather.com)(wind) are available.
 
-<img src ="https://user-images.githubusercontent.com/12926652/205563333-549cf4dc-abbd-4392-9233-b8391687e0bc.png" width=400/> 
+<img src ="https://user-images.githubusercontent.com/12926652/205563333-549cf4dc-abbd-4392-9233-b8391687e0bc.png" width=400/>
 
 
 ## GUI

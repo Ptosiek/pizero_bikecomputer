@@ -414,13 +414,7 @@ class GUI_PyQt(QtCore.QObject):
 
             p = self.stack_widget.grab().toImage().convertToFormat(self.image_format)
 
-            # PyQt 5.11(Buster) or 5.15(Bullseye)
-            qt_version = QT_VERSION_STR.split(".")
-
-            if qt_version[0] == "5" and int(qt_version[1]) < 15:
-                self.bufsize = p.bytesPerLine() * p.height()  # PyQt 5.11(Buster)
-            else:
-                self.bufsize = p.sizeInBytes()  # PyQt 5.15 or later (Bullseye)
+            self.bufsize = p.sizeInBytes()
 
             if has_color:
                 self.screen_shape = (p.height(), p.width(), 3)
