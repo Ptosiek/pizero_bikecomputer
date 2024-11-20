@@ -8,13 +8,13 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.12"
-aiohttp = "3.10.10"
+aiohttp = "3.11.7"
 aiofiles = "24.1.0"
 numpy = "1.26.4"
 oyaml = "1.0"
 pillow = "11.0.0"
 pyqtgraph= "0.13.7"
-qasync = "0.24.0"
+qasync = "0.27.1"
 timezonefinder = "6.5.4"
 
 # optional

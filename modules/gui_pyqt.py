@@ -151,9 +151,14 @@ class GUI_PyQt(QtCore.QObject):
         self.app = QtWidgets.QApplication(sys.argv)
         self.app.setApplicationName(settings.PRODUCT)
 
-        self.config.loop = qasync.QEventLoop(self.app)
-        self.config.loop.set_debug(True)
-        self.config.init_loop(call_from_gui=True)
+        self.loop = qasync.QEventLoop(self.app)
+        self.loop.set_debug(True)
+
+        # workaround for qasync >= 0.24.2
+        asyncio.events._set_running_loop(self.loop)
+        asyncio.set_event_loop(self.loop)
+
+        self.config.start_coroutine()
 
         self.main_window = MainWindow(settings.PRODUCT, self.config.display.resolution)
         self.main_window.set_gui(self)
@@ -461,8 +466,8 @@ class GUI_PyQt(QtCore.QObject):
         self.config.display.update(buf, direct_update)
 
     def exec(self):
-        with self.config.loop:
-            self.config.loop.run_forever()
+        with self.loop:
+            self.loop.run_forever()
             # loop is stopped
         # loop is closed
 

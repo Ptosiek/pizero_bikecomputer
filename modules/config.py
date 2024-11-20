@@ -69,34 +69,17 @@ class Config:
             )
             shutil.copy(Path("layouts") / default_layout, settings.LAYOUT_FILE)
 
-        # coroutine loop
-        self.init_loop()
-
         self.log_time = datetime.now()
 
         self.button_config = Button_Config(self)
 
-    def init_loop(self, call_from_gui=False):
-        if settings.GUI_MODE == "PyQt":
-            if call_from_gui:
-                # workaround for latest qasync and older version(~0.24.0)
-                asyncio.events._set_running_loop(self.loop)
-                asyncio.set_event_loop(self.loop)
-                self.start_coroutine()
-        else:
-            self.loop = asyncio.get_event_loop()
-
     def import_gui(self):
-        if settings.GUI_MODE == "PyQt":
-            from modules.gui_pyqt import GUI_PyQt
+        from modules.gui_pyqt import GUI_PyQt
 
-            self.gui_class = GUI_PyQt
-        else:
-            raise ValueError(f"{settings.GUI_MODE} mode not supported")
+        self.gui_class = GUI_PyQt
 
     def start_gui(self):
-        if self.gui_class:
-            self.gui_class(self)
+        self.gui_class(self)
 
     def start_coroutine(self):
         self.logger.start_coroutine()
@@ -223,11 +206,8 @@ class Config:
         tasks = asyncio.all_tasks()
         current_task = asyncio.current_task()
         for task in tasks:
-            if settings.GUI_MODE == "PyQt":
-                if task == current_task or task.get_coro().__name__ in [
-                    "update_display"
-                ]:
-                    continue
+            if task == current_task or task.get_coro().__name__ in ["update_display"]:
+                continue
             task.cancel()
             try:
                 await task
