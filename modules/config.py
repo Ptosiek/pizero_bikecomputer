@@ -14,6 +14,7 @@ from modules.utils.cmd import (
     is_running_as_service,
 )
 from modules.settings import settings
+from modules.utils.external_services.rwgps import RWGPS
 from modules.utils.timer import Timer
 
 BOOT_FILE = "/boot/config.txt"
@@ -91,11 +92,15 @@ class Config:
 
         # network
         await self.gui.set_boot_status("initialize network modules...")
-        from modules.helper.api import Api
         from modules.helper.network import Network
 
-        self.api = Api(self)
         self.network = Network(settings.DOWNLOAD_QUEUE)
+        # external services
+        self.rwgps = RWGPS(
+            settings.RWGS_ROUTE_DOWNLOAD_DIR,
+            settings.RWGPS_APIKEY,
+            settings.RWGPS_TOKEN,
+        )
 
         # bluetooth
         await self.gui.set_boot_status("initialize bluetooth modules...")

@@ -40,7 +40,7 @@ async def download_file(session, url, save_path, headers, params):
         return False
 
 
-async def download_files(urls_with_path, headers=None, params=None, max_concurrency=-1):
+async def download_files(urls_with_path, headers=None, params=None, max_concurrency=1):
     tasks = []
 
     async with asyncio.Semaphore(max_concurrency):

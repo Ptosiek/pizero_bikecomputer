@@ -135,7 +135,7 @@ class CourseListWidget(ListWidget):
             self.add_list_item(course_item)
 
     async def list_ride_with_gps(self, reset=False):
-        courses = await self.config.api.rwgps.list_routes(reset)
+        courses = await self.config.rwgps.list_routes(reset)
 
         for c in reversed(courses or []):
             course_item = CourseListItemWidget(self, self.list_type, c)
@@ -206,10 +206,9 @@ class CourseListItemWidget(ListItemWidget):
 
 
 class CourseDetailWidget(MenuWidget):
-    list_id = None
+    route_id = None
+    course = None
 
-    map_image_size = None
-    profile_image_size = None
     next_button = None
     font_size = 20
 
@@ -260,74 +259,57 @@ class CourseDetailWidget(MenuWidget):
         self.menu_layout.addLayout(outer_layout)
         self.menu_layout.addWidget(self.profile_image)
 
-        # update panel for every 1 seconds
-        self.timer = QtCore.QTimer(parent=self)
-        self.timer.timeout.connect(self.update_display)
-
         # also set extra button for topbar
         self.next_button = topbar.TopBarNextButton()
         self.next_button.setEnabled(False)
 
         self.top_bar_layout.addWidget(self.next_button)
 
-    def enable_next_button(self):
-        self.next_button.setVisible(True)
-        self.next_button.setEnabled(True)
-
     def connect_buttons(self):
         self.next_button.clicked.connect(self.set_course)
 
     def preprocess(self, course_info):
         # reset
-        self.list_id = None
+        self.course = None
 
         self.map_image.clear()
         self.profile_image.clear()
-        self.next_button.setVisible(False)
         self.next_button.setEnabled(False)
 
         self.page_name_label.setText(course_info["name"])
         self.distance_item.update_value(course_info["distance"])
         self.ascent_item.update_value(course_info["elevation_gain"])
 
-        self.list_id = course_info["id"]
-
-        self.timer.start(settings.DRAW_INTERVAL)
+        self.route_id = course_info["id"]
 
     async def load_images(self):
-        if self.check_all_image_and_draw():
-            self.timer.stop()
-        else:
-            # 1st download
-            await self.config.api.rwgps.get_route_files(self.list_id)
-
-    def on_back_menu(self):
-        self.timer.stop()
-
-    @qasync.asyncSlot()
-    async def update_display(self):
-        if self.check_all_image_and_draw():
-            self.timer.stop()
-            return
-
-        # 1st download check
-        if self.config.api.rwgps.check_files(self.list_id, True):
-            self.draw_images(draw_map_image=True, draw_profile_image=False)
-            # download files with privacy code (2nd download)
-            await self.config.api.rwgps.get_route_files(
-                self.list_id, with_privacy_code=True
+        if not self.check_all_image_and_draw():
+            course_info, map_preview = await self.config.rwgps.get_route_files(
+                self.route_id
             )
 
+            if course_info and map_preview:
+                self.draw_images(map_image=map_preview)
+                profile, course = await self.config.rwgps.get_private_route_files(
+                    self.route_id
+                )
+
+                if profile and course:
+                    self.draw_images(profile_image=profile)
+                    self.course = course
+                    self.next_button.setEnabled(True)
+
     def check_all_image_and_draw(self):
-        # if all files exists, reload images and buttons, stop timer and exit
-        all_downloaded = self.config.api.rwgps.check_files(self.list_id)
+        # if all files exists, load images and buttons,
+        downloaded = self.config.rwgps.check_files(self.route_id)
 
-        if all_downloaded:
-            res = self.draw_images()
-            self.enable_next_button()
-            return res
+        if downloaded:
+            self.draw_images(downloaded[1], downloaded[2])
+            self.course = downloaded[3]
+            self.next_button.setEnabled(True)
+            return True
 
-        # if no internet connection, stop timer and exit
+        # if no internet connection exit
         elif not detect_network():
             return True
         return False
@@ -336,61 +318,47 @@ class CourseDetailWidget(MenuWidget):
         widget = self.parentWidget().findChild(
             QtWidgets.QWidget, MenuLabel.COURSES_LIST
         )
-        widget.set_course(
-            settings.RWGS_ROUTE_DOWNLOAD_DIR / f"course-{self.list_id}.tcx"
-        )
+        widget.set_course(self.course)
 
-    def draw_images(self, draw_map_image=True, draw_profile_image=True):
-        if self.list_id is None:
-            return False
+    def draw_images(self, map_image=None, profile_image=None):
+        if self.route_id is None:
+            return
 
-        if draw_map_image:
-            filename = settings.RWGS_ROUTE_DOWNLOAD_DIR / f"preview-{self.list_id}.png"
-
-            if not filename.exists():
-                return
-
-            im = Image.open(filename).convert("RGBA")
+        if map_image and map_image.exists():
+            im = Image.open(map_image).convert("RGBA")
             im = ImageEnhance.Contrast(im).enhance(2.0)
 
-            if self.map_image_size is None:
-                self.map_image_size = Image.open(filename).size  # tuple (w, h)
-            if self.map_image_size[0] == 0 or self.map_image_size[1] == 0:
-                return False
+            map_image_size = im.size  # tuple (w, h)
+
+            if map_image_size[0] == 0 or map_image_size[1] == 0:
+                return
 
             ratio = 1 if self.is_vertical else 0.5
 
-            scale = (self.size().width() * ratio) / self.map_image_size[0]
+            scale = (self.size().width() * ratio) / map_image_size[0]
             im = im.resize(
                 (
-                    int(self.map_image_size[0] * scale),
-                    int(self.map_image_size[1] * scale),
+                    int(map_image_size[0] * scale),
+                    int(map_image_size[1] * scale),
                 )
             )
             self.map_image.setPixmap(QtGui.QPixmap.fromImage(ImageQt.ImageQt(im)))
 
-        if draw_profile_image:
-            filename = (
-                settings.RWGS_ROUTE_DOWNLOAD_DIR
-                / f"elevation_profile-{self.list_id}.jpg"
-            )
+        if profile_image and profile_image.exists():
+            im = Image.open(profile_image).convert("RGBA")
+            profile_image_size = im.size  # tuple (w, h)
 
-            im = Image.open(filename).convert("RGBA")
-            if self.profile_image_size is None:
-                self.profile_image_size = Image.open(filename).size  # tuple (w, h)
-            if self.profile_image_size[0] == 0 or self.profile_image_size[1] == 0:
-                return False
+            if profile_image_size[0] == 0 or profile_image_size[1] == 0:
+                return
 
-            scale = self.size().width() / self.profile_image_size[0]
+            scale = self.size().width() / profile_image_size[0]
             im = im.resize(
                 (
-                    int(self.profile_image_size[0] * scale),
-                    int(self.profile_image_size[1] * scale),
+                    int(profile_image_size[0] * scale),
+                    int(profile_image_size[1] * scale),
                 )
             )
             self.profile_image.setPixmap(QtGui.QPixmap.fromImage(ImageQt.ImageQt(im)))
-
-        return True
 
     def set_font_size(self, init=False):
         if init:
