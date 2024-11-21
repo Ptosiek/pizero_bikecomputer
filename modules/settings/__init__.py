@@ -72,7 +72,6 @@ class SettingsNamespace:
     #######################
     #  command line args  #
     #######################
-    DEBUG = False
     DUMMY_OUTPUT = False
     FULLSCREEN = False
     HEADLESS = False
@@ -369,17 +368,19 @@ class SettingsNamespace:
     def handle_cli_arguments(self):
         parser = argparse.ArgumentParser()
         parser.add_argument("-f", "--fullscreen", action="store_true", default=False)
-        parser.add_argument("-d", "--debug", action="store_true", default=False)
         parser.add_argument("--demo", action="store_true", default=False)
         parser.add_argument("--headless", action="store_true", default=False)
+        parser.add_argument("-l", "--log-level", choices=logging.getLevelNamesMapping())
         parser.add_argument("--layout")
         parser.add_argument("--version", action="version", version="%(prog)s 0.1")
         parser.add_argument("--vertical", action="store_true", default=False)
 
         args = parser.parse_args()
 
-        if args.debug:
-            app_logger.setLevel(logging.DEBUG)
+        if args.log_level:
+            level = getattr(logging, args.log_level)
+            app_logger.setLevel(level)
+            app_logger.log(level, f"Log devel set to {logging.getLevelName(level)}")
         if args.fullscreen:
             self.update_setting("FULLSCREEN", True)
         if args.demo:

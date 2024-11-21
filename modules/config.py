@@ -44,9 +44,6 @@ class Config:
     boot_time = 0
 
     def __init__(self):
-        if settings.DEBUG:
-            app_logger.setLevel(logging.DEBUG)
-
         # read setting.conf and state.pickle
         self.state = AppState()
 

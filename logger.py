@@ -72,7 +72,7 @@ class CustomRotatingFileHandler(RotatingFileHandler):
 
 app_logger = logging.getLogger("bike_computer")
 
-# change level in regard to config G_DEBUG
+# change level in regard to config
 app_logger.setLevel(level=logging.INFO)
 
 # Add simple stream handler
