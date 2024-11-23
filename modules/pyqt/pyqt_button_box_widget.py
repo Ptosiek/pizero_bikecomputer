@@ -1,3 +1,5 @@
+import asyncio
+
 from logger import app_logger
 from modules._pyqt import QtWidgets
 from modules.pyqt.components import box_buttons
@@ -73,7 +75,7 @@ class ButtonBoxWidget(QtWidgets.QWidget):
                     == self.config.button_config.G_BUTTON_LONG_PRESS
                 ):
                     app_logger.info("quit or poweroff")
-                    self.config.gui.quit()
+                    asyncio.create_task(self.config.gui.quit())
         elif self.start_button._state == 1:
             self.start_button._state = 0
             self.start_button_count = 0

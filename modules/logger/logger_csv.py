@@ -1,13 +1,14 @@
-import sqlite3
 import shutil
 
-from modules.settings import settings
+from modules.db.sqlite3_utils import sqlite3
 from modules.utils.cmd import exec_cmd
 
 
 class LoggerCsv:
-    @staticmethod
-    def write_log(filename):
+    def __init__(self, db):
+        self.db = db
+
+    def write_log(self, filename):
         r = (
             "lap,timer,timestamp,total_timer_time,elapsed_time,heart_rate,speed,cadence,power,distance,"
             "accumulated_power,position_long,position_lat,raw_long,raw_lat,altitude,gps_altitude,course_altitude,"
@@ -16,28 +17,16 @@ class LoggerCsv:
             "motion,acc_x,acc_y,acc_z,gyro_x,gyro_y,gyro_z,cpu_percent,light"
         )
 
-        # voltage_battery,current_battery,voltage_out,current_out,battery_percentage\
-        # "
         # if sqlite3 command exists, use this command (much faster)
         if shutil.which("sh") is not None and shutil.which("sqlite3"):
-            sql_cmd = (
-                "sqlite3 -header -csv "
-                + settings.LOG_DB
-                + " 'SELECT "
-                + r
-                + " FROM BIKECOMPUTER_LOG;' > "
-                + filename
-            )
+            sql_cmd = f"sqlite3 -header -csv {self.db} 'SELECT {r} FROM BIKECOMPUTER_LOG;' > {filename}"
             sqlite3_cmd = ["sh", "-c", sql_cmd]
             exec_cmd(sqlite3_cmd)
         else:
             con = sqlite3.connect(
-                settings.LOG_DB,
+                self.db,
                 detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
             )
-            sqlite3.dbapi2.converters["DATETIME"] = sqlite3.dbapi2.converters[
-                "TIMESTAMP"
-            ]
             cur = con.cursor()
 
             with open(filename, "w", encoding="UTF-8") as o:

@@ -1,6 +1,6 @@
 import asyncio
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from logger import app_logger
 from modules.settings import settings
@@ -20,7 +20,7 @@ except Exception:  # noqa
     app_logger.exception("Failed to init GPS_GPSD")
     try:
         _gps3_thread.stop()
-    except:
+    except:  # noqa
         pass
 
 
@@ -57,7 +57,7 @@ class GPSD(AbstractSensorGPS):
                 gps_time = self.NULL_VALUE
                 if g.time != self.NULL_VALUE:
                     gps_time = datetime.strptime(g.time, "%Y-%m-%dT%X.%fZ").replace(
-                        tzinfo=timezone.utc
+                        tzinfo=UTC
                     )
                 await self.get_basic_values(
                     g.lat,

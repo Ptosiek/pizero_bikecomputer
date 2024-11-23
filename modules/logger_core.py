@@ -1,16 +1,17 @@
-import sqlite3
 import signal
 import shutil
 import time
 import asyncio
 import traceback
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import numpy as np
 from crdp import rdp
 
 from logger import app_logger
 from modules.constants import ANTDevice
+from modules.db.sqlite3_utils import sqlite3
 from modules.settings import settings
 from modules.utils.cmd import exec_cmd
 from modules.utils.date import datetime_myparser
@@ -107,8 +108,8 @@ class LoggerCore:
 
         self.sensor = sensor_core.SensorCore(self.config)
         self.course = Course(self.config)
-        self.logger_csv = logger_csv.LoggerCsv()
-        self.logger_fit = logger_fit.LoggerFit()
+        self.logger_csv = logger_csv.LoggerCsv(settings.LOG_DB)
+        self.logger_fit = logger_fit.LoggerFit(settings.LOG_DB, settings.UNIT_ID)
 
         self.sensor.start_coroutine()
 
@@ -122,10 +123,6 @@ class LoggerCore:
             self.record_stats["lap_max"][k] = 0
             self.record_stats["entire_max"][k] = 0
 
-        # sqlite3
-        # usage of sqlite3 is "insert" only, so check_same_thread=False
-        self.con = sqlite3.connect(settings.LOG_DB, check_same_thread=False)
-        self.cur = self.con.cursor()
         self.init_db()
         self.cur.execute("SELECT timestamp FROM BIKECOMPUTER_LOG LIMIT 1")
         first_row = self.cur.fetchone()
@@ -162,15 +159,15 @@ class LoggerCore:
             utctime = datetime.strptime(
                 self.last_timestamp, "%Y-%m-%d %H:%M:%S.%f"
             ) + timedelta(seconds=delta)
-            if utctime > datetime.utcnow():
-                datecmd = [
+            if utctime > datetime.now():
+                cmd = [
                     "sudo",
                     "date",
                     "-u",
                     "--set",
                     utctime.strftime("%Y/%m/%d %H:%M:%S"),
                 ]
-                exec_cmd(datecmd)
+                exec_cmd(cmd)
 
     async def quit(self):
         await self.sensor.quit()
@@ -194,84 +191,31 @@ class LoggerCore:
             self.sql_queue.task_done()
 
     def init_db(self):
-        self.create_table_sql = """CREATE TABLE BIKECOMPUTER_LOG(
-      timestamp DATETIME,
-      lap INTEGER,
-      timer INTEGER,
-      total_timer_time INTEGER,
-      elapsed_time INTEGER,
-      position_lat FLOAT,
-      position_long FLOAT,
-      raw_lat FLOAT,
-      raw_long FLOAT,
-      gps_altitude FLOAT,
-      gps_speed FLOAT,
-      gps_distance FLOAT,
-      gps_mode INTEGER,
-      gps_used_sats INTEGER,
-      gps_total_sats INTEGER,
-      gps_track INTEGER,
-      gps_epx FLOAT,
-      gps_epy FLOAT,
-      gps_epv FLOAT,
-      gps_pdop FLOAT,
-      gps_hdop FLOAT,
-      gps_vdop FLOAT,
-      heart_rate INTEGER,
-      cadence INTEGER,
-      distance FLOAT,
-      speed FLOAT,
-      power INTEGER,
-      accumulated_power INTEGER,
-      temperature FLOAT,
-      pressure FLOAT,
-      humidity INTEGER,
-      altitude FLOAT,
-      course_altitude FLOAT,
-      heading INTEGER,
-      motion INTEGER,
-      acc_x FLOAT,
-      acc_y FLOAT,
-      acc_z FLOAT,
-      gyro_x FLOAT,
-      gyro_y FLOAT,
-      gyro_z FLOAT,
-      light INTEGER,
-      cpu_percent INTEGER,
-      total_ascent FLOAT,
-      total_descent FLOAT,
-      lap_heart_rate INTEGER,
-      lap_cadence INTEGER,
-      lap_distance FLOAT,
-      lap_speed FLOAT,
-      lap_power INTEGER,
-      lap_accumulated_power INTEGER,
-      lap_total_ascent FLOAT,
-      lap_total_descent FLOAT,
-      avg_heart_rate INTEGER,
-      avg_cadence INTEGER,
-      avg_speed FLOAT,
-      avg_power INTEGER,
-      lap_cad_count INTEGER,
-      lap_cad_sum INTEGER,
-      avg_cad_count INTEGER,
-      avg_cad_sum INTEGER,
-      lap_power_count INTEGER,
-      lap_power_sum INTEGER,
-      avg_power_count INTEGER,
-      avg_power_sum INTEGER
-    )"""
-        self.cur.execute(
-            "SELECT * FROM sqlite_master WHERE type='table' and name='BIKECOMPUTER_LOG'"
-        )
-        res = self.cur.fetchone()
+        # sqlite3
+        # usage of sqlite3 is "insert" only, so check_same_thread=False
+        self.con = sqlite3.connect(settings.LOG_DB, check_same_thread=False)
+        self.cur = self.con.cursor()
+
+        self.cur.execute("""
+            SELECT GROUP_CONCAT(REPLACE(REPLACE(sql, '\n', ''), ' ', ''), '')
+            FROM sqlite_master
+            WHERE (type = 'table' AND name = 'BIKECOMPUTER_LOG') OR (type = 'index' AND tbl_name = 'BIKECOMPUTER_LOG');
+        """)
+
+        res = self.cur.fetchone()[0]
         replace_flg = False
-        if (
-            res is not None
-            and len(res) >= 5
-            and res[4].replace(" ", "") != self.create_table_sql.replace(" ", "")
-        ):
-            log_db_moved = settings.LOG_DB + "-old_layout"
+
+        with open(Path(__file__).parent / "db" / "0001.sql", "r") as f:
+            create_table_sql = f.read()
+            f_create_table_sql = (
+                create_table_sql.replace(";", "").replace("\n", "").replace(" ", "")
+            )
+
+        if res is not None and res != f_create_table_sql:
+            log_db_moved = settings.LOG_DB.with_name(
+                settings.LOG_DB.name + "-old_layout"
+            )
+
             self.cur.close()
             self.con.close()
 
@@ -284,14 +228,7 @@ class LoggerCore:
             self.cur = self.con.cursor()
             replace_flg = True
         if res is None or replace_flg:
-            self.con.execute(self.create_table_sql)
-            self.cur.execute("CREATE INDEX lap_index ON BIKECOMPUTER_LOG(lap)")
-            self.cur.execute(
-                "CREATE INDEX total_timer_time_index ON BIKECOMPUTER_LOG(total_timer_time)"
-            )
-            self.cur.execute(
-                "CREATE INDEX timestamp_index ON BIKECOMPUTER_LOG(timestamp)"
-            )
+            self.con.executescript(create_table_sql)
             self.con.commit()
 
     def count_up(self):
@@ -307,21 +244,17 @@ class LoggerCore:
         self.count_up_lock = False
 
     def start_and_stop_manual(self):
-        time_str = datetime.now().strftime("%Y%m%d %H:%M:%S")
-
         if self.config.G_MANUAL_STATUS != "START":
             self.config.display.screen_flash_short()
-            app_logger.info(f"->M START {time_str}")
             self.start_and_stop("STOP")
             self.config.G_MANUAL_STATUS = "START"
             if self.config.gui is not None:
                 self.config.gui.change_start_stop_button(self.config.G_MANUAL_STATUS)
             if self.values["start_time"] is None:
-                self.values["start_time"] = int(datetime.utcnow().timestamp())
+                self.values["start_time"] = int(datetime.now(UTC).timestamp())
 
         elif self.config.G_MANUAL_STATUS == "START":
             self.config.display.screen_flash_long()
-            app_logger.info(f"->M STOP  {time_str}")
             self.start_and_stop("START")
             self.config.G_MANUAL_STATUS = "STOP"
             if self.config.gui is not None:
@@ -392,7 +325,8 @@ class LoggerCore:
         )
         self.config.display.screen_flash_short()
 
-    def get_start_end_dates(self):
+    @staticmethod
+    def get_start_end_dates():
         # get start date and end_date of the current log
         start_date = end_date = None  # UTC time
 
@@ -400,18 +334,18 @@ class LoggerCore:
             settings.LOG_DB,
             detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
         )
-        sqlite3.dbapi2.converters["DATETIME"] = sqlite3.dbapi2.converters["TIMESTAMP"]
+
         cur = con.cursor()
         cur.execute(
-            'SELECT MIN(timestamp) as "ts [timestamp]", MAX(timestamp) as "ts [timestamp]" FROM BIKECOMPUTER_LOG'
+            'SELECT MIN(timestamp) as "ts [datetime]", MAX(timestamp) as "ts [datetime]" FROM BIKECOMPUTER_LOG'
         )
         first_row = cur.fetchone()
 
         if first_row is not None:
             start_date, end_date = first_row
 
-            start_date = start_date.replace(tzinfo=timezone.utc)
-            end_date = end_date.replace(tzinfo=timezone.utc)
+            start_date = start_date.replace(tzinfo=UTC)
+            end_date = end_date.replace(tzinfo=UTC)
 
         cur.close()
         con.close()
@@ -470,10 +404,6 @@ class LoggerCore:
 
             self.reset()
 
-            # restart db connect
-            # usage of sqlite3 is "insert" only, so check_same_thread=False
-            self.con = sqlite3.connect(settings.LOG_DB, check_same_thread=False)
-            self.cur = self.con.cursor()
             self.init_db()
 
         # reset temporary values
@@ -600,7 +530,7 @@ class LoggerCore:
             self.record_stats["lap_max"][k] = x2
 
         ## SQLite
-        now_time = datetime.utcnow()
+        now_time = datetime.now(UTC)
         # self.cur.execute("""\
         sql = (
             """\
@@ -706,7 +636,7 @@ class LoggerCore:
             return
         # [s]
         self.values["elapsed_time"] = int(
-            datetime.utcnow().timestamp() - self.values["start_time"]
+            datetime.now(UTC).timestamp() - self.values["start_time"]
         )
 
         # gross_avg_spd
@@ -907,11 +837,11 @@ class LoggerCore:
         lon = np.array([])
         lat = np.array([])
         timestamp_new = timestamp
-        # t = datetime.utcnow()
 
         timestamp_delta = None
+
         if timestamp is not None:
-            timestamp_delta = (datetime.utcnow() - timestamp).total_seconds()
+            timestamp_delta = (datetime.now(UTC) - timestamp).total_seconds()
 
         # make_tmp_db = False
         lat_raw = np.array([])
@@ -981,8 +911,6 @@ class LoggerCore:
                 lon = lon_raw
 
         if timestamp is None:
-            timestamp_new = datetime.utcnow()
-
-        # print("\tlogger_core : update_track(new) ", (datetime.utcnow()-t).total_seconds(), "sec")
+            timestamp_new = datetime.now(UTC)
 
         return timestamp_new, lon, lat

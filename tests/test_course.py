@@ -1,5 +1,6 @@
 import unittest
 from tempfile import NamedTemporaryFile
+from pathlib import Path
 from unittest.mock import patch
 
 from modules.course import Course
@@ -30,8 +31,8 @@ class TestCourse(unittest.TestCase):
     #     self.assertEqual(len(course.colored_altitude), 31)
 
     @patch(
-        "modules.settings.settings.COURSE_FILE_PATH",
-        NamedTemporaryFile().name,
+        "modules.settings.SettingsNamespace.COURSE_FILE_PATH",
+        Path(NamedTemporaryFile().name),
     )
     def test_load_with_tcx_indexing(self):
         config = Config()
@@ -44,8 +45,8 @@ class TestCourse(unittest.TestCase):
         self.assertEqual(len(course.course_points.distance), 18)
 
     @patch(
-        "modules.settings.settings.COURSE_FILE_PATH",
-        NamedTemporaryFile().name,
+        "modules.settings.SettingsNamespace.COURSE_FILE_PATH",
+        Path(NamedTemporaryFile().name),
     )
     def test_load_insert_course_point(self):
         config = Config()

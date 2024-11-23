@@ -173,9 +173,7 @@ class Course:
                 # extension was set in custom attributes as the current course is always
                 # loaded from '.current'
                 try:
-                    # ext = os.getxattr(
-                    #    self.config.G_COURSE_FILE_PATH, "user.ext"
-                    # ).decode()
+                    # ext = os.getxattr(settings.COURSE_FILE_PATH, "user.ext").decode()
                     ext = "tcx"
                     if ext in LOADERS:
                         course_data, course_points_data = LOADERS[ext].load_file(

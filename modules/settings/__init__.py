@@ -375,7 +375,7 @@ class SettingsNamespace:
         parser.add_argument("--version", action="version", version="%(prog)s 0.1")
         parser.add_argument("--vertical", action="store_true", default=False)
 
-        args = parser.parse_args()
+        args, _ = parser.parse_known_args()
 
         if args.log_level:
             level = getattr(logging, args.log_level)

@@ -1,5 +1,6 @@
 import re
 from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
 
@@ -28,7 +29,9 @@ class TcxLoader:
     config = None
 
     @classmethod
-    def load_file(cls, file):
+    def load_file(cls, file: str | Path):
+        file = Path(file)
+
         if not file.exists():
             return None, None
         app_logger.info(f"[{cls.__name__}]: loading {file}")

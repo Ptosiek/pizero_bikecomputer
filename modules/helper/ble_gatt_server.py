@@ -2,7 +2,7 @@ import asyncio
 import base64
 import json
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 try:
     from bluez_peripheral.gatt.service import Service
@@ -137,11 +137,10 @@ class GadgetbridgeService(Service):
                 # we have a known time fix, we can use it to set the time of the system before we get gps fix
                 utctime = (
                     (
-                        datetime.fromtimestamp(int(res.group(1)))
-                        - time_diff
+                        datetime.fromtimestamp(int(res.group(1))) - time_diff
                         # we could also account for the time of message reception
                     )
-                    .replace(tzinfo=timezone.utc)
+                    .replace(tzinfo=UTC)
                     .isoformat()
                 )
                 set_time(utctime)
@@ -167,11 +166,9 @@ class GadgetbridgeService(Service):
                     self.gui.show_dialog_ok_only(fn=None, title="Gadgetbridge")
                 elif m_type == "gps":
                     # encode gps message
-                    lat = (
-                        lon
-                    ) = (
-                        alt
-                    ) = speed = track = hdop = mode = timestamp = self.sensor.NULL_VALUE
+                    lat = lon = alt = speed = track = hdop = mode = timestamp = (
+                        self.sensor.NULL_VALUE
+                    )
                     if "lat" in message and "lon" in message:
                         lat = float(message["lat"])
                         lon = float(message["lon"])
@@ -187,7 +184,7 @@ class GadgetbridgeService(Service):
                         timestamp = (
                             datetime.fromtimestamp(message["time"] // 1000)
                             - self.timediff_from_utc
-                        ).replace(tzinfo=timezone.utc)
+                        ).replace(tzinfo=UTC)
                     if "hdop" in message:
                         hdop = float(message["hdop"])
                         if hdop < HDOP_CUTOFF_MODERATE:

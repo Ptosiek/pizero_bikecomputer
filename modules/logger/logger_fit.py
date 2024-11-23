@@ -1,9 +1,8 @@
-import sqlite3
 import struct
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from logger import app_logger
-from modules.settings import settings
+from modules.db.sqlite3_utils import sqlite3
 from modules.utils.date import datetime_myparser
 
 # cython
@@ -164,8 +163,10 @@ class LoggerFit:
         },
     }
 
-    def __init__(self):
+    def __init__(self, db, unit_id=0x1A2B3C4D):
         self.reset()
+        self.db = db
+        self.unit_id = unit_id
 
     def reset(self):
         self.fit_data = []
@@ -218,11 +219,11 @@ class LoggerFit:
 
     def write_log_cython(self, filename, start_date, end_date):
         res = write_log_cython(
-            settings.LOG_DB,
+            str(self.db),
             filename,
             start_date.strftime("%Y-%m-%d_%H-%M-%S"),
             end_date.strftime("%Y-%m-%d_%H-%M-%S"),
-            settings.UNIT_ID,
+            self.unit_id,
         )
         return res
 
@@ -231,22 +232,20 @@ class LoggerFit:
         from .cython.crc16_p import crc16
 
         con = sqlite3.connect(
-            settings.LOG_DB,
+            self.db,
             detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
         )
-        sqlite3.dbapi2.converters["DATETIME"] = sqlite3.dbapi2.converters["TIMESTAMP"]
         cur = con.cursor()
 
         local_message_num = 0
 
         # file_id
-        app_logger.debug("file_id")
         self.write_definition(local_message_num)
         struct_def = self.get_struct_def(local_message_num)
         self.write(
             struct.pack(
                 struct_def,
-                settings.UNIT_ID,  # serial_number: XXXXXXXXXX
+                self.unit_id,  # serial_number: XXXXXXXXXX
                 self.get_epoch_time(start_date),  # timestamp
                 255,  # manufacturer (255: development)
                 # 2530,       #garmin product (Edge 820)
@@ -259,7 +258,7 @@ class LoggerFit:
         app_logger.debug("file_creator")
         self.write_definition(local_message_num)
         struct_def = self.get_struct_def(local_message_num)
-        self.write(struct.pack("<1H1B", 100, 1))
+        self.write(struct.pack(struct_def, 100, 1))
 
         # record
         app_logger.debug("record")
@@ -296,20 +295,20 @@ class LoggerFit:
                             continue
                         available_fields.append(record_index[i])
                         available_data.append(
-                            self.convertValue((v,), message_num, record_index[i])
+                            self.convert_value((v,), message_num, record_index[i])
                         )
 
                     # available_fields = [j for i, j in zip(row, record_index) if i is not None]
-                    # available_data = list(map(self.convertValue, [(i,) for i in row if i is not None], [message_num]*len(available_fields), available_fields))
+                    # available_data = list(map(self.convert_value, [(i,) for i in row if i is not None], [message_num]*len(available_fields), available_fields))
 
-                    # available_data_gen = [(self.convertValue((i,),message_num,j), j) for i, j in zip(row, record_index) if i is not None]
+                    # available_data_gen = [(self.convert_value((i,),message_num,j), j) for i, j in zip(row, record_index) if i is not None]
                     # available_fields = [row[1] for row in available_data_gen]
                     # available_data = [row[0] for row in available_data_gen]
                 else:
                     available_fields = record_index
                     available_data = list(
                         map(
-                            self.convertValue,
+                            self.convert_value,
                             [(i,) for i in row],
                             [message_num] * len(available_fields),
                             available_fields,
@@ -361,10 +360,7 @@ class LoggerFit:
         self.write_definition(local_message_num)
         struct_def = self.get_struct_def(local_message_num)
         offset = int(
-            end_date.replace(tzinfo=timezone.utc)
-            .astimezone()
-            .utcoffset()
-            .total_seconds()
+            end_date.replace(tzinfo=UTC).astimezone().utcoffset().total_seconds()
         )
         end_date_epochtime = self.get_epoch_time(end_date)
 
@@ -453,13 +449,13 @@ class LoggerFit:
                 index = i
         return index
 
-    def convertValue(self, v, message_num, defnum):
+    def convert_value(self, v, message_num, defnum):
         field = self.profile[message_num]["field"][defnum]
         value = v[0]
         if field[0] in ["position_lat", "position_long"]:
             try:
                 value = v[0] / 180 * (2**31)
-            except:
+            except:  # noqa
                 value = 0
         elif message_num in [18, 19] and field[0] in [
             "timestamp",
@@ -493,10 +489,7 @@ class LoggerFit:
                     and "AVG" not in lap_sql[k]
                 ):
                     cur.execute(
-                        "\
-            SELECT %s FROM BIKECOMPUTER_LOG\
-            WHERE LAP = %s AND TIMER = (\
-              SELECT MAX(TIMER) FROM BIKECOMPUTER_LOG WHERE LAP = %s)"
+                        "SELECT %s FROM BIKECOMPUTER_LOG WHERE LAP = %s AND TIMER = (SELECT MAX(TIMER) FROM BIKECOMPUTER_LOG WHERE LAP = %s)"
                         % (lap_sql[k], lap_num, lap_num)
                     )
                 else:
@@ -507,10 +500,7 @@ class LoggerFit:
             elif message_num == 18:  # session
                 if "avg_" in lap_sql[k]:
                     cur.execute(
-                        "\
-            SELECT %s FROM BIKECOMPUTER_LOG\
-            WHERE total_timer_time = (\
-              SELECT MAX(total_timer_time) FROM BIKECOMPUTER_LOG)"
+                        "SELECT %s FROM BIKECOMPUTER_LOG WHERE total_timer_time = (SELECT MAX(total_timer_time) FROM BIKECOMPUTER_LOG)"
                         % (lap_sql[k])
                     )
                 else:
@@ -519,7 +509,7 @@ class LoggerFit:
             if not len(v) or v[0] is None:
                 continue
             lap_fields.append(k)
-            lap_data.append(self.convertValue(v, message_num, k))
+            lap_data.append(self.convert_value(v, message_num, k))
         # add sport = 2(cycling)
         if message_num == 18:
             lap_fields.append(5)
@@ -550,28 +540,14 @@ class LoggerFit:
             return -1
         return local_message_num
 
-    def get_epoch_time(self, nowdate):
-        if nowdate.tzinfo:
-            if nowdate.tzinfo == timezone.utc:
-                nowdate = nowdate.replace(tzinfo=None)
+    def get_epoch_time(self, current_datetime):
+        if current_datetime.tzinfo:
+            if current_datetime.tzinfo == UTC:
+                current_datetime = current_datetime.replace(tzinfo=None)
             else:
-                raise ValueError(f"Incorrect date passed {nowdate}")
-        seconds = int((nowdate - self.epoch_datetime).total_seconds())
+                raise ValueError(f"Incorrect date passed {current_datetime}")
+        seconds = int((current_datetime - self.epoch_datetime).total_seconds())
         return seconds
 
     def get_epoch_time_str(self, strtime):
         return self.get_epoch_time(datetime_myparser(strtime))
-
-
-if __name__ == "__main__":
-    # from line_profiler import LineProfiler
-    d = LoggerFit()
-    # d.write_log()
-
-    # prf = LineProfiler()
-    # prf.add_function(l.convertValue)
-    # prf.add_function(l.getEpochTime)
-    # prf.add_function(l.get_struct_def)
-    # prf.add_function(l.crc)
-    # prf.runcall(l.writeLog)
-    # prf.print_stats()

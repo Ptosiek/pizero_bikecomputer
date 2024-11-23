@@ -1,24 +1,22 @@
 #ifndef __LOGGER_FIT_C
 #define __LOGGER_FIT_C
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-
 #include <cstring>
-#include <string>
+#include <cstdint>
+#include <ctime>
 #include <algorithm>
-#include <vector>
 #include <unordered_map>
+#include <string>
+#include <vector>
 
 //sudo apt-get install libsqlite3-dev
 #include <sqlite3.h>
 
 static std::vector<uint8_t> fit_data;
 
-static  int message_num, local_message_num;
+static int message_num, local_message_num;
 
-static  std::unordered_map<int, std::vector<int> > profile_indexes;
+static std::unordered_map<int, std::vector<int> > profile_indexes;
 //for lap and session, divide profile_indexes into 2 group
 static std::unordered_map<int, std::vector<std::vector<int> > > sql_indexes;
 static std::unordered_map<int, std::unordered_map<int, std::vector<std::string> > > profile_name_type;
@@ -42,7 +40,6 @@ struct lap_summary_data{
 };
 
 constexpr double LAT_LON_CONST = ((unsigned int)(1 << 31))/180.0; //pow(2,31) / 180;
-
 
 void reset();
 

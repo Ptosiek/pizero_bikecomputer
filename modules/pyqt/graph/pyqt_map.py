@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import numpy as np
 
@@ -143,13 +143,12 @@ class MapWidget(BaseMapWidget):
 
         self.reset_map()
 
-        # self.load_course()
-        t = datetime.utcnow()
+        t = Timer(
+            auto_start=True, auto_log=True, text="resume_track(init): {0:.3f} sec"
+        )
         self.get_track()  # heavy when resume
         if len(self.tracks_lon):
-            app_logger.info(
-                f"resume_track(init): {(datetime.utcnow() - t).total_seconds():.3f} sec"
-            )
+            t.log()
 
         # map
         self.layout.addWidget(self.plot, 0, 0, 4, 3)

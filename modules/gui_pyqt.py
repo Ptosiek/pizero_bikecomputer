@@ -759,7 +759,7 @@ class GUI_PyQt(QtCore.QObject):
         text_align = msg.get("text_align", QT_ALIGN_CENTER)
         fn = msg.get("fn")  # use with OK button(button_num=2)
 
-        default_timeout = 5
+        default_timeout = 3
         timeout = msg.get("timeout", default_timeout)
         if timeout is None:
             timeout = default_timeout
