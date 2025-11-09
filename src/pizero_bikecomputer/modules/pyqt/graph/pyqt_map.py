@@ -1,0 +1,916 @@
+from datetime import datetime, timedelta
+
+import numpy as np
+
+from pizero_bikecomputer.logger import app_logger
+from pizero_bikecomputer.modules._pyqt import pg, qasync
+from pizero_bikecomputer.modules.pyqt.graph.pyqtgraph.CoursePlotItem import (
+    CoursePlotItem,
+)
+from pizero_bikecomputer.modules.pyqt.pyqt_cuesheet_widget import CueSheetWidget
+from pizero_bikecomputer.modules.pyqt.utils import load_tile
+from pizero_bikecomputer.modules.settings import settings
+from pizero_bikecomputer.modules.utils.geo import (
+    calc_y_mod,
+    get_mod_lat,
+    get_mod_lat_np,
+    get_width_distance,
+)
+from pizero_bikecomputer.modules.utils.map import (
+    connected_map,
+    get_geo_area,
+    get_lon_lat_from_tile_xy,
+)
+from pizero_bikecomputer.modules.utils.timer import Timer, log_timers
+
+from .pyqt_base_map import BaseMapWidget
+from .pyqt_map_button import MapButtonLabel
+
+
+class MapWidget(BaseMapWidget):
+    # map position
+    map_area = {
+        "w": np.nan,
+        "h": np.nan,
+    }  # width(longitude diff) and height(latitude diff)
+    move_pos = {"x": 0, "y": 0}
+    map_pos = {"x": np.nan, "y": np.nan}  # center
+
+    # current point
+    location = []
+
+    # tracks
+    tracks_lat = np.array([])
+    tracks_lon = np.array([])
+    tracks_lat_pos = None
+    tracks_lon_pos = None
+    tracks_timestamp = None
+
+    course_plot = None
+    plot_verification = None
+    course_points_plot = None
+    instruction = None
+
+    cuesheet_widget = None
+
+    # misc
+    arrow_direction_num = 16
+    # calculate these ony once
+    arrow_direction_angle_unit = 360 / arrow_direction_num
+    arrow_direction_angle_unit_half = arrow_direction_angle_unit / 2
+
+    y_mod = 1.22  # 31/25 at Tokyo(N35)
+    pre_zoom_level = {}
+
+    drawn_tiles = {}
+    existing_tiles = {}
+
+    zoom_delta_from_tile_size = 0
+    auto_zoom_level = None
+    auto_zoom_level_diff = 2  # auto_zoom_level = zoom_level + auto_zoom_level_diff
+    auto_zoom_level_back = None
+
+    # overlays
+    use_heat_overlay_map = False
+    use_rain_overlay_map = False
+    use_wind_overlay_map = False
+
+    track_pen = pg.mkPen(color=(0, 170, 255), width=4)
+    scale_pen = pg.mkPen(color=(0, 0, 0), width=3)
+
+    scale_text = pg.TextItem(
+        text="",
+        anchor=(0.5, 1),
+        angle=0,
+        border=(255, 255, 255, 255),
+        fill=(255, 255, 255, 255),
+        color=(0, 0, 0),
+    )
+
+    def setup_ui_extra(self):
+        super().setup_ui_extra()
+
+        self.map_pos["x"] = settings.DUMMY_POS_X
+        self.map_pos["y"] = settings.DUMMY_POS_Y
+
+        # self.plot.showGrid(x=True, y=True, alpha=1)
+        self.track_plot = self.plot.plot(pen=self.track_pen)
+        self.scale_plot = self.plot.plot(pen=self.scale_pen)
+
+        self.current_point.setZValue(40)
+        self.track_plot.setZValue(30)
+        self.scale_text.setZValue(100)
+
+        self.plot.addItem(self.scale_text)
+
+        # current point
+        self.point["size"] = 29
+
+        self.direction_arrows = []
+        array_symbol_base = np.array(
+            [
+                [-0.45, -0.5],
+                [0, -0.3],
+                [0.45, -0.5],
+                [0, 0.5],
+                [-0.45, -0.5],
+            ]
+        )  # 0 or 360 degree
+        self.direction_arrows.append(
+            pg.arrayToQPath(
+                array_symbol_base[:, 0], -array_symbol_base[:, 1], connect="all"
+            )
+        )
+        self.current_point.setSymbol(self.direction_arrows[0])
+        for i in range(1, self.arrow_direction_num):
+            rad = np.deg2rad(i * 360 / self.arrow_direction_num)
+            cos_rad = np.cos(rad)
+            sin_rad = np.sin(rad)
+            R = np.array([[cos_rad, sin_rad], [-sin_rad, cos_rad]])
+            array_symbol_conv = np.dot(R, array_symbol_base.T).T
+            self.direction_arrows.append(
+                pg.arrayToQPath(
+                    array_symbol_conv[:, 0], -array_symbol_conv[:, 1], connect="all"
+                )
+            )
+
+        # center point (displays while moving the map)
+        self.center_point = pg.ScatterPlotItem(pxMode=True, symbol="+")
+        self.center_point.setZValue(50)
+        self.center_point_data = {
+            "pos": [np.nan, np.nan],
+            "size": 15,
+            "pen": {"color": (0, 0, 0), "width": 2},
+        }
+        self.center_point_location = []
+
+        self.reset_map()
+
+        # self.load_course()
+        t = datetime.utcnow()
+        self.get_track()  # heavy when resume
+        if len(self.tracks_lon):
+            app_logger.info(
+                f"resume_track(init): {(datetime.utcnow() - t).total_seconds():.3f} sec"
+            )
+
+        # map
+        self.layout.addWidget(self.plot, 0, 0, 4, 3)
+
+        if self.config.display.has_touch:
+            # zoom
+            self.layout.addWidget(self.buttons[MapButtonLabel.ZOOM_OUT], 0, 0)
+            self.layout.addWidget(self.buttons[MapButtonLabel.LOCK], 1, 0)
+            self.layout.addWidget(self.buttons[MapButtonLabel.ZOOM_IN], 2, 0)
+            # arrow
+            self.layout.addWidget(self.buttons[MapButtonLabel.LEFT], 0, 2)
+            self.layout.addWidget(self.buttons[MapButtonLabel.UP], 1, 2)
+            self.layout.addWidget(self.buttons[MapButtonLabel.DOWN], 2, 2)
+            self.layout.addWidget(self.buttons[MapButtonLabel.RIGHT], 3, 2)
+
+        # cue sheet and instruction
+        self.init_cuesheet_and_instruction()
+
+        # for expanding column
+        self.layout.setColumnMinimumWidth(0, 40)
+        self.layout.setColumnStretch(1, 1)
+        self.layout.setColumnMinimumWidth(2, 40)
+
+    def reset_map(self):
+        # adjust zoom level for large tiles
+        zoom_delta_from_tile_size = int(settings.CURRENT_MAP.tile_size / 256) - 1
+        self.zoom_level += self.zoom_delta_from_tile_size - zoom_delta_from_tile_size
+        self.zoom_delta_from_tile_size = zoom_delta_from_tile_size
+
+        if self.zoom_level < 1:
+            self.zoom_level = 1
+
+        self.auto_zoom_level = self.zoom_level + self.auto_zoom_level_diff
+
+        for key in [
+            settings.MAP,
+            settings.HEAT_OVERLAY_MAP,
+            settings.RAIN_OVERLAY_MAP,
+            settings.WIND_OVERLAY_MAP,
+        ]:
+            self.drawn_tiles[key] = {}
+            self.existing_tiles[key] = {}
+            self.pre_zoom_level[key] = np.nan
+
+    def init_cuesheet_and_instruction(self):
+        # init cuesheet_widget
+        if (
+            self.config.logger.course.course_points.is_set
+            and settings.CUESHEET_DISPLAY_ON_MAP
+            and settings.COURSE_INDEXING
+        ):
+            if self.cuesheet_widget is None:
+                self.cuesheet_widget = CueSheetWidget(self, self.config)
+                self.cuesheet_widget.hide()  # adhoc
+
+            # init instruction
+            self.instruction = pg.TextItem(
+                color=(0, 0, 0),
+                anchor=(0.5, 0.5),
+                fill=(255, 255, 255, 192),
+                border=(0, 0, 0),
+            )
+            self.instruction.setZValue(100)
+
+    # override for long press
+    def switch_lock(self):
+        button = self.buttons[MapButtonLabel.LOCK]
+        if button.isDown():
+            if button._state == 0:
+                button._state = 1
+            else:
+                self.button_press_count[MapButtonLabel.LOCK] += 1
+                # long press
+                if (
+                    self.button_press_count[MapButtonLabel.LOCK]
+                    == self.config.button_config.G_BUTTON_LONG_PRESS
+                ):
+                    self.change_move()
+        elif button._state == 1:
+            button._state = 0
+            self.button_press_count[MapButtonLabel.LOCK] = 0
+        # short press
+        else:
+            super().switch_lock()
+
+    def load_course(self):
+        timers = [
+            Timer(auto_start=False, text="course plot  : {0:.3f} sec"),
+            Timer(auto_start=False, text="course points: {0:.3f} sec"),
+        ]
+
+        with timers[0]:
+            if self.course_plot is not None:
+                self.plot.removeItem(self.course_plot)
+            if not len(self.course.latitude):
+                app_logger.warning("Course has no points")
+            else:
+                self.course_plot = CoursePlotItem(
+                    x=self.course.longitude,
+                    y=get_mod_lat_np(self.course.latitude),
+                    brushes=self.course.colored_altitude,
+                    width=6,
+                )
+                self.course_plot.setZValue(20)
+                self.plot.addItem(self.course_plot)
+
+                # test
+                if not settings.IS_RASPI:
+                    if self.plot_verification is not None:
+                        self.plot.removeItem(self.plot_verification)
+                    self.plot_verification = pg.ScatterPlotItem(pxMode=True)
+                    self.plot_verification.setZValue(25)
+                    test_points = []
+                    for i in range(len(self.course.longitude)):
+                        p = {
+                            "pos": [
+                                self.course.longitude[i],
+                                get_mod_lat(self.course.latitude[i]),
+                            ],
+                            "size": 2,
+                            "pen": {"color": "w", "width": 1},
+                            "brush": pg.mkBrush(color=(255, 0, 0)),
+                        }
+                        test_points.append(p)
+                    self.plot_verification.setData(test_points)
+                    self.plot.addItem(self.plot_verification)
+
+        with timers[1]:
+            if self.course_points_plot is not None:
+                self.plot.removeItem(self.course_points_plot)
+
+            if not len(self.course_points.longitude):
+                app_logger.warning("No course points found")
+
+            else:
+                self.course_points_plot = pg.ScatterPlotItem(
+                    pxMode=True, symbol="t", size=12
+                )
+                self.course_points_plot.setZValue(40)
+                formatted_course_points = []
+
+                for i in reversed(range(len(self.course_points.longitude))):
+                    color = (255, 0, 0)
+                    symbol = "t"
+                    if self.course_points.type[i] == "Left":
+                        symbol = "t3"
+                    elif self.course_points.type[i] == "Right":
+                        symbol = "t2"
+                    cp = {
+                        "pos": [
+                            self.course_points.longitude[i],
+                            get_mod_lat(self.course_points.latitude[i]),
+                        ],
+                        "pen": {"color": color, "width": 1},
+                        "symbol": symbol,
+                        "brush": pg.mkBrush(color=color),
+                    }
+                    formatted_course_points.append(cp)
+                self.course_points_plot.setData(formatted_course_points)
+                self.plot.addItem(self.course_points_plot)
+
+        app_logger.info("Plotting course:")
+        log_timers(timers, text_total=f"total        : {0:.3f} sec")
+
+    @qasync.asyncSlot()
+    async def update_display(self):
+        # display current position
+        if len(self.location):
+            self.plot.removeItem(self.current_point)
+            self.location.pop()
+        # display center point
+        if len(self.center_point_location):
+            self.plot.removeItem(self.center_point)
+            self.center_point_location.pop()
+
+        # current position
+        self.point["pos"] = [self.gps_values["lon"], self.gps_values["lat"]]
+        # dummy position
+        if np.isnan(self.gps_values["lon"]) or np.isnan(self.gps_values["lat"]):
+            # recent point(from log or pre_point) / course start / dummy
+            if len(self.tracks_lon) and len(self.tracks_lat):
+                self.point["pos"] = [self.tracks_lon_pos, self.tracks_lat_pos]
+            elif self.course.is_set:
+                self.point["pos"] = [
+                    self.course.longitude[0],
+                    self.course.latitude[0],
+                ]
+            else:
+                self.point["pos"] = [
+                    settings.DUMMY_POS_X,
+                    settings.DUMMY_POS_Y,
+                ]
+        # update y_mod (adjust for lat:lon=1:1)
+        self.y_mod = calc_y_mod(self.point["pos"][1])
+        # add position circle to map
+        if self.gps_values["mode"] == 3:  # NMEA_MODE_3D
+            self.point["brush"] = self.point_color["fix"]
+        else:
+            self.point["brush"] = self.point_color["lost"]
+
+        # center position
+        if self.lock_status:
+            self.map_pos["x"] = self.point["pos"][0]
+            self.map_pos["y"] = self.point["pos"][1]
+
+        # set width and height
+        self.map_area["w"], self.map_area["h"] = self.get_geo_area(
+            self.map_pos["x"], self.map_pos["y"]
+        )
+
+        # move
+        x_move = y_move = 0
+        if (
+            self.lock_status
+            and len(self.course.distance)
+            and self.course.index.on_course_status
+        ):
+            index = self.course.get_index_with_distance_cutoff(
+                self.course.index.value,
+                # get some forward distance [m]
+                get_width_distance(self.map_pos["y"], self.map_area["w"]) / 1000,
+            )
+            x2 = self.course.longitude[index]
+            y2 = self.course.latitude[index]
+            x_delta = x2 - self.map_pos["x"]
+            y_delta = y2 - self.map_pos["y"]
+            # slide from center
+            x_move = 0.25 * self.map_area["w"]
+            y_move = 0.25 * self.map_area["h"]
+            if x_delta > x_move:
+                self.map_pos["x"] += x_move
+            elif x_delta < -x_move:
+                self.map_pos["x"] -= x_move
+            if y_delta > y_move:
+                self.map_pos["y"] += y_move
+            elif y_delta < -y_move:
+                self.map_pos["y"] -= y_move
+        elif not self.lock_status:
+            if self.move_pos["x"] > 0:
+                x_move = self.map_area["w"] / 2
+            elif self.move_pos["x"] < 0:
+                x_move = -self.map_area["w"] / 2
+            if self.move_pos["y"] > 0:
+                y_move = self.map_area["h"] / 2
+            elif self.move_pos["y"] < 0:
+                y_move = -self.map_area["h"] / 2
+            self.map_pos["x"] += x_move / self.move_factor
+            self.map_pos["y"] += y_move / self.move_factor
+        self.move_pos["x"] = self.move_pos["y"] = 0
+
+        self.map_area["w"], self.map_area["h"] = self.get_geo_area(
+            self.map_pos["x"], self.map_pos["y"]
+        )
+
+        ###########
+        # drawing #
+        ###########
+
+        # current point
+        # print(self.point['pos'])
+        self.point["pos"][1] *= self.y_mod
+        self.location.append(self.point)
+
+        if not np.isnan(self.gps_values["track"]):
+            self.current_point.setSymbol(
+                self.direction_arrows[
+                    self.get_arrow_angle_index(self.gps_values["track"])
+                ]
+            )
+
+        self.current_point.setData(self.location)
+        self.plot.addItem(self.current_point)
+
+        # center point
+        if not self.lock_status:
+            if self.move_adjust_mode:
+                self.center_point_data["size"] = 7.5
+            else:
+                self.center_point_data["size"] = 15
+            self.center_point_data["pos"][0] = self.map_pos["x"]
+            self.center_point_data["pos"][1] = get_mod_lat(self.map_pos["y"])
+            self.center_point_location.append(self.center_point_data)
+            self.center_point.setData(self.center_point_location)
+            self.plot.addItem(self.center_point)
+
+        # set x and y ranges
+        x_start = self.map_pos["x"] - self.map_area["w"] / 2
+        x_end = x_start + self.map_area["w"]
+        y_start = self.map_pos["y"] - self.map_area["h"] / 2
+        y_end = y_start + self.map_area["h"]
+
+        if not np.isnan(x_start) and not np.isnan(x_end):
+            self.plot.setXRange(x_start, x_end, padding=0)
+        if not np.isnan(y_start) and not np.isnan(y_end):
+            self.plot.setYRange(get_mod_lat(y_start), get_mod_lat(y_end), padding=0)
+
+        if not np.any(np.isnan([x_start, x_end, y_start, y_end])):
+            await self.draw_map_tile(x_start, x_end, y_start, y_end)
+
+        # TODO shouldn't be there but does not plot if removed !
+        if not self.course_loaded:
+            self.load_course()
+            self.course_loaded = True
+
+        await self.update_cuesheet_and_instruction(
+            x_start, x_end, y_start, y_end, auto_zoom=True
+        )
+
+        # draw track
+        self.get_track()
+        self.track_plot.setData(self.tracks_lon, self.tracks_lat)
+
+        if not np.any(np.isnan([x_start, y_start])):
+            # draw scale
+            self.draw_scale(x_start, y_start)
+
+    def get_track(self):
+        # get track from SQL
+        # not good (input & output)    #conversion coordinate
+        (self.tracks_timestamp, lon, lat) = self.logger.update_track(
+            self.tracks_timestamp
+        )
+        if len(lon) and len(lat):
+            self.tracks_lon_pos = lon[-1]
+            self.tracks_lat_pos = lat[-1]
+            self.tracks_lon = np.append(self.tracks_lon, np.array(lon))
+            self.tracks_lat = np.append(self.tracks_lat, get_mod_lat_np(np.array(lat)))
+
+    def reset_track(self):
+        self.tracks_lon = np.array([])
+        self.tracks_lat = np.array([])
+
+    def reset_course(self):
+        for p in [
+            self.course_plot,
+            self.plot_verification,
+            self.course_points_plot,
+            self.instruction,
+        ]:
+            if p is not None:
+                self.plot.removeItem(p)
+
+        if self.cuesheet_widget is not None:
+            self.cuesheet_widget.reset()
+
+    def init_course(self):
+        self.init_cuesheet_and_instruction()
+        self.course_loaded = False
+        self.resizeEvent(None)
+
+    async def draw_map_tile(self, x_start, x_end, y_start, y_end):
+        # get tile coordinates of display border points
+        p0 = {"x": min(x_start, x_end), "y": min(y_start, y_end)}
+        p1 = {"x": max(x_start, x_end), "y": max(y_start, y_end)}
+
+        # map
+        drawn_main_map = await self.draw_map_tile_by_overlay(
+            settings.CURRENT_MAP,
+            self.zoom_level,
+            p0,
+            p1,
+            overlay=False,
+        )
+
+        await self.overlay_heat_map(drawn_main_map, p0, p1)
+        await self.overlay_rain_map(drawn_main_map, p0, p1)
+        await self.overlay_wind_map(drawn_main_map, p0, p1)
+
+    async def overlay_heat_map(self, drawn_main_map, p0, p1):
+        if not self.use_heat_overlay_map:
+            return
+
+        await self.overlay_map(
+            drawn_main_map,
+            p0,
+            p1,
+            settings.CURRENT_HEAT_MAP,
+        )
+
+    async def overlay_rain_map(self, drawn_main_map, p0, p1):
+        if not self.use_rain_overlay_map:
+            return
+
+        map_info = settings.CURRENT_RAIN_MAP
+
+        if self.update_overlay_basetime(map_info):
+            # basetime update
+            basetime_str = map_info.format_current_time()
+
+            map_info.basetime = basetime_str
+            map_info.validtime = basetime_str
+
+            # re-draw from settings.MAP
+            return
+
+        await self.overlay_map(drawn_main_map, p0, p1, map_info)
+
+    async def overlay_wind_map(self, drawn_main_map, p0, p1):
+        if not self.use_wind_overlay_map:
+            return
+
+        map_info = settings.CURRENT_WIND_MAP
+
+        if self.update_overlay_basetime(map_info):
+            basetime_str = map_info.format_current_time()
+            map_info.basetime = basetime_str
+            map_info.validtime = basetime_str
+
+            # re-draw from settings.MAP
+            return
+
+        await self.overlay_map(drawn_main_map, p0, p1, map_info)
+
+    def update_overlay_basetime(self, map_info):
+        # update basetime
+        current_time = map_info.current_time_func()
+        delta_minutes = current_time.minute % map_info.time_interval
+
+        delta_seconds = delta_minutes * 60 + current_time.second
+        delta_seconds_cutoff = map_info.update_minutes * 60 + 15
+
+        if delta_seconds < delta_seconds_cutoff:
+            delta_minutes = delta_minutes + map_info.time_interval
+
+        current_time += timedelta(minutes=-delta_minutes)
+        current_time = current_time.replace(second=0, microsecond=0)
+
+        if map_info.current_time != current_time:
+            # clear tile
+            self.drawn_tiles[settings.MAP] = {}
+            self.drawn_tiles[map_info.name] = {}
+            self.existing_tiles[map_info.name] = {}
+            self.pre_zoom_level[map_info.name] = np.nan
+            map_info.remove_tiles()
+
+            map_info.current_time = current_time
+            return True
+
+        return False
+
+    async def overlay_map(self, drawn_main_map, p0, p1, map_info):
+        map_name = map_info.name
+
+        if drawn_main_map:
+            self.drawn_tiles[map_name] = {}
+
+        z = (
+            self.zoom_level
+            + int(settings.CURRENT_MAP.tile_size / map_info.tile_size)
+            - 1
+        )
+        # supported zoom levels
+        if map_info.min_zoom_level <= z <= map_info.max_zoom_level:
+            await self.draw_map_tile_by_overlay(map_info, z, p0, p1, overlay=True)
+        # above maximum zoom level: expand max zoom level tiles
+        elif z > map_info.max_zoom_level:
+            await self.draw_map_tile_by_overlay(
+                map_info, z, p0, p1, overlay=True, expand=True
+            )
+        else:
+            self.pre_zoom_level[map_name] = z
+
+    async def draw_map_tile_by_overlay(
+        self,
+        map_info,
+        z,
+        p0,
+        p1,
+        overlay=False,
+        expand=False,
+    ):
+        map_name = map_info.name
+        tile_size = map_info.tile_size
+
+        # specify tile range and zoom level
+        # z: current zoom level from map widget
+        # z_draw: actual zoom level of map tile (for overlay map tiles which have limited zoom level)
+        # tile_x, tile_y: tile range in zoom level z
+        z_draw, z_conv_factor, tile_x, tile_y = map_info.init_draw_map(
+            z, p0, p1, expand
+        )
+
+        with connected_map(map_info) as cursor:
+            if not cursor:
+                # prepare tiles for download
+                tiles = self.get_tiles_for_drawing(
+                    tile_x, tile_y, z_conv_factor, expand
+                )
+
+                # download
+                if z not in self.existing_tiles[map_name]:
+                    self.existing_tiles[map_name][z_draw] = {}
+
+                await self.download_tiles(tiles, map_info, z_draw)
+
+            draw_flag, add_keys, expand_keys = self.check_drawn_tiles(
+                map_info, z, z_draw, z_conv_factor, tile_x, tile_y, expand
+            )
+
+            self.pre_zoom_level[map_name] = z
+
+            if draw_flag:
+                # draw only the necessary tiles
+                w_h = int(tile_size / z_conv_factor) if expand else 0
+
+                for key in add_keys:
+                    x, y = key[0:2] if not expand else expand_keys[key][0:2]
+                    img_file = map_info.get_image_file(z_draw, x, y)
+                    crop = None
+
+                    if expand:
+                        # x_start, y_start, w_h, w_h
+                        crop = (
+                            int(w_h * expand_keys[key][2]),
+                            int(w_h * expand_keys[key][3]),
+                            w_h,
+                            w_h,
+                        )
+
+                    img_item = load_tile(img_file, z_draw, crop, overlay)
+
+                    imgarray_min_x, imgarray_max_y = get_lon_lat_from_tile_xy(
+                        z, key[0], key[1]
+                    )
+                    imgarray_max_x, imgarray_min_y = get_lon_lat_from_tile_xy(
+                        z, key[0] + 1, key[1] + 1
+                    )
+
+                    self.plot.addItem(img_item)
+                    img_item.setZValue(-100)
+                    img_item.setRect(
+                        pg.QtCore.QRectF(
+                            imgarray_min_x,
+                            get_mod_lat(imgarray_min_y),
+                            imgarray_max_x - imgarray_min_x,
+                            get_mod_lat(imgarray_max_y) - get_mod_lat(imgarray_min_y),
+                        )
+                    )
+
+        return draw_flag
+
+    @staticmethod
+    def get_tiles_for_drawing(tile_x, tile_y, z_conv_factor, expand):
+        tiles = []
+        for i in range(tile_x[0], tile_x[1] + 1):
+            for j in range(tile_y[0], tile_y[1] + 1):
+                tiles.append((i, j))
+                # tiles.append((int(i/z_conv_factor), int(j/z_conv_factor)))
+        for i in [tile_x[0] - 1, tile_x[1] + 1]:
+            for j in range(tile_y[0] - 1, tile_y[1] + 2):
+                tiles.append((i, j))
+                # tiles.append((int(i/z_conv_factor), int(j/z_conv_factor)))
+        for i in range(tile_x[0], tile_x[1] + 1):
+            for j in [tile_y[0] - 1, tile_y[1] + 1]:
+                tiles.append((i, j))
+                # tiles.append((int(i/z_conv_factor), int(j/z_conv_factor)))
+
+        if expand and z_conv_factor > 1:
+            tiles = list(
+                set(
+                    map(
+                        lambda x: tuple(map(lambda y: int(y / z_conv_factor), x)), tiles
+                    )
+                )
+            )
+
+        return tiles
+
+    async def download_tiles(self, tiles, map_info, z_draw):
+        tiles_to_download = []
+
+        for tile in tiles:
+            filename = map_info.get_tile_filename(z_draw, *tile)
+
+            if filename.exists() and filename.stat().st_size > 0:
+                self.existing_tiles[map_info.name][z_draw][tile] = True
+                continue
+
+            # download is in progress
+            if tile in self.existing_tiles[map_info.name][z_draw]:
+                continue
+
+            # entry to download tiles
+            self.existing_tiles[map_info.name][z_draw][tile] = False
+            tiles_to_download.append(tile)
+
+        # start downloading
+        if len(tiles_to_download):
+            if not await map_info.download_tiles(
+                settings.DOWNLOAD_QUEUE,
+                z_draw,
+                tiles_to_download,
+                additional_download=True,
+            ):
+                # failed to put queue, then retry
+                for tile in tiles_to_download:
+                    if tile in self.existing_tiles[map_info.name][z_draw]:
+                        self.existing_tiles[map_info.name][z_draw].pop(tile)
+
+    def check_drawn_tiles(
+        self, map_info, z, z_draw, z_conv_factor, tile_x, tile_y, expand
+    ):
+        draw_flag = False
+        add_keys = {}
+        expand_keys = {}
+
+        map_name = map_info.name
+        map_drawn_tiles = self.drawn_tiles[map_name]
+
+        if z not in map_drawn_tiles or self.pre_zoom_level[map_name] != z:
+            map_drawn_tiles[z] = {}
+
+        for i in range(tile_x[0], tile_x[1] + 1):
+            for j in range(tile_y[0], tile_y[1] + 1):
+                drawn_tile_key = f"{i}-{j}"
+                exist_tile_key = (i, j)
+                pixel_x = x_start = pixel_y = y_start = 0
+
+                if expand:
+                    pixel_x, x_start = divmod(i, z_conv_factor)
+                    pixel_y, y_start = divmod(j, z_conv_factor)
+                    exist_tile_key = (pixel_x, pixel_y)
+
+                if drawn_tile_key not in map_drawn_tiles[z] and self.check_tile(
+                    map_info, z_draw, exist_tile_key
+                ):
+                    map_drawn_tiles[z][drawn_tile_key] = True
+                    add_keys[(i, j)] = True
+                    draw_flag = True
+
+                    if expand:
+                        expand_keys[(i, j)] = (pixel_x, pixel_y, x_start, y_start)
+
+        return draw_flag, add_keys, expand_keys
+
+    def check_tile(self, map_info, z_draw, key):
+        if map_info.mbtiles:
+            return map_info.check_mbtiles_image(key[0], key[1], z_draw)
+        else:
+            return self.existing_tiles[map_info.name][z_draw].get(key, False)
+
+    def draw_scale(self, x_start, y_start):
+        # draw scale at left bottom
+        scale_factor = 10
+        scale_dist = get_width_distance(y_start, self.map_area["w"]) / scale_factor
+        num = scale_dist / (10 ** int(np.log10(scale_dist)))
+        modify = 1
+        if 1 < num < 2:
+            modify = 2 / num
+        elif 2 < num < 5:
+            modify = 5 / num
+        elif 5 < num < 10:
+            modify = 10 / num
+        scale_x1 = x_start + self.map_area["w"] / 25
+        scale_x2 = scale_x1 + self.map_area["w"] / scale_factor * modify
+        scale_y1 = y_start + self.map_area["h"] / 25
+        scale_y2 = scale_y1 + self.map_area["h"] / 30
+        scale_y1 = get_mod_lat(scale_y1)
+        scale_y2 = get_mod_lat(scale_y2)
+        self.scale_plot.setData(
+            [scale_x1, scale_x1, scale_x2, scale_x2],
+            [scale_y2, scale_y1, scale_y1, scale_y2],
+        )
+
+        scale_unit = "m"
+        scale_label = round(scale_dist * modify)
+        if scale_label >= 1000:
+            scale_label = int(scale_label / 1000)
+            scale_unit = "km"
+        self.scale_text.setPlainText(f"{scale_label}{scale_unit}\n(z{self.zoom_level})")
+        self.scale_text.setPos((scale_x1 + scale_x2) / 2, scale_y2)
+
+    async def update_cuesheet_and_instruction(
+        self, x_start, x_end, y_start, y_end, auto_zoom=False
+    ):
+        if (
+            not self.course_points.is_set
+            or not settings.CUESHEET_DISPLAY_ON_MAP
+            or not settings.COURSE_INDEXING
+        ):
+            return
+
+        await self.cuesheet_widget.update_display()
+
+        if self.instruction is not None:
+            self.plot.removeItem(self.instruction)
+
+        cue = self.cuesheet_widget.cuesheet[0]
+
+        self.instruction.setHtml(
+            f'<div style="text-align: left; vertical-align: bottom;">'
+            f'<img src="{cue.image}"><span style="font-size: 28px;">{cue.dist.text()}</span>'
+            f"</div>"
+        )
+        self.instruction.setPos(
+            (x_end + x_start) / 2,
+            (get_mod_lat(y_start) + (get_mod_lat(y_end) - get_mod_lat(y_start)) * 0.85),
+        )
+        self.plot.addItem(self.instruction)
+
+        if auto_zoom:
+            delta = self.zoom_delta_from_tile_size
+            if cue.dist_num < 1000:
+                if (
+                    self.auto_zoom_level_back is None
+                    and self.zoom_level < self.auto_zoom_level - delta
+                ):
+                    self.auto_zoom_level_back = self.zoom_level
+                    self.zoom_level = self.auto_zoom_level - delta
+            else:
+                if (
+                    self.auto_zoom_level_back is not None
+                    and self.zoom_level == self.auto_zoom_level - delta
+                ):
+                    self.zoom_level = self.auto_zoom_level_back
+                self.auto_zoom_level_back = None
+
+    def get_geo_area(self, x, y):
+        return get_geo_area(
+            x, y, self.zoom_level, settings.CURRENT_MAP.tile_size
+        ) * np.array((self.width(), self.height()))
+
+    def get_arrow_angle_index(self, angle):
+        return (
+            int(
+                (angle + self.arrow_direction_angle_unit_half)
+                / self.arrow_direction_angle_unit
+            )
+            % self.arrow_direction_num
+        )
+
+    def toggle_overlay(self, overlay_type):
+        if overlay_type == "Heat map":
+            status = not self.use_heat_overlay_map
+            self.use_heat_overlay_map = status
+        elif overlay_type == "Rain map":
+            status = not self.use_rain_overlay_map
+            self.use_rain_overlay_map = status
+        elif overlay_type == "Wind map":
+            status = not self.use_wind_overlay_map
+            self.use_wind_overlay_map = status
+        self.reset_map()
+        return status
+
+    @qasync.asyncSlot()
+    async def zoom_in(self):
+        await super().zoom_in()
+
+        if self.zoom_level == settings.CURRENT_MAP.max_zoom_level:
+            self.buttons[MapButtonLabel.ZOOM_IN].setEnabled(False)
+        if self.zoom_level == settings.CURRENT_MAP.min_zoom_level + 1:
+            self.buttons[MapButtonLabel.ZOOM_OUT].setEnabled(True)
+
+    @qasync.asyncSlot()
+    async def zoom_out(self):
+        await super().zoom_out()
+
+        if self.zoom_level == settings.CURRENT_MAP.min_zoom_level:
+            self.buttons[MapButtonLabel.ZOOM_OUT].setEnabled(False)
+        if self.zoom_level == settings.CURRENT_MAP.max_zoom_level - 1:
+            self.buttons[MapButtonLabel.ZOOM_IN].setEnabled(True)

@@ -2,7 +2,7 @@ import unittest
 from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
-from modules.course import Course
+from pizero_bikecomputer.modules.course import Course
 
 
 class Config:

@@ -4,8 +4,8 @@ import unittest
 from datetime import datetime, timezone
 from unittest.mock import patch
 
-from modules.logger.logger_csv import LoggerCsv
-from modules.logger.logger_fit import LoggerFit
+from pizero_bikecomputer.modules.logger.logger_csv import LoggerCsv
+from pizero_bikecomputer.modules.logger.logger_fit import LoggerFit
 
 
 class TestLoggerCsv(unittest.TestCase):
