@@ -1,0 +1,120 @@
+MAIN:
+  STATUS: true
+  LAYOUT:
+    Power: [0, 0, 1, 2]
+    Heart Rate: [0, 2]
+    Speed: [1, 0]
+    Cadence: [1, 1]
+    Timer: [1, 2]
+    Distance: [2, 0]
+    Work: [2, 1]
+    I2C Ascent: [2, 2]
+
+GPS:
+  STATUS: true
+  LAYOUT:
+    GPS Latitude: [0, 0]
+    GPS Longitude: [0, 1]
+    GPS Fix: [0, 2]
+    GPS Speed: [1, 0]
+    GPS Distance: [1, 1]
+    GPS Satellites: [1, 2]
+    GPS PDOP: [2, 0]
+    GPS HDOP: [2, 1]
+    GPS VDOP: [2, 2]
+    GPS Heading: [3, 0]
+    I2C Heading: [3, 1]
+    GPS Course Distance: [3,2]
+
+I2C:
+  STATUS: true
+  LAYOUT:
+    I2C Pressure: [0, 0]
+    I2C Altitude: [0, 1]
+    Grade (speddd): [0, 2]
+    I2C Ascent: [1, 0]
+    I2C Descent: [1, 1]
+    Grade: [1, 2]
+    I2C Battery: [2, 0]
+    I2C Elapsed Time: [2, 1]
+    I2C Pitch: [2, 2]
+    Cpu Mem: [3, 0, 4, 2]
+    I2C Gross Diff Time: [3, 2]
+
+ALTITUDE_GRAPH:
+  STATUS: true
+
+ACC_GRAPH:
+  STATUS: true
+
+ANT+_raw:
+  STATUS: true
+  LAYOUT:
+    ANT+ Speed: [0, 0]
+    GPS Speed: [0, 1]
+    ANT+ Speed 17: [0, 2]
+    ANT+ Power 17: [0, 3]
+    ANT+ Distance: [1, 0]
+    GPS Distance: [1, 1]
+    ANT+ Distance 17: [1, 2]
+    ANT+ Work 17: [1, 3]
+    ANT+ Power 16: [2, 0]
+    ANT+ Work 16: [2, 1]
+    ANT+ Power L: [2, 2]
+    ANT+ Power 18: [2, 3]
+    ANT+ Torque Effectiveness: [3, 0]
+    ANT+ Pedal Smoothness: [3, 1]
+    ANT+ Balance: [3, 2]
+    ANT+ Work 18: [3, 3]
+
+LAP_STAT-1:
+  STATUS: false
+  LAYOUT:
+    Pre Lap Hear Rate: [0, 0]
+    Lap Heart Rate: [0, 1]
+    Average Heart Rate: [0, 2]
+    Pre Lap Ascent: [0, 3]
+    Pre Lap Max Heart Rate: [1, 0]
+    Lap Max Heart Rate: [1, 1]
+    Max Heart Rate: [1, 2]
+    Lap Ascent: [1, 3]
+    Pre Lap Cadence: [2, 0]
+    Lap Cadence: [2, 1]
+    Average Cadence: [2, 2]
+    Pre Lap Descent: [2, 3]
+    Pre Lap Max Cadence: [3, 0]
+    Lap Max Cadence: [3, 1]
+    Max Cadence: [3, 2]
+    Lap Descent: [3, 3]
+
+LAP_STAT-2:
+  STATUS: false
+  LAYOUT:
+    Pre Lap Speed: [0, 0]
+    Lap Speed: [0, 1]
+    Average Speed: [0, 2]
+    Pre Lap DIST: [0, 3]
+    Pre Lap Max Speed: [1, 0]
+    Lap Max Speed: [1, 1]
+    Max Speed: [1, 2]
+    Lap Distance: [1, 3]
+    Pre Lap Power: [2, 0]
+    Lap Power: [2, 1]
+    Average Power: [2, 2]
+    Pre Lap WRK: [2, 3]
+    Pre Lap Max Power: [3, 0]
+    Lap Max Power: [3, 1]
+    Max Power: [3, 2]
+    Lap WRK: [3, 3]
+
+PERFORMANCE_GRAPH:
+  STATUS: true
+
+COURSE_PROFILE_GRAPH:
+  STATUS: true
+
+SIMPLE_MAP:
+  STATUS: true
+
+CUESHEET:
+  STATUS: false

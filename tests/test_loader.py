@@ -1,6 +1,6 @@
 import unittest
 
-from modules.loaders.tcx import TcxLoader
+from pizero_bikecomputer.modules.loaders.tcx import TcxLoader
 
 
 class TestLoader(unittest.TestCase):
