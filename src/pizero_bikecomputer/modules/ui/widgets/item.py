@@ -1,7 +1,6 @@
 import numpy as np
 
 from pizero_bikecomputer.modules._pyqt import QT_ALIGN_CENTER, QtWidgets
-from pizero_bikecomputer.modules.items import ITEM_CONFIG
 
 
 class ItemLabel(QtWidgets.QLabel):

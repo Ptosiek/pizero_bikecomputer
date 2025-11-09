@@ -1,6 +1,7 @@
 from pizero_bikecomputer.logger import app_logger
 from pizero_bikecomputer.modules._pyqt import QtWidgets
-from pizero_bikecomputer.modules.pyqt.components import box_buttons
+
+from ..components import box_buttons
 
 
 class ButtonBoxWidget(QtWidgets.QWidget):

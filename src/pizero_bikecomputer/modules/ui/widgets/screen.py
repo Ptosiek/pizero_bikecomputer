@@ -6,7 +6,7 @@ from pizero_bikecomputer.modules.constants import (
 from pizero_bikecomputer.modules.items import ITEM_CONFIG
 from pizero_bikecomputer.modules.settings import settings  # noqa (needed for AntWidget)
 
-from .pyqt_item import Item
+from .item import Item
 
 
 class ScreenWidget(QtWidgets.QWidget):
@@ -75,11 +75,11 @@ class ScreenWidget(QtWidgets.QWidget):
 
         self.set_font_size(min(self.config.display.resolution))
 
-    # call from on_change_main_page in gui_pyqt.py
+    # call from on_change_main_page in gui.py
     def start(self):
         self.timer.start(self.DRAW_INTERVAL)
 
-    # call from on_change_main_page in gui_pyqt.py
+    # call from on_change_main_page in gui.py
     def stop(self):
         self.timer.stop()
 

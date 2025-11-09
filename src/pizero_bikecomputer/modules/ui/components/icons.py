@@ -65,10 +65,6 @@ class ToggleOnIcon(_QIconWithPath):
     path = BASE_DIR / "toggle_on_blue.svg"
 
 
-class CloudIcon(_QIconWithPath):
-    path = BASE_DIR / "cloud_upload.svg"
-
-
 class ZoomInIcon(_QIconWithPath):
     path = BASE_DIR / "map/zoom_in.svg"
 
@@ -131,20 +127,6 @@ class BaseMenuIcon(QtWidgets.QLabel):
         self.set_icon(self.icon())
 
 
-class MenuBackgroundIcon(BaseMenuIcon):
-    icon = QtGui.QIcon
-
-
-class MenuRightIcon(BaseMenuIcon):
-    icon = NextIcon
-    size = 20
-    margin = 1
-
-    @staticmethod
-    def icon_hover():
-        return NextIcon(color="white")
-
-
 class MenuToggleIcon(BaseMenuIcon):
     icon = ToggleOffIcon
     icon_hover = ToggleOffHoverIcon
@@ -159,10 +141,6 @@ class MenuToggleIcon(BaseMenuIcon):
         else:
             icon = self.icon
         self.set_icon(icon())
-
-
-class MenuCloudUploadIcon(BaseMenuIcon):
-    icon = CloudIcon
 
 
 class CourseRightIcon(QtWidgets.QLabel):

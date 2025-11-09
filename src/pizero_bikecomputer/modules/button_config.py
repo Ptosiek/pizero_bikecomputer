@@ -4,7 +4,7 @@ class Button_Config:
     # long press threshold of buttons [sec]
     G_BUTTON_LONG_PRESS = 1
 
-    # GPIO button action (short press / long press) from gui_pyqt
+    # GPIO button action (short press / long press) from gui
     # call from SensorGPIO.my_callback(self, channel)
     # number is from GPIO.setmode(GPIO.BCM)
     G_BUTTON_DEF = {

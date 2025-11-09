@@ -58,7 +58,7 @@ class Config:
             delay = not Path(settings.LOG_DEBUG_FILE).exists()
             fh = CustomRotatingFileHandler(settings.LOG_DEBUG_FILE, delay=delay)
             fh.doRollover()
-            fh_formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+            fh_formatter = logging.Formatter(settings.LOG_FORMAT)
             fh.setFormatter(fh_formatter)
             app_logger.addHandler(fh)
 
@@ -69,41 +69,32 @@ class Config:
             )
             shutil.copy(Path("layouts") / default_layout, settings.LAYOUT_FILE)
 
-        # coroutine loop
-        self.init_loop()
-
         self.log_time = datetime.now()
 
         self.button_config = Button_Config(self)
 
-    def init_loop(self, call_from_gui=False):
-        if settings.GUI_MODE == "PyQt":
-            if call_from_gui:
-                # workaround for latest qasync and older version(~0.24.0)
-                asyncio.events._set_running_loop(self.loop)
-                asyncio.set_event_loop(self.loop)
-                self.start_coroutine()
-        else:
-            self.loop = asyncio.get_event_loop()
+    @property
+    def loop(self):
+        return asyncio.get_running_loop()
 
     def import_gui(self):
-        if settings.GUI_MODE == "PyQt":
-            from pizero_bikecomputer.modules.gui_pyqt import GUI_PyQt
+        from pizero_bikecomputer.modules.gui import GUI
 
-            self.gui_class = GUI_PyQt
-        else:
-            raise ValueError(f"{settings.GUI_MODE} mode not supported")
+        self.gui_class = GUI
 
     def start_gui(self):
         if self.gui_class:
             self.gui_class(self)
 
-    def start_coroutine(self):
+    async def start_coroutine(self):
+        self.app_close_event = asyncio.Event()
+
         self.logger.start_coroutine()
         self.display.start_coroutine()
 
         # delay init start
         asyncio.create_task(self.delay_init())
+        await self.app_close_event.wait()
 
     async def delay_init(self):
         await asyncio.sleep(0.01)
@@ -225,11 +216,8 @@ class Config:
         tasks = asyncio.all_tasks()
         current_task = asyncio.current_task()
         for task in tasks:
-            if settings.GUI_MODE == "PyQt":
-                if task == current_task or task.get_coro().__name__ in [
-                    "update_display"
-                ]:
-                    continue
+            if task == current_task or task.get_coro().__name__ in ["update_display"]:
+                continue
             task.cancel()
             try:
                 await task
@@ -252,6 +240,7 @@ class Config:
         settings.save()
         self.state.delete()
 
+        self.app_close_event.set()
         await asyncio.sleep(0.5)
         await self.kill_tasks()
         self.logger.remove_handler()

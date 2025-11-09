@@ -1,4 +1,4 @@
-from .pyqt_screen_widget import ScreenWidget
+from .screen import ScreenWidget
 
 #################################
 # values only widget

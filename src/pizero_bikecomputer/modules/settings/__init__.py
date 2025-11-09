@@ -123,13 +123,11 @@ class SettingsNamespace:
     PRODUCT = "Pizero Bikecomputer"
     UNIT_ID = UNIT_ID
 
-    # GUI mode
-    GUI_MODE = "PyQt"
-
     # log setting
     LOG_DIR = Path("logs")
     LOG_DB = LOG_DIR / "log.db"
     LOG_DEBUG_FILE = LOG_DIR / "debug.log"
+    LOG_FORMAT = "%(asctime)s %(levelname)s %(message)s"
 
     # log format switch
     LOG_WRITE_CSV = True

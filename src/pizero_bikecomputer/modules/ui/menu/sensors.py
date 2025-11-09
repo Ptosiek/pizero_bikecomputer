@@ -6,21 +6,25 @@ from pizero_bikecomputer.modules.constants import ANTDevice, MenuLabel
 from pizero_bikecomputer.modules.sensor.ant.ant_code import AntCode
 from pizero_bikecomputer.modules.settings import settings
 
-from .pyqt_menu_widget import ListItemWidget, ListWidget, MenuWidget
+from .base import ListItemWidget, ListWidget, MenuItem, MenuType, MenuWidget
 
 
 class SensorMenuWidget(MenuWidget):
-    def setup_menu(self):
-        button_conf = (
-            # Name(page_name), button_attribute, connected functions
-            (
-                MenuLabel.ANT_SENSORS,
-                "submenu",
-                partial(self.change_page, MenuLabel.ANT_SENSORS),
+    def get_menu_items(self):
+        return [
+            MenuItem(
+                type=MenuType.MENU,
+                name=MenuLabel.ANT_SENSORS,
+                action=partial(self.change_page, MenuLabel.ANT_SENSORS),
+                icon="ANT+",
             ),
-            (MenuLabel.ADJUST_ALTITUDE, "submenu", self.adjust_altitude),
-        )
-        self.add_buttons(button_conf)
+            MenuItem(
+                type=MenuType.MENU,
+                name=MenuLabel.ADJUST_ALTITUDE,
+                action=self.adjust_altitude,
+                icon="🏔",
+            ),
+        ]
 
     def adjust_altitude(self):
         self.change_page(MenuLabel.ADJUST_ALTITUDE)
@@ -30,25 +34,25 @@ class SensorMenuWidget(MenuWidget):
 
 class ANTMenuWidget(MenuWidget):
     items = {
-        ANTDevice.HEART_RATE: "Heart Rate",
-        ANTDevice.SPEED: "Speed",
-        ANTDevice.CADENCE: "Cadence",
-        ANTDevice.POWER: "Power",
-        ANTDevice.LIGHT: "Light",
-        ANTDevice.CONTROL: "Control",
-        ANTDevice.TEMPERATURE: "Temperature",
+        ANTDevice.HEART_RATE: {"text": "Heart Rate", "icon": "❤️"},
+        ANTDevice.SPEED: {"text": "Speed", "icon": "🚀"},
+        ANTDevice.CADENCE: {"text": "Cadence", "icon": "🔄"},
+        ANTDevice.POWER: {"text": "Power", "icon": "⚡"},
+        ANTDevice.LIGHT: {"text": "Light", "icon": "💡"},
+        ANTDevice.CONTROL: {"text": "Control", "icon": "🧰"},
+        ANTDevice.TEMPERATURE: {"text": "Temperature", "icon": "🌡️"},
     }
 
-    def setup_menu(self):
-        self.add_buttons(
-            [(name, "submenu", partial(self.setting_ant, name)) for name in self.items]
-        )
-
-        for name in self.items:
-            self.buttons[name].setText(self.get_button_state(name))
-
-        if not self.config.display.has_touch:
-            self.focus_widget = self.buttons[next(iter(self.items.keys()))]
+    def get_menu_items(self):
+        return [
+            MenuItem(
+                type=MenuType.MENU,
+                name=value["text"],
+                icon=value["icon"],
+                action=partial(self.setting_ant, key),
+            )
+            for key, value in self.items.items()
+        ]
 
     def get_button_state(self, ant_name):
         status = "OFF"
@@ -84,12 +88,13 @@ class ANTListWidget(ListWidget):
         super().__init__(parent, page_name, config)
 
     def setup_menu(self):
+        return
         super().setup_menu()
         # update panel for every 1 seconds
         self.timer = QtCore.QTimer(parent=self)
         self.timer.timeout.connect(self.update_display)
 
-    async def button_func_extra(self):
+    async def on_click(self):
         if self.selected_item is None:
             return
 
@@ -111,7 +116,8 @@ class ANTListWidget(ListWidget):
             QtWidgets.QWidget, MenuLabel.ANT_SENSORS
         ).update_button_label()
 
-    def preprocess_extra(self):
+    def preprocess(self):
+        super().preprocess()
         self.ant_sensor_types.clear()
         self.config.logger.sensor.sensor_ant.searcher.search(self.list_type)
         self.timer.start(settings.DRAW_INTERVAL)

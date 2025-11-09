@@ -17,9 +17,10 @@ from pizero_bikecomputer.modules.items.i2c import (
     I2C_AltitudeItemConfig,
     I2C_MStatItemConfig,
 )
-from pizero_bikecomputer.modules.pyqt.pyqt_screen_widget import ScreenWidget
 from pizero_bikecomputer.modules.settings import settings
 from pizero_bikecomputer.modules.utils.array import shift_insert
+
+from ..widgets.screen import ScreenWidget
 
 
 class GraphWidget(ScreenWidget):

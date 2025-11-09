@@ -3,13 +3,11 @@ from importlib import resources
 import numpy as np
 
 from pizero_bikecomputer.modules._pyqt import QtGui, pg, qasync
-from pizero_bikecomputer.modules.pyqt.graph.pyqtgraph.CourseProfileGraphItem import (
-    CourseProfileGraphItem,
-)
 from pizero_bikecomputer.modules.utils.timer import Timer
 
-from .pyqt_base_map import BaseMapWidget
-from .pyqt_map_button import MapButtonLabel
+from ..graph.pyqtgraph.CourseProfileGraphItem import CourseProfileGraphItem
+from .base_map import BaseMapWidget
+from .map_button import MapButtonLabel
 
 BASE_DIR = resources.files("pizero_bikecomputer.img")
 

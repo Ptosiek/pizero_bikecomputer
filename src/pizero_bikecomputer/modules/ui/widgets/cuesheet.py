@@ -3,7 +3,7 @@ from importlib import resources
 from pizero_bikecomputer.modules._pyqt import QtCore, QtGui, QtWidgets, qasync
 from pizero_bikecomputer.modules.settings import settings
 
-from .pyqt_screen_widget import ScreenWidget
+from .screen import ScreenWidget
 
 BASE_DIR = resources.files("pizero_bikecomputer.img")
 

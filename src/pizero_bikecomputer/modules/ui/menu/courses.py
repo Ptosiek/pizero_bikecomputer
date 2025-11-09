@@ -11,47 +11,51 @@ from pizero_bikecomputer.modules._pyqt import (
     qasync,
 )
 from pizero_bikecomputer.modules.constants import MenuLabel
-from pizero_bikecomputer.modules.pyqt.components import icons, topbar
-from pizero_bikecomputer.modules.pyqt.pyqt_item import Item
 from pizero_bikecomputer.modules.settings import settings
 from pizero_bikecomputer.modules.utils.formatter import Altitude, Distance
 from pizero_bikecomputer.modules.utils.network import detect_network
 
-from .pyqt_menu_widget import (
+from ..components import icons, topbar
+from ..widgets.item import Item
+from .base import (
+    BaseWidget,
     ListItemWidget,
     ListWidget,
+    MenuItem,
+    MenuType,
     MenuWidget,
 )
 
 SimpleItemConfig = namedtuple("SimpleItemConfig", ("label", "formatter"))
 
 
-class CoursesMenuWidget(MenuWidget):
-    def setup_menu(self):
-        button_conf = (
-            # Name(page_name), button_attribute, connected functions, icon
-            (MenuLabel.LOCAL_STORAGE, "submenu", self.load_local_courses),
-            (
-                MenuLabel.RIDE_WITH_GPS,
-                "submenu",
-                self.load_rwgps_courses,
-                (
-                    icons.RideWithGPSIcon(),
-                    (icons.BASE_LOGO_SIZE * 4, icons.BASE_LOGO_SIZE),
-                ),
+class CourseMenuWidget(MenuWidget):
+    def get_menu_items(self):
+        return [
+            MenuItem(
+                type=MenuType.MENU,
+                name=MenuLabel.LOCAL_STORAGE,
+                action=self.load_local_courses,
+                icon="📍",
             ),
-            (
-                MenuLabel.CANCEL_COURSE,
-                "dialog",
-                lambda: self.config.gui.show_dialog(
+            MenuItem(
+                type=MenuType.MENU,
+                name=MenuLabel.RIDE_WITH_GPS,
+                action=self.load_rwgps_courses,
+                icon=icons.RideWithGPSIcon(),
+            ),
+            MenuItem(
+                type=MenuType.DIALOG,
+                name=MenuLabel.CANCEL_COURSE,
+                action=lambda: self.show_dialog(
                     self.cancel_course, MenuLabel.CANCEL_COURSE
                 ),
+                icon="❌",
             ),
-        )
-        self.add_buttons(button_conf)
+        ]
 
     def preprocess(self):
-        self.onoff_course_cancel_button()
+        self.set_cancel_button_state()
 
     @qasync.asyncSlot()
     async def load_local_courses(self):
@@ -71,18 +75,19 @@ class CoursesMenuWidget(MenuWidget):
         )
         await widget.list_ride_with_gps(reset=True)
 
-    def onoff_course_cancel_button(self):
-        status = self.config.logger.course.is_set
-        self.buttons[MenuLabel.CANCEL_COURSE].onoff_button(status)
+    def set_cancel_button_state(self):
+        self.menu_items[MenuLabel.CANCEL_COURSE].set_state(
+            self.config.logger.course.is_set
+        )
 
     def cancel_course(self):
         self.config.logger.reset_course(delete_course_file=True)
-        self.onoff_course_cancel_button()
+        self.set_cancel_button_state()
 
     def set_new_course(self, course_file):
         self.config.logger.set_new_course(course_file)
         self.config.gui.init_course()
-        self.onoff_course_cancel_button()
+        self.set_cancel_button_state()
 
     async def load_tcx_route(self, filename):
         self.cancel_course()
@@ -95,10 +100,14 @@ class CoursesMenuWidget(MenuWidget):
 
 
 class CourseListWidget(ListWidget):
-    def setup_menu(self):
-        super().setup_menu()
+    def setup_ui(self):
+        super().setup_ui()
         self.vertical_scrollbar = self.list.verticalScrollBar()
         self.vertical_scrollbar.valueChanged.connect(self.detect_bottom)
+
+        self.loading_indicator = topbar.TopBarLoadingIndicator()
+        self.loading_indicator.setVisible(False)
+        self.top_bar_layout.addWidget(self.loading_indicator)
 
     @qasync.asyncSlot(int)
     async def detect_bottom(self, value):
@@ -106,10 +115,12 @@ class CourseListWidget(ListWidget):
             self.list_type == MenuLabel.RIDE_WITH_GPS
             and value == self.vertical_scrollbar.maximum()
         ):
+            self.loading_indicator.start_loading()
             await self.list_ride_with_gps()
+            self.loading_indicator.stop_loading()
 
     @qasync.asyncSlot()
-    async def button_func(self):
+    async def _on_click(self):
         if self.list_type == MenuLabel.LOCAL_STORAGE:
             self.set_course()
         elif self.list_type == MenuLabel.RIDE_WITH_GPS:
@@ -126,9 +137,6 @@ class CourseListWidget(ListWidget):
         )
         await widget.load_images()
 
-    def preprocess_extra(self):
-        self.page_name_label.setText(self.list_type)
-
     async def list_local_courses(self):
         courses = self.config.get_courses()
         for c in courses:
@@ -136,11 +144,14 @@ class CourseListWidget(ListWidget):
             self.add_list_item(course_item)
 
     async def list_ride_with_gps(self, reset=False):
+        self.loading_indicator.start_loading()
         courses = await self.config.api.rwgps.list_routes(reset)
 
         for c in reversed(courses or []):
             course_item = CourseListItemWidget(self, self.list_type, c)
             self.add_list_item(course_item)
+
+        self.loading_indicator.stop_loading()
 
     def set_course(self, course_file=None):
         if self.selected_item is None:
@@ -206,7 +217,7 @@ class CourseListItemWidget(ListItemWidget):
         self.outer_layout.addWidget(right_icon)
 
 
-class CourseDetailWidget(MenuWidget):
+class CourseDetailWidget(BaseWidget):
     list_id = None
 
     map_image_size = None
@@ -214,8 +225,15 @@ class CourseDetailWidget(MenuWidget):
     next_button = None
     font_size = 20
 
-    def setup_menu(self):
-        self.make_menu_layout(QtWidgets.QVBoxLayout)
+    def __init__(self, parent, page_name, config):
+        super().__init__(parent, page_name, config)
+        self.setup_ui()
+
+    def setup_ui(self):
+        super().setup_ui()
+        widget = QtWidgets.QWidget()
+
+        layout = QtWidgets.QVBoxLayout(widget)
 
         self.map_image = QtWidgets.QLabel()
         self.map_image.setAlignment(QT_ALIGN_CENTER)
@@ -254,12 +272,12 @@ class CourseDetailWidget(MenuWidget):
             outer_layout.addLayout(info_layout)
 
         else:
-            self.menu_layout.addWidget(self.map_image)
+            layout.addWidget(self.map_image)
             outer_layout.addLayout(self.distance_item)
             outer_layout.addLayout(self.ascent_item)
 
-        self.menu_layout.addLayout(outer_layout)
-        self.menu_layout.addWidget(self.profile_image)
+        layout.addLayout(outer_layout)
+        layout.addWidget(self.profile_image)
 
         # update panel for every 1 seconds
         self.timer = QtCore.QTimer(parent=self)
@@ -268,15 +286,15 @@ class CourseDetailWidget(MenuWidget):
         # also set extra button for topbar
         self.next_button = topbar.TopBarNextButton()
         self.next_button.setEnabled(False)
+        self.next_button.clicked.connect(self.set_course)
 
         self.top_bar_layout.addWidget(self.next_button)
+
+        self.layout.addWidget(widget)
 
     def enable_next_button(self):
         self.next_button.setVisible(True)
         self.next_button.setEnabled(True)
-
-    def connect_buttons(self):
-        self.next_button.clicked.connect(self.set_course)
 
     def preprocess(self, course_info):
         # reset
@@ -287,7 +305,6 @@ class CourseDetailWidget(MenuWidget):
         self.next_button.setVisible(False)
         self.next_button.setEnabled(False)
 
-        self.page_name_label.setText(course_info["name"])
         self.distance_item.update_value(course_info["distance"])
         self.ascent_item.update_value(course_info["elevation_gain"])
 
@@ -302,8 +319,9 @@ class CourseDetailWidget(MenuWidget):
             # 1st download
             await self.config.api.rwgps.get_route_files(self.list_id)
 
-    def on_back_menu(self):
+    def back(self):
         self.timer.stop()
+        super().back()
 
     @qasync.asyncSlot()
     async def update_display(self):

@@ -1,14 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 
 from pizero_bikecomputer.logger import app_logger
 from pizero_bikecomputer.modules._pyqt import pg, qasync
-from pizero_bikecomputer.modules.pyqt.graph.pyqtgraph.CoursePlotItem import (
-    CoursePlotItem,
-)
-from pizero_bikecomputer.modules.pyqt.pyqt_cuesheet_widget import CueSheetWidget
-from pizero_bikecomputer.modules.pyqt.utils import load_tile
 from pizero_bikecomputer.modules.settings import settings
 from pizero_bikecomputer.modules.utils.geo import (
     calc_y_mod,
@@ -23,8 +18,11 @@ from pizero_bikecomputer.modules.utils.map import (
 )
 from pizero_bikecomputer.modules.utils.timer import Timer, log_timers
 
-from .pyqt_base_map import BaseMapWidget
-from .pyqt_map_button import MapButtonLabel
+from ..graph.pyqtgraph.CoursePlotItem import CoursePlotItem
+from ..utils import load_tile
+from ..widgets.cuesheet import CueSheetWidget
+from .base_map import BaseMapWidget
+from .map_button import MapButtonLabel
 
 
 class MapWidget(BaseMapWidget):
@@ -147,11 +145,11 @@ class MapWidget(BaseMapWidget):
         self.reset_map()
 
         # self.load_course()
-        t = datetime.utcnow()
+        t = datetime.now(UTC)
         self.get_track()  # heavy when resume
         if len(self.tracks_lon):
             app_logger.info(
-                f"resume_track(init): {(datetime.utcnow() - t).total_seconds():.3f} sec"
+                f"resume_track(init): {(datetime.now(UTC) - t).total_seconds():.3f} sec"
             )
 
         # map

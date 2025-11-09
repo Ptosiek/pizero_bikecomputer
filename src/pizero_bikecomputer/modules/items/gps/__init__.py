@@ -28,28 +28,28 @@ class GPS_LongitudeItemConfig(BaseItemConfig):
 
 class GPS_AltitudeItemConfig(BaseItemConfig):
     name = "GPS Altitude"
-    label = "Alt.(GPS)"
+    label = "Alt. 🛰️"
     formatter = Altitude
     value = "self.sensor.values['GPS']['alt']"
 
 
 class GPS_SpeedItemConfig(BaseItemConfig):
     name = "GPS Speed"
-    label = "Speed(GPS)"
+    label = "Speed 🛰️"
     formatter = Speed
     value = "self.sensor.values['GPS']['speed']"
 
 
 class GPS_DistanceItemConfig(BaseItemConfig):
     name = "GPS Distance"
-    label = "Dist.(GPS)"
+    label = "Dist. 🛰️"
     formatter = Distance
     value = "self.sensor.values['GPS']['distance']"
 
 
 class GPS_HeadingItemConfig(BaseItemConfig):
     name = "GPS Heading"
-    label = "Heading(GPS)"
+    label = "Heading 🛰️"
     formatter = ValueFormatter
     value = "self.sensor.values['GPS']['track_str']"
 

@@ -4,7 +4,7 @@ import signal
 import sqlite3
 import time
 import traceback
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 from crdp import rdp
@@ -162,7 +162,7 @@ class LoggerCore:
             utctime = datetime.strptime(
                 self.last_timestamp, "%Y-%m-%d %H:%M:%S.%f"
             ) + timedelta(seconds=delta)
-            if utctime > datetime.utcnow():
+            if utctime > datetime.now(UTC):
                 datecmd = [
                     "sudo",
                     "date",
@@ -182,6 +182,7 @@ class LoggerCore:
 
     @staticmethod
     def remove_handler():
+        signal.setitimer(signal.ITIMER_REAL, 0)
         asyncio.get_running_loop().remove_signal_handler(signal.SIGALRM)
 
     async def sql_worker(self):
@@ -307,23 +308,21 @@ class LoggerCore:
         self.count_up_lock = False
 
     def start_and_stop_manual(self):
-        time_str = datetime.now().strftime("%Y%m%d %H:%M:%S")
-
         if self.config.G_MANUAL_STATUS != "START":
             self.config.display.screen_flash_short()
-            app_logger.info(f"->M START {time_str}")
             self.start_and_stop("STOP")
             self.config.G_MANUAL_STATUS = "START"
+
             if self.config.gui is not None:
                 self.config.gui.change_start_stop_button(self.config.G_MANUAL_STATUS)
             if self.values["start_time"] is None:
-                self.values["start_time"] = int(datetime.utcnow().timestamp())
+                self.values["start_time"] = int(datetime.now(UTC).timestamp())
 
         elif self.config.G_MANUAL_STATUS == "START":
             self.config.display.screen_flash_long()
-            app_logger.info(f"->M STOP  {time_str}")
             self.start_and_stop("START")
             self.config.G_MANUAL_STATUS = "STOP"
+
             if self.config.gui is not None:
                 self.config.gui.change_start_stop_button(self.config.G_MANUAL_STATUS)
 
@@ -351,18 +350,22 @@ class LoggerCore:
     def count_laps(self):
         if self.values["count"] == 0 or self.values["count_lap"] == 0:
             return
+
         self.config.display.screen_flash_short()
         lap_time = self.values["count_lap"]
         self.values["lap"] += 1
         self.values["count_lap"] = 0
+
         for k in self.lap_keys:
             self.record_stats["pre_lap_avg"][k] = self.record_stats["lap_avg"][k]
             self.record_stats["pre_lap_max"][k] = self.record_stats["lap_max"][k]
             self.record_stats["lap_max"][k] = 0
             self.record_stats["lap_avg"][k] = 0
+
         for k2 in ["cadence", "power"]:
             self.average["lap"][k2]["count"] = 0
             self.average["lap"][k2]["sum"] = 0
+
         asyncio.create_task(self.record_log())
         time_str = datetime.now().strftime("%Y%m%d %H:%M:%S")
         app_logger.info(f"->LAP:{self.values['lap']}   {time_str}")
@@ -378,6 +381,7 @@ class LoggerCore:
         value_message = (
             f"{(pre_lap_avg['speed'] * 3.6):{Speed.value_format}} {Speed.unit}"
         )
+
         if settings.is_ant_device_enabled(ANTDevice.HEART_RATE):
             value_message += f", {pre_lap_avg['heart_rate']:{HeartRate.value_format}} {HeartRate.unit}"
         if settings.is_ant_device_enabled(ANTDevice.POWER):
@@ -392,7 +396,8 @@ class LoggerCore:
         )
         self.config.display.screen_flash_short()
 
-    def get_start_end_dates(self):
+    @staticmethod
+    def get_start_end_dates():
         # get start date and end_date of the current log
         start_date = end_date = None  # UTC time
 
@@ -410,8 +415,8 @@ class LoggerCore:
         if first_row is not None:
             start_date, end_date = first_row
 
-            start_date = start_date.replace(tzinfo=timezone.utc)
-            end_date = end_date.replace(tzinfo=timezone.utc)
+            start_date = start_date.replace(tzinfo=UTC)
+            end_date = end_date.replace(tzinfo=UTC)
 
         cur.close()
         con.close()
@@ -501,6 +506,7 @@ class LoggerCore:
             self.record_stats["pre_lap_max"][k] = 0
             self.record_stats["lap_max"][k] = 0
             self.record_stats["entire_max"][k] = 0
+
         for k1 in self.average.keys():
             for k2 in ["cadence", "power"]:
                 self.average[k1][k2]["count"] = 0
@@ -532,8 +538,10 @@ class LoggerCore:
                 "accumulated_power",
             ]:
                 continue
+
             if np.isnan(v):
                 continue
+
             # get average
             if k in ["heart_rate", "cadence", "speed", "power"]:
                 x1 = t1 = 0  # for lap_avg = x1 / t1
@@ -600,7 +608,7 @@ class LoggerCore:
             self.record_stats["lap_max"][k] = x2
 
         ## SQLite
-        now_time = datetime.utcnow()
+        now_time = datetime.now(UTC)
         # self.cur.execute("""\
         sql = (
             """\
@@ -706,12 +714,13 @@ class LoggerCore:
             return
         # [s]
         self.values["elapsed_time"] = int(
-            datetime.utcnow().timestamp() - self.values["start_time"]
+            datetime.now(UTC).timestamp() - self.values["start_time"]
         )
 
         # gross_avg_spd
         if self.values["elapsed_time"] == 0:
             return
+
         # [m]/[s]
         self.values["gross_avg_spd"] = (
             self.sensor.values["integrated"]["distance"] / self.values["elapsed_time"]
@@ -733,10 +742,13 @@ class LoggerCore:
         diff_h, diff_m = divmod(abs(diff_time), 60)
         diff_m = int(diff_m)
         diff_time_sign = "+"
+
         if np.sign(diff_time) < 0:
             diff_time_sign = "-"
+
         if diff_h == 0 and diff_m == 0:
             diff_time_sign = ""
+
         self.values["gross_diff_time"] = "{:}{:02.0f}:{:02.0f}".format(
             diff_time_sign, diff_h, diff_m
         )
@@ -746,6 +758,7 @@ class LoggerCore:
     def resume(self):
         self.cur.execute("SELECT count(*) FROM BIKECOMPUTER_LOG")
         res = self.cur.fetchone()
+
         if res[0] == 0:
             return
 
@@ -787,12 +800,15 @@ class LoggerCore:
         )
 
         index = 11
+
         for k in self.lap_keys:
             self.record_stats["lap_avg"][k] = value[index]
             index += 1
+
         for k in ["heart_rate", "cadence", "speed", "power"]:
             self.record_stats["entire_avg"][k] = value[index]
             index += 1
+
         for k1 in ["lap", "entire"]:
             for k2 in ["cadence", "power"]:
                 for k3 in ["count", "sum"]:
@@ -809,6 +825,7 @@ class LoggerCore:
         main_item = ["heart_rate", "cadence", "speed", "power"]
         self.cur.execute("SELECT %s FROM BIKECOMPUTER_LOG" % (max_row))
         max_value = list(self.cur.fetchone())
+
         for i, k in enumerate(main_item):
             self.record_stats["entire_max"][k] = 0
             if max_value[i] is not None:
@@ -819,6 +836,7 @@ class LoggerCore:
             "SELECT %s FROM BIKECOMPUTER_LOG WHERE LAP = %s" % (max_row, max_lap)
         )
         max_value = list(self.cur.fetchone())
+
         for i, k in enumerate(main_item):
             self.record_stats["lap_max"][k] = 0
             if max_value[i] is not None:
@@ -858,6 +876,7 @@ class LoggerCore:
         # start_time
         self.cur.execute("SELECT MIN(timestamp) FROM BIKECOMPUTER_LOG")
         first_row = self.cur.fetchone()
+
         if first_row[0] is not None:
             self.values["start_time"] = int(
                 datetime_myparser(first_row[0]).timestamp() - 1
@@ -872,14 +891,18 @@ class LoggerCore:
     def store_short_log_for_update_track(self, dist, lat, lon, timestamp):
         if not self.short_log_available:
             return
+
         if np.isnan(lat) or np.isnan(lon):
             return
+
         if len(self.short_log_dist) and self.short_log_dist[-1] == dist:
             return
+
         if (len(self.short_log_lat) and self.short_log_lat[-1] == lat) and (
             len(self.short_log_lon) and self.short_log_lon[-1] == lon
         ):
             return
+
         if len(self.short_log_lat) > self.short_log_limit:
             self.clear_short_log()
             self.short_log_available = False
@@ -898,6 +921,7 @@ class LoggerCore:
         while self.short_log_lock:
             app_logger.info("locked: clear_short_log")
             time.sleep(0.02)
+
         self.short_log_dist = []
         self.short_log_lat = []
         self.short_log_lon = []
@@ -907,11 +931,12 @@ class LoggerCore:
         lon = np.array([])
         lat = np.array([])
         timestamp_new = timestamp
-        # t = datetime.utcnow()
+        # t = datetime.now(UTC)
 
         timestamp_delta = None
+
         if timestamp is not None:
-            timestamp_delta = (datetime.utcnow() - timestamp).total_seconds()
+            timestamp_delta = (datetime.now(UTC) - timestamp).total_seconds()
 
         # make_tmp_db = False
         lat_raw = np.array([])
@@ -923,11 +948,14 @@ class LoggerCore:
             while self.short_log_lock:
                 app_logger.info("locked: get values")
                 time.sleep(0.02)
+
             lat_raw = np.array(self.short_log_lat)
             lon_raw = np.array(self.short_log_lon)
             dist_raw = np.array(self.short_log_dist)
+
             if len(self.short_log_lon):
                 timestamp_new = self.short_log_timestamp[-1]
+
             self.clear_short_log()
             self.short_log_available = True
         # get values from copied db when initial execution or migration from short_log to db in logging
@@ -940,6 +968,7 @@ class LoggerCore:
                 + "WHERE position_lat is not null AND position_long is not null "
                 + 'and typeof(position_lat) = "real" and typeof(position_long) = "real"'
             )
+
             if timestamp is not None:
                 query = query + "AND timestamp > '%s'" % timestamp
 
@@ -955,6 +984,7 @@ class LoggerCore:
             # timestamp
             cur.execute("SELECT MAX(timestamp) FROM BIKECOMPUTER_LOG")
             first_row = cur.fetchone()
+
             if first_row[0] is not None:
                 timestamp_new = datetime_myparser(first_row[0])
 
@@ -981,8 +1011,6 @@ class LoggerCore:
                 lon = lon_raw
 
         if timestamp is None:
-            timestamp_new = datetime.utcnow()
-
-        # print("\tlogger_core : update_track(new) ", (datetime.utcnow()-t).total_seconds(), "sec")
+            timestamp_new = datetime.now(UTC)
 
         return timestamp_new, lon, lat

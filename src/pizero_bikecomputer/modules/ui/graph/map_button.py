@@ -1,7 +1,8 @@
 from enum import Enum, auto
 
 from pizero_bikecomputer.modules._pyqt import QtCore, QtWidgets
-from pizero_bikecomputer.modules.pyqt.components.icons import (
+
+from ..components.icons import (
     ArrowEastIcon,
     ArrowNorthIcon,
     ArrowSouthIcon,

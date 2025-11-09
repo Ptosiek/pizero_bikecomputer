@@ -1,12 +1,12 @@
 import pickle
-from datetime import datetime
+from datetime import UTC, datetime
 
 
 # store temporary values. unreadable and uneditable.
 class AppState:
     interval = 10  # [s]
 
-    last_write_time = datetime.utcnow()
+    last_write_time = datetime.now(UTC)
     pickle_file = "state.pickle"
     values = None
 
@@ -17,10 +17,14 @@ class AppState:
         except (FileNotFoundError, ModuleNotFoundError):
             self.values = {}
 
+    def write(self):
+        with open(self.pickle_file, "wb") as f:
+            pickle.dump(self.values, f)
+
     def set_value(self, key, value, force_apply=False):
         self.values[key] = value
 
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         if (
             not force_apply
@@ -28,8 +32,7 @@ class AppState:
         ):
             return
 
-        with open(self.pickle_file, "wb") as f:
-            pickle.dump(self.values, f)
+        self.write()
         self.last_write_time = now
 
     def get_value(self, key, default_value):
@@ -42,8 +45,7 @@ class AppState:
             if "mag" in k:
                 continue
             del self.values[k]
-        with open(self.pickle_file, "wb") as f:
-            pickle.dump(self.values, f)
+        self.write()
 
     # quit (poweroff)
     #   ant+_sc_values, ant+_spd_values,
@@ -52,5 +54,4 @@ class AppState:
         for k, v in list(self.values.items()):
             if "ant+" in k:
                 del self.values[k]
-        with open(self.pickle_file, "wb") as f:
-            pickle.dump(self.values, f)
+        self.write()

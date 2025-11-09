@@ -86,20 +86,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.gui.draw_display()
 
 
-class GUI_PyQt(QtCore.QObject):
+class GUI(QtCore.QObject):
     config = None
     app = None
 
-    stack_widget = None
+    acc_graph_widget = None
+    altitude_graph_widget = None
     button_box_widget = None
+    course_profile_graph_widget = None
+    cuesheet_widget = None
     main_page = None
     main_page_index = None
-    altitude_graph_widget = None
-    acc_graph_widget = None
-    performance_graph_widget = None
-    course_profile_graph_widget = None
     map_widget = None
-    cuesheet_widget = None
+    performance_graph_widget = None
+    stack_widget = None
+    status_bar = None
 
     # layout
     layout = None
@@ -147,12 +148,9 @@ class GUI_PyQt(QtCore.QObject):
         self.init_window()
 
     def init_window(self):
-        self.app = QtWidgets.QApplication(sys.argv)
-        self.app.setApplicationName(settings.PRODUCT)
+        self.app = qasync.QApplication(sys.argv)
 
-        self.config.loop = qasync.QEventLoop(self.app)
-        self.config.loop.set_debug(True)
-        self.config.init_loop(call_from_gui=True)
+        self.app.setApplicationName(settings.PRODUCT)
 
         self.main_window = MainWindow(settings.PRODUCT, self.config.display.resolution)
         self.main_window.set_gui(self)
@@ -186,6 +184,15 @@ class GUI_PyQt(QtCore.QObject):
             await asyncio.sleep(0.01)  # need for changing QLabel in the event loop
 
     def delay_init(self):
+        async def delay_init():
+            loop = asyncio.get_running_loop()
+            loop.add_signal_handler(signal.SIGTERM, self.app.quit)
+            loop.add_signal_handler(signal.SIGINT, self.app.quit)
+            loop.add_signal_handler(signal.SIGQUIT, self.app.quit)
+            loop.add_signal_handler(signal.SIGHUP, self.app.quit)
+
+        asyncio.create_task(delay_init())
+
         # ensure visually alignment for log
         timers = [
             Timer(auto_start=False, text="misc  : {0:.3f} sec"),
@@ -215,52 +222,20 @@ class GUI_PyQt(QtCore.QObject):
             asyncio.create_task(self.msg_worker())
 
         with timers[1]:
-            import pizero_bikecomputer.modules.pyqt.graph.pyqt_course_profile as pyqt_course_profile
-            import pizero_bikecomputer.modules.pyqt.graph.pyqt_map as pyqt_map
-            import pizero_bikecomputer.modules.pyqt.graph.pyqt_value_graph as pyqt_value_graph
-            from pizero_bikecomputer.modules.pyqt.menu.pyqt_adjust_widget import (
-                AdjustAltitudeWidget,
-                AdjustCPWidget,
-                AdjustWheelCircumferenceWidget,
-                AdjustWPrimeBalanceWidget,
+            import pizero_bikecomputer.modules.ui.menu as menu
+            from pizero_bikecomputer.modules.ui.graph.course_profile import (
+                CourseProfileGraphWidget,
             )
-            from pizero_bikecomputer.modules.pyqt.menu.pyqt_course_menu_widget import (
-                CourseDetailWidget,
-                CourseListWidget,
-                CoursesMenuWidget,
+            from pizero_bikecomputer.modules.ui.graph.map import MapWidget
+            from pizero_bikecomputer.modules.ui.graph.value_graph import (
+                AccelerationGraphWidget,
+                AltitudeGraphWidget,
+                PerformanceGraphWidget,
             )
-            from pizero_bikecomputer.modules.pyqt.menu.pyqt_map_menu_widget import (
-                HeatmapListWidget,
-                MapListWidget,
-                MapMenuWidget,
-                MapOverlayMenuWidget,
-                RainmapListWidget,
-                WindmapListWidget,
-            )
-            from pizero_bikecomputer.modules.pyqt.menu.pyqt_menu_widget import (
-                ConnectivityMenuWidget,
-                TopMenuWidget,
-                UploadActivityMenuWidget,
-            )
-            from pizero_bikecomputer.modules.pyqt.menu.pyqt_profile_widget import (
-                ProfileWidget,
-            )
-            from pizero_bikecomputer.modules.pyqt.menu.pyqt_sensor_menu_widget import (
-                ANTListWidget,
-                ANTMenuWidget,
-                SensorMenuWidget,
-            )
-            from pizero_bikecomputer.modules.pyqt.menu.pyqt_system_menu_widget import (
-                BluetoothTetheringListWidget,
-                DebugLogViewerWidget,
-                DebugMenuWidget,
-                NetworkMenuWidget,
-                SystemMenuWidget,
-            )
-            from pizero_bikecomputer.modules.pyqt.pyqt_cuesheet_widget import (
+            from pizero_bikecomputer.modules.ui.widgets.cuesheet import (
                 CueSheetWidget,
             )
-            from pizero_bikecomputer.modules.pyqt.pyqt_values_widget import ValuesWidget
+            from pizero_bikecomputer.modules.ui.widgets.values import ValuesWidget
 
         with timers[2]:
             # self.main_window
@@ -283,31 +258,30 @@ class GUI_PyQt(QtCore.QObject):
             self.stack_widget.addWidget(main_widget)
 
             menus = [
-                (MenuLabel.MENU, TopMenuWidget),
-                (MenuLabel.SENSORS, SensorMenuWidget),
-                (MenuLabel.ANT_SENSORS, ANTMenuWidget),
-                (MenuLabel.ANT_DETAIL, ANTListWidget),
-                (MenuLabel.ADJUST_ALTITUDE, AdjustAltitudeWidget),
-                (MenuLabel.CONNECTIVITY, ConnectivityMenuWidget),
-                (MenuLabel.BT_TETHERING_DEVICE, BluetoothTetheringListWidget),
-                (MenuLabel.COURSES, CoursesMenuWidget),
-                (MenuLabel.COURSES_LIST, CourseListWidget),
-                (MenuLabel.COURSE_DETAIL, CourseDetailWidget),
-                (MenuLabel.UPLOAD_ACTIVITY, UploadActivityMenuWidget),
-                (MenuLabel.MAP, MapMenuWidget),
-                (MenuLabel.SELECT_MAP, MapListWidget),
-                (MenuLabel.MAP_OVERLAY, MapOverlayMenuWidget),
-                (MenuLabel.HEAT_MAP_LIST, HeatmapListWidget),
-                (MenuLabel.RAIN_MAP_LIST, RainmapListWidget),
-                (MenuLabel.WIND_MAP_LIST, WindmapListWidget),
-                (MenuLabel.PROFILE, ProfileWidget),
-                (MenuLabel.WHEEL_SIZE, AdjustWheelCircumferenceWidget),
-                (MenuLabel.CP, AdjustCPWidget),
-                (MenuLabel.W_PRIME_BALANCE, AdjustWPrimeBalanceWidget),
-                (MenuLabel.SYSTEM, SystemMenuWidget),
-                (MenuLabel.NETWORK, NetworkMenuWidget),
-                (MenuLabel.DEBUG, DebugMenuWidget),
-                (MenuLabel.DEBUG_LOG, DebugLogViewerWidget),
+                (MenuLabel.MENU, menu.MainMenuWidget),
+                (MenuLabel.SENSORS, menu.SensorMenuWidget),
+                (MenuLabel.ANT_SENSORS, menu.ANTMenuWidget),
+                (MenuLabel.ANT_DETAIL, menu.ANTListWidget),
+                (MenuLabel.ADJUST_ALTITUDE, menu.AdjustAltitudeWidget),
+                (MenuLabel.CONNECTIVITY, menu.ConnectivityMenuWidget),
+                (MenuLabel.BT_TETHERING_DEVICE, menu.BluetoothTetheringListWidget),
+                (MenuLabel.GADGETBRIDGE, menu.GadgetBridgeMenuWidget),
+                (MenuLabel.COURSES, menu.CourseMenuWidget),
+                (MenuLabel.COURSES_LIST, menu.CourseListWidget),
+                (MenuLabel.COURSE_DETAIL, menu.CourseDetailWidget),
+                (MenuLabel.UPLOAD_ACTIVITY, menu.UploadActivityMenuWidget),
+                (MenuLabel.MAP, menu.MapMenuWidget),
+                (MenuLabel.SELECT_MAP, menu.MapListWidget),
+                (MenuLabel.HEAT_MAP, menu.HeatmapListWidget),
+                (MenuLabel.RAIN_MAP, menu.RainmapListWidget),
+                (MenuLabel.WIND_MAP, menu.WindmapListWidget),
+                (MenuLabel.PROFILE, menu.ProfileWidget),
+                (MenuLabel.WHEEL_SIZE, menu.AdjustWheelCircumferenceWidget),
+                (MenuLabel.CP, menu.AdjustCPWidget),
+                (MenuLabel.W_PRIME_BALANCE, menu.AdjustWPrimeBalanceWidget),
+                (MenuLabel.SYSTEM, menu.SystemMenuWidget),
+                (MenuLabel.DEBUG, menu.DebugMenuWidget),
+                (MenuLabel.LOGS, menu.LogViewerWidget),
             ]
 
             for label, widget in menus:
@@ -344,40 +318,30 @@ class GUI_PyQt(QtCore.QObject):
                         and "i2c_baro_temp"
                         in self.config.logger.sensor.sensor_i2c.sensor
                     ):
-                        self.altitude_graph_widget = (
-                            pyqt_value_graph.AltitudeGraphWidget(
-                                self.main_page, self.config
-                            )
+                        self.altitude_graph_widget = AltitudeGraphWidget(
+                            self.main_page, self.config
                         )
                         self.main_page.addWidget(self.altitude_graph_widget)
                     elif (
                         k == "ACC_GRAPH"
                         and self.config.logger.sensor.sensor_i2c.motion_sensor["ACC"]
                     ):
-                        self.acc_graph_widget = (
-                            pyqt_value_graph.AccelerationGraphWidget(
-                                self.main_page, self.config
-                            )
+                        self.acc_graph_widget = AccelerationGraphWidget(
+                            self.main_page, self.config
                         )
                         self.main_page.addWidget(self.acc_graph_widget)
                     elif k == "PERFORMANCE_GRAPH" and settings.ANT_STATUS:
-                        self.performance_graph_widget = (
-                            pyqt_value_graph.PerformanceGraphWidget(
-                                self.main_page, self.config
-                            )
+                        self.performance_graph_widget = PerformanceGraphWidget(
+                            self.main_page, self.config
                         )
                         self.main_page.addWidget(self.performance_graph_widget)
                     elif k == "COURSE_PROFILE_GRAPH":
-                        self.course_profile_graph_widget = (
-                            pyqt_course_profile.CourseProfileGraphWidget(
-                                self.main_page, self.config
-                            )
+                        self.course_profile_graph_widget = CourseProfileGraphWidget(
+                            self.main_page, self.config
                         )
                         self.main_page.addWidget(self.course_profile_graph_widget)
                     elif k == "SIMPLE_MAP":
-                        self.map_widget = pyqt_map.MapWidget(
-                            self.main_page, self.config
-                        )
+                        self.map_widget = MapWidget(self.main_page, self.config)
                         self.main_page.addWidget(self.map_widget)
                     elif (
                         k == "CUESHEET"
@@ -390,11 +354,16 @@ class GUI_PyQt(QtCore.QObject):
                         self.main_page.addWidget(self.cuesheet_widget)
 
         with timers[3]:
+            from pizero_bikecomputer.modules.ui.widgets.status_bar import StatusBar
+
+            self.status_bar = StatusBar()
+            main_layout.addWidget(self.status_bar)
+
             # integrate main_layout
             main_layout.addWidget(self.main_page)
 
             if self.config.display.has_touch:
-                from pizero_bikecomputer.modules.pyqt.pyqt_button_box_widget import (
+                from pizero_bikecomputer.modules.ui.widgets.button_box import (
                     ButtonBoxWidget,
                 )
 
@@ -466,10 +435,7 @@ class GUI_PyQt(QtCore.QObject):
         self.config.display.update(buf, direct_update)
 
     def exec(self):
-        with self.config.loop:
-            self.config.loop.run_forever()
-            # loop is stopped
-        # loop is closed
+        asyncio.run(self.config.start_coroutine(), loop_factory=qasync.QEventLoop)
 
     def add_font(self):
         # Additional font from setting.conf
@@ -484,17 +450,10 @@ class GUI_PyQt(QtCore.QObject):
                 self.app.setFont(font)
                 app_logger.info(f"add font: {font_name}")
 
-    @qasync.asyncSlot(object, object)
-    async def quit_by_ctrl_c(self, signal, frame):
-        await self.quit()
-
     async def quit(self):
         self.msg_event.set()
         await self.msg_queue.put(None)
         await self.config.quit()
-
-        # with loop.close, so execute at the end
-        self.app.quit()
 
     # for main_page page transition
     def on_change_main_page(self, index):
@@ -845,13 +804,10 @@ class GUI_PyQt(QtCore.QObject):
         font_size = font.pointSize()
         font.setPointSize(int(font_size * 2))
         title_label = QtWidgets.QLabel(title, font=font, objectName="title_label")
-        # title_label = MarqueeLabel(config=self.config)
         title_label.setWordWrap(True)
         title_label.setText(title)
         title_label.setAlignment(text_align)
         title_label.setFont(font)
-
-        # title_label_width = title_label.fontMetrics().horizontalAdvance(title_label.text())
 
         # title_icon
         if title_icon is not None:

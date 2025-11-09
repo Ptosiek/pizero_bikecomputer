@@ -2,7 +2,7 @@ import asyncio
 import base64
 import json
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 try:
     from bluez_peripheral.advert import Advertisement
@@ -142,7 +142,7 @@ class GadgetbridgeService(Service):
                         datetime.fromtimestamp(int(res.group(1))) - time_diff
                         # we could also account for the time of message reception
                     )
-                    .replace(tzinfo=timezone.utc)
+                    .replace(tzinfo=UTC)
                     .isoformat()
                 )
                 set_time(utctime)
@@ -186,7 +186,7 @@ class GadgetbridgeService(Service):
                         timestamp = (
                             datetime.fromtimestamp(message["time"] // 1000)
                             - self.timediff_from_utc
-                        ).replace(tzinfo=timezone.utc)
+                        ).replace(tzinfo=UTC)
                     if "hdop" in message:
                         hdop = float(message["hdop"])
                         if hdop < HDOP_CUTOFF_MODERATE:

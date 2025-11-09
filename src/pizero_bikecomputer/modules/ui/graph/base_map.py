@@ -1,9 +1,9 @@
 import numpy as np
 
 from pizero_bikecomputer.modules._pyqt import Signal, pg, qasync
-from pizero_bikecomputer.modules.pyqt.pyqt_screen_widget import ScreenWidget
 
-from .pyqt_map_button import (
+from ..widgets.screen import ScreenWidget
+from .map_button import (
     ArrowEastButton,
     ArrowNorthButton,
     ArrowSouthButton,

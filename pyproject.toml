@@ -17,7 +17,7 @@ dependencies = [
   "pillow==11.0.0",
   "pyqt6==6.10.0",
   "pyqtgraph==0.13.7",
-  "qasync==0.24.0",
+  "qasync==0.28.0",
   "timezonefinder==6.5.4"
 ]
 
@@ -27,10 +27,6 @@ dbus = [
 ]
 gadgetbridge = [
     "bluez-peripheral==0.1.7"
-]
-gps_i2c = [
-    "pa1010d==0.0.4",
-
 ]
 polyline = [
     "polyline==2.0.0"

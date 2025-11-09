@@ -1,6 +1,6 @@
 import sqlite3
 import struct
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pizero_bikecomputer.logger import app_logger
 from pizero_bikecomputer.modules.settings import settings
@@ -361,10 +361,7 @@ class LoggerFit:
         self.write_definition(local_message_num)
         struct_def = self.get_struct_def(local_message_num)
         offset = int(
-            end_date.replace(tzinfo=timezone.utc)
-            .astimezone()
-            .utcoffset()
-            .total_seconds()
+            end_date.replace(tzinfo=UTC).astimezone().utcoffset().total_seconds()
         )
         end_date_epochtime = self.get_epoch_time(end_date)
 
@@ -552,7 +549,7 @@ class LoggerFit:
 
     def get_epoch_time(self, nowdate):
         if nowdate.tzinfo:
-            if nowdate.tzinfo == timezone.utc:
+            if nowdate.tzinfo == UTC:
                 nowdate = nowdate.replace(tzinfo=None)
             else:
                 raise ValueError(f"Incorrect date passed {nowdate}")

@@ -1,4 +1,3 @@
-from pizero_bikecomputer.logger import app_logger
 from pizero_bikecomputer.modules._pyqt import (
     QT_ALIGN_CENTER,
     QT_ALIGN_RIGHT,
@@ -8,7 +7,7 @@ from pizero_bikecomputer.modules._pyqt import (
 )
 from pizero_bikecomputer.modules.settings import settings
 
-from .pyqt_menu_widget import MenuWidget
+from .base import BaseWidget
 
 ##################################
 # adjust widgets
@@ -73,26 +72,38 @@ class AdjustEdit(QtWidgets.QLineEdit):
         self.setFocusPolicy(QT_NO_FOCUS)
 
 
-class AdjustWidget(MenuWidget):
+class AdjustWidget(BaseWidget):
     unit = ""
 
-    def setup_menu(self):
-        self.make_menu_layout(QtWidgets.QGridLayout)
+    def __init__(self, parent, page_name, config):
+        # if icon is passed, no text is used
+        super().__init__(parent, page_name, config)
+        self.setup_ui()
+
+    def setup_ui(self):
+        super().setup_ui()
+        widget = QtWidgets.QWidget()
+        layout = QtWidgets.QGridLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
         vertical = self.is_vertical
 
         max_width = 2 if vertical else 5
 
         self.display = AdjustEdit("")
-        self.menu_layout.addWidget(self.display, 0, 0, 1, max_width)
+        layout.addWidget(self.display, 0, 0, 1, max_width)
 
         unit_label = UnitLabel(self.unit)
-        self.menu_layout.addWidget(unit_label, 0, max_width)
+        layout.addWidget(unit_label, 0, max_width)
 
         num_buttons = {}
         cols = 3 if vertical else 5
         grid_position = []
+
         for i in range(1, 10):
             grid_position.append((1 + (i - 1) // cols, (i - 1) % cols))
+
         if not vertical:
             grid_position.append((2, 4))  # 0
             grid_position.append((1, 5))  # clear button
@@ -105,19 +116,20 @@ class AdjustWidget(MenuWidget):
         for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]:
             num_buttons[i] = AdjustButton(str(i))
             num_buttons[i].clicked.connect(self.digit_clicked)
-            self.menu_layout.addWidget(num_buttons[i], *grid_position.pop(0))
+            layout.addWidget(num_buttons[i], *grid_position.pop(0))
 
         clear_button = AdjustButton("x")
         clear_button.clicked.connect(self.clear)
-        self.menu_layout.addWidget(clear_button, *grid_position[0])
+        layout.addWidget(clear_button, *grid_position[0])
 
         set_button = AdjustButton("Set")
         set_button.clicked.connect(self.set_value)
-        self.menu_layout.addWidget(set_button, *grid_position[1])
+        layout.addWidget(set_button, *grid_position[1])
 
         if not self.config.display.has_touch:
             self.focus_widget = num_buttons[1]
 
+        self.layout.addWidget(widget)
         self.init_extra()
 
     def init_extra(self):

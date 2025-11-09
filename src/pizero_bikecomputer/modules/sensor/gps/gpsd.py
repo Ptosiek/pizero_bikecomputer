@@ -1,6 +1,6 @@
 import asyncio
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pizero_bikecomputer.logger import app_logger
 from pizero_bikecomputer.modules.settings import settings
@@ -58,7 +58,7 @@ class GPSD(AbstractSensorGPS):
                 gps_time = self.NULL_VALUE
                 if g.time != self.NULL_VALUE:
                     gps_time = datetime.strptime(g.time, "%Y-%m-%dT%X.%fZ").replace(
-                        tzinfo=timezone.utc
+                        tzinfo=UTC
                     )
                 await self.get_basic_values(
                     g.lat,

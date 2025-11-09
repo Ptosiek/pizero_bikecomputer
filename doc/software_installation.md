@@ -443,6 +443,24 @@ Right side
 - Adjust Altitude
   - Enter the current altitude to correct the sea level and increase the accuracy when an I2C pressure sensor is connected.
 
+### Connectivity
+
+- Wifi, Bluetooth
+  - Turn Wifi and BT On/Off at the software level using `rfkill`.
+- BT Tethering
+  - If dbus and bluez is available, start bluetooth tethering with a smartphone which are already paired using `bluetoothctl`.
+- GadgetBridge
+  - Receive notifications and GPS location from a smartphone. Install [GadgetBridge](https://gadgetbridge.org) Android app and toggle on.
+  - `dbus-next` and `bluez-peripheral` packages, which can be installed with the `pip3` command, is required.
+  - GadgetBridge app settings
+    - Enable all permissions.
+    - `Settings` > `Discovery and Pairing options` > `Ignore bonded devices`: Off, `CompanionDevice Pairing`: On, `Discover unsupported devices`: On, `Scanning intensity`: 2 or 3
+    - From `Connect new device` in the menu or `+` button, you can enter '`Device discovery`. Select the device(shown as host name), long press, and do pairing as `Bangle.js`.
+- Get Location
+  - Enable GPS location acquisition by Gadgetbridge.
+  - GadgetBridge app settings
+    - Click the Settings button in the list of devices on the top screen. `Use phone gps data`: On, `GPS data update interval in ms`: 5000-10000.
+    -
 ### Courses
 
 <img width="400" alt="menu-03-courses" src="https://github.com/hishizuka/pizero_bikecomputer/assets/12926652/35322fa8-e41e-4f8d-a922-fc86c8481cf5">
@@ -504,37 +522,12 @@ If ANT+ powermeter is available, set both parameters are used in W'balance (%). 
 
 <img width="400" alt="menu-08-system" src="https://github.com/hishizuka/pizero_bikecomputer/assets/12926652/402692a5-1612-4bf3-a645-a84ba91b766b">
 
-
-- Network
-  - See below.
 - Debug (experimental)
   - Debug log: view "log/debug.log".
   - Disable Wifi/BT, Enable Wifi/BT: modify /boot/config.txt to turn Wifi and BT On/Off at the hardware level. Reboot required for settings to take effect.
   - Update: execite `git pull origin master`.
 - Power Off
   - Power off the raspberry pi zero when the program is started with the service.
-
-#### Network
-
-<img width="400" alt="menu-09-network" src="https://github.com/hishizuka/pizero_bikecomputer/assets/12926652/48a617c4-73a5-4c4d-ac7b-d2471ed1d404">
-
-- Wifi, Bluetooth
-  - Turn Wifi and BT On/Off at the software level using `rfkill`.
-- BT Tethering
-  - If dbus and bluez is available, start bluetooth tethering with a smartphone which are already paired using `bluetoothctl`.
-- IP Address
-  - Show IP address. This can be used for ssh access while tethering a smartphone.
-- GadgetBridge
-  - Receive notifications and GPS location from a smartphone. Install [GadgetBridge](https://gadgetbridge.org) Android app and toggle on.
-  - `dbus-next` and `bluez-peripheral` packages, which can be installed with the `pip3` command, is required.
-  - GadgetBridge app settings
-    - Enable all permissions.
-    - `Settings` > `Discovery and Pairing options` > `Ignore bonded devices`: Off, `CompanionDevice Pairing`: On, `Discover unsupported devices`: On, `Scanning intensity`: 2 or 3
-    - From `Connect new device` in the menu or `+` button, you can enter '`Device discovery`. Select the device(shown as host name), long press, and do pairing as `Bangle.js`.
-- Get Location
-  - Enable GPS location acquisition by Gadgetbridge.
-  - GadgetBridge app settings
-    - Click the Settings button in the list of devices on the top screen. `Use phone gps data`: On, `GPS data update interval in ms`: 5000-10000.
 
 ## Settings
 

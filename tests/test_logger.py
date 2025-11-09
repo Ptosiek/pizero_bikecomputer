@@ -1,7 +1,7 @@
 import os
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 from pizero_bikecomputer.modules.logger.logger_csv import LoggerCsv
@@ -33,8 +33,8 @@ class TestLoggerFit(unittest.TestCase):
     def test_write_logs(self):
         logger = LoggerFit()
 
-        start = datetime(2023, 9, 28, 20, 39, 13, tzinfo=timezone.utc)
-        end = datetime(2023, 9, 28, 21, 10, 53, tzinfo=timezone.utc)
+        start = datetime(2023, 9, 28, 20, 39, 13, tzinfo=UTC)
+        end = datetime(2023, 9, 28, 21, 10, 53, tzinfo=UTC)
 
         _, path = tempfile.mkstemp()
 
