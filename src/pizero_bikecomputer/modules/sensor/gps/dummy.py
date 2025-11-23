@@ -45,6 +45,7 @@ class Dummy_GPS(AbstractSensorGPS):
             self.values["distance"] += (
                 dist[idx + 1] - dist[idx]
             ) * self.COURSE_RAND_FACTOR
+
         self.values["track"] = int(
             (
                 calc_azimuth(
@@ -59,6 +60,7 @@ class Dummy_GPS(AbstractSensorGPS):
     async def update(self):
         if not settings.DUMMY_OUTPUT:
             return
+
         course_i = pre_course_i = 0
 
         try:
@@ -79,8 +81,22 @@ class Dummy_GPS(AbstractSensorGPS):
                 self.values["pre_lon"] = self.values["lon"]
                 self.values["pre_track"] = self.values["track"]
 
+                # from course
+                if self.config.logger.course.is_set:
+                    # TODO No need to do this for each loop, unless the course can be changed in between  ?
+                    course_n = len(self.config.logger.course.latitude)
+
+                    self.set_position_from_course(self.config.logger.course, course_i)
+
+                    pre_course_i = course_i
+                    course_i += int(course_n / self.COURSE_DIVIDE_FACTOR) + 1
+
+                    if course_i >= course_n:
+                        pre_course_i = 0
+                        course_i = course_i % course_n
+
                 # generate dummy position from log
-                if self.config.logger.position_log.shape[0] > 0:
+                elif self.config.logger.position_log.shape[0] > 0:
                     self.set_position_from_log(
                         self.config.logger.position_log[course_i]
                     )
@@ -95,19 +111,6 @@ class Dummy_GPS(AbstractSensorGPS):
                         if course_i >= len(self.config.logger.position_log):
                             course_i = pre_course_i = 0
                             continue
-
-                # from course
-                else:
-                    # TODO No need to do this for each loop, unless the course can be changed in between  ?
-                    course_n = len(self.config.logger.course.latitude)
-
-                    self.set_position_from_course(self.config.logger.course, course_i)
-
-                    pre_course_i = course_i
-                    course_i += int(course_n / self.COURSE_DIVIDE_FACTOR) + 1
-                    if course_i >= course_n:
-                        pre_course_i = 0
-                        course_i = course_i % course_n
 
                 self.config.logger.course.get_index(
                     self.values["lat"],
