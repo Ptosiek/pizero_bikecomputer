@@ -43,7 +43,6 @@ I2C:
     I2C Descent: [2, 1]
     Elapsed Time: [3, 0]
     Gross Diff Time: [3, 1]
-    CPU Mem: [4, 0, -1, -1]
 
 ALTITUDE_GRAPH:
   STATUS: true

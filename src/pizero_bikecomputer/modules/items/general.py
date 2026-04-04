@@ -144,13 +144,6 @@ class TemperatureItemConfig(BaseItemConfig):
     value = "self.sensor.values['integrated']['temperature']"
 
 
-class CpuMemItemConfig(BaseItemConfig):
-    name = "CPU Mem"
-    label = "CPU_MEM"
-    formatter = ValueFormatter
-    value = "self.sensor.values['integrated']['CPU_MEM']"
-
-
 # System monitoring metrics (separate fields for better readability)
 class CpuPercentItemConfig(BaseItemConfig):
     name = "CPU"

@@ -38,7 +38,7 @@ I2C:
   LAYOUT:
     I2C Pressure: [0, 0]
     I2C Altitude: [0, 1]
-    Grade (speddd): [0, 2]
+    Grade (speed): [0, 2]
     I2C Ascent: [1, 0]
     I2C Descent: [1, 1]
     Grade: [1, 2]
