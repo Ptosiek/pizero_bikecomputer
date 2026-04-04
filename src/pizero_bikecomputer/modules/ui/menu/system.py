@@ -61,8 +61,18 @@ class SystemMenuWidget(MenuWidget):
 
 
 class DebugMenuWidget(MenuWidget):
+    def __init__(self, parent, page_name, config):
+        super().__init__(parent, page_name, config)
+        self.monitoring_enabled = settings.SYSTEM_MONITORING
+
     def get_menu_items(self):
         return [
+            MenuItem(
+                type=MenuType.TOGGLE,
+                name=MenuLabel.MONITORING,
+                action=self.toggle_monitoring,
+                icon="📊",
+            ),
             MenuItem(
                 type=MenuType.DIALOG,
                 name="Disable Wifi/BT",
@@ -96,6 +106,22 @@ class DebugMenuWidget(MenuWidget):
                 icon="🔌",
             ),
         ]
+
+    def toggle_monitoring(self):
+        """Toggle system monitoring on/off"""
+        self.monitoring_enabled = not self.monitoring_enabled
+        settings.update_setting("SYSTEM_MONITORING", self.monitoring_enabled)
+        # Update the button's visual toggle state
+        self.menu_items[MenuLabel.MONITORING].change_toggle(self.monitoring_enabled)
+        app_logger.info(
+            f"System monitoring {'enabled' if self.monitoring_enabled else 'disabled'}"
+        )
+
+    def preprocess(self, **kwargs):
+        """Update toggle state when entering the menu"""
+        self.monitoring_enabled = settings.SYSTEM_MONITORING
+        # Update the toggle button if it exists
+        self.menu_items[settings.MONITORING].change_toggle(self.monitoring_enabled)
 
 
 class LogViewerWidget(BaseWidget):

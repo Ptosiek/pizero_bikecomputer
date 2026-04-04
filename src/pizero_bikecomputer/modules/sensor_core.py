@@ -3,14 +3,7 @@ import math
 from datetime import datetime
 
 import numpy as np
-
-_IMPORT_PSUTIL = False
-try:
-    import psutil
-
-    _IMPORT_PSUTIL = True
-except ImportError:
-    pass
+import psutil
 
 from pizero_bikecomputer.logger import app_logger
 
@@ -95,6 +88,7 @@ class SensorCore:
         # reset
         for key in self.integrated_value_keys:
             self.values["integrated"][key] = np.nan
+
         self.reset_internal()
 
         for d in self.diff_keys:
@@ -106,7 +100,8 @@ class SensorCore:
             for v in self.average_values:
                 self.average_values[v][s] = []
                 self.values["integrated"][f"ave_{v}_{s}s"] = np.nan
-        if _IMPORT_PSUTIL:
+
+        if settings.SYSTEM_MONITORING:
             self.process = psutil.Process()
 
         if SensorGPS:
@@ -649,7 +644,7 @@ class SensorCore:
                     )
 
                 # cpu and memory
-                if _IMPORT_PSUTIL:
+                if settings.SYSTEM_MONITORING:
                     self.values["integrated"]["cpu_percent"] = int(
                         self.process.cpu_percent(interval=None)
                     )

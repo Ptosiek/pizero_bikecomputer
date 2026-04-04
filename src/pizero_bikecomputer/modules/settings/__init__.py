@@ -78,6 +78,9 @@ class SettingsNamespace:
     LAYOUT_FILE = "layout.yaml"
     VERTICAL = False
 
+    # System monitoring (psutil stats collection)
+    SYSTEM_MONITORING = False
+
     #######################
     # configurable values #
     #######################
