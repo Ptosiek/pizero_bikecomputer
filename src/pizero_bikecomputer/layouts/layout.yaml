@@ -28,10 +28,6 @@ GPS:
 
 MONITORING:
   STATUS: true
-  LAYOUT:
-    CPU: [ 0, 0 ]
-    Threads: [ 0, 1 ]
-    Memory: [ 1, 0 ]
 
 I2C:
   STATUS: true

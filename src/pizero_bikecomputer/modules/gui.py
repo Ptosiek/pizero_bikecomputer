@@ -98,6 +98,7 @@ class GUI(QtCore.QObject):
     main_page = None
     main_page_index = None
     map_widget = None
+    monitoring_widget = None
     performance_graph_widget = None
     stack_widget = None
     status_bar = None
@@ -232,8 +233,9 @@ class GUI(QtCore.QObject):
                 AltitudeGraphWidget,
                 PerformanceGraphWidget,
             )
-            from pizero_bikecomputer.modules.ui.widgets.cuesheet import (
-                CueSheetWidget,
+            from pizero_bikecomputer.modules.ui.widgets.cuesheet import CueSheetWidget
+            from pizero_bikecomputer.modules.ui.widgets.monitoring import (
+                MonitoringWidget,
             )
             from pizero_bikecomputer.modules.ui.widgets.values import ValuesWidget
 
@@ -344,6 +346,11 @@ class GUI(QtCore.QObject):
                     elif k == "SIMPLE_MAP":
                         self.map_widget = MapWidget(self.main_page, self.config)
                         self.main_page.addWidget(self.map_widget)
+                    elif k == "MONITORING":
+                        self.monitoring_widget = MonitoringWidget(
+                            self.main_page, self.config
+                        )
+                        self.main_page.addWidget(self.monitoring_widget)
                     elif (
                         k == "CUESHEET"
                         and self.config.logger.course.course_points.is_set
@@ -563,9 +570,37 @@ class GUI(QtCore.QObject):
             self.course_profile_graph_widget.init_course()
 
     def scroll(self, delta):
-        mod_index = (
-            self.main_page.currentIndex() + delta + self.main_page.count()
-        ) % self.main_page.count()
+        n = self.main_page.count()
+        d = delta
+        mod_index = self.main_page.currentIndex()
+
+        while d != 0:
+            mod_index = (mod_index + d + n) % n
+            w = self.main_page.widget(mod_index)
+
+            if (
+                (
+                    w == self.course_profile_graph_widget
+                    and (
+                        not self.config.logger.course.is_set
+                        or not self.config.logger.course.has_altitude
+                        or not self.config.G_COURSE_INDEXING
+                    )
+                )
+                or (
+                    w == self.cuesheet_widget
+                    and (
+                        not self.config.logger.course.course_points.is_set
+                        or not self.config.G_COURSE_INDEXING
+                        or not self.config.G_CUESHEET_DISPLAY_NUM
+                    )
+                )
+                or (w == self.monitoring_widget and not settings.SYSTEM_MONITORING)
+            ):
+                d = delta
+            else:
+                d = 0
+
         self.on_change_main_page(mod_index)
         self.main_page.setCurrentIndex(mod_index)
 
