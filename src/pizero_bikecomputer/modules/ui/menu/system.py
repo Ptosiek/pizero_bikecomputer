@@ -121,7 +121,7 @@ class DebugMenuWidget(MenuWidget):
         """Update toggle state when entering the menu"""
         self.monitoring_enabled = settings.SYSTEM_MONITORING
         # Update the toggle button if it exists
-        self.menu_items[settings.MONITORING].change_toggle(self.monitoring_enabled)
+        self.menu_items[MenuLabel.MONITORING].change_toggle(self.monitoring_enabled)
 
 
 class LogViewerWidget(BaseWidget):

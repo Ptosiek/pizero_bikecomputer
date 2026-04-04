@@ -101,8 +101,7 @@ class SensorCore:
                 self.average_values[v][s] = []
                 self.values["integrated"][f"ave_{v}_{s}s"] = np.nan
 
-        if settings.SYSTEM_MONITORING:
-            self.process = psutil.Process()
+        self.process = psutil.Process()
 
         if SensorGPS:
             self.sensor_gps = SensorGPS(config, self.values["GPS"])
