@@ -3,6 +3,7 @@ import json
 import logging
 import shutil
 from datetime import datetime
+from importlib import resources
 from pathlib import Path
 
 from pizero_bikecomputer.logger import CustomRotatingFileHandler, app_logger
@@ -67,7 +68,10 @@ class Config:
             default_layout = (
                 "layout-vertical.yaml" if settings.VERTICAL else "layout.yaml"
             )
-            shutil.copy(Path("layouts") / default_layout, settings.LAYOUT_FILE)
+            shutil.copy(
+                resources.files("pizero_bikecomputer.layouts") / default_layout,
+                settings.LAYOUT_FILE,
+            )
 
         self.log_time = datetime.now()
 

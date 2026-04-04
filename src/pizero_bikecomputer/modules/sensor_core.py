@@ -54,8 +54,11 @@ class SensorCore:
         "grade_spd",
         "glide_ratio",
         "temperature",
-        "cpu_percent",
         "send_time",
+        # perf
+        "cpu_percent",
+        "cpu_threads",
+        "memory_percent",
     ]
     average_secs = [3, 30, 60]
     average_values = {"heart_rate": {}, "power": {}}
@@ -93,8 +96,8 @@ class SensorCore:
 
         for d in self.diff_keys:
             self.values["integrated"][d] = np.full(self.grade_range, np.nan)
+
         self.brakelight_spd = [0] * self.brakelight_spd_range
-        self.values["integrated"]["CPU_MEM"] = ""
 
         for s in self.average_secs:
             for v in self.average_values:
@@ -647,15 +650,11 @@ class SensorCore:
                     self.values["integrated"]["cpu_percent"] = int(
                         self.process.cpu_percent(interval=None)
                     )
-                    self.values["integrated"]["CPU_MEM"] = (
-                        "{0:^2.0f}% ({1}) / ALL {2:^2.0f}%,  {3:^2.0f}%".format(
-                            self.values["integrated"][
-                                "cpu_percent"
-                            ],  # self.process.cpu_percent(interval=None),
-                            self.process.num_threads(),
-                            psutil.cpu_percent(interval=None),
-                            self.process.memory_percent(),
-                        )
+                    self.values["integrated"]["cpu_threads"] = (
+                        self.process.num_threads()
+                    )
+                    self.values["integrated"]["memory_percent"] = (
+                        self.process.memory_percent()
                     )
 
                 # adjust loop time

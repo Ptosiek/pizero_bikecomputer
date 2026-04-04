@@ -304,6 +304,7 @@ class GUI(QtCore.QObject):
             for k, v in self.layout.items():
                 if not v["STATUS"]:
                     continue
+
                 if "LAYOUT" in v:
                     self.main_page.addWidget(
                         ValuesWidget(
@@ -335,6 +336,17 @@ class GUI(QtCore.QObject):
                             self.main_page, self.config
                         )
                         self.main_page.addWidget(self.performance_graph_widget)
+                    elif k == "MONITORING":
+                        # System monitoring screen - shows CPU, memory metrics in separate boxes
+                        monitoring_layout = {
+                            "CPU": [0, 0],
+                            "Threads": [0, 1],
+                            "MEM": [1, 0],
+                        }
+                        self.monitoring_widget = ValuesWidget(
+                            self.main_page, self.config, monitoring_layout
+                        )
+                        self.main_page.addWidget(self.monitoring_widget)
                     elif k == "COURSE_PROFILE_GRAPH":
                         self.course_profile_graph_widget = CourseProfileGraphWidget(
                             self.main_page, self.config

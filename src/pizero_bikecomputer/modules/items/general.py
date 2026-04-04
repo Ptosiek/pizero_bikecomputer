@@ -151,6 +151,28 @@ class CpuMemItemConfig(BaseItemConfig):
     value = "self.sensor.values['integrated']['CPU_MEM']"
 
 
+# System monitoring metrics (separate fields for better readability)
+class CpuPercentItemConfig(BaseItemConfig):
+    name = "CPU"
+    label = "CPU %"
+    formatter = ValueFormatter(value_format=".0f", unit="%")
+    value = "self.sensor.values['integrated']['cpu_percent']"
+
+
+class CpuThreadsItemConfig(BaseItemConfig):
+    name = "Threads"
+    label = "CPU Threads"
+    formatter = ValueFormatter(value_format="d")
+    value = "self.sensor.values['integrated']['cpu_threads']"
+
+
+class MemoryPercentItemConfig(BaseItemConfig):
+    name = "Memory"
+    label = "Memory %"
+    formatter = ValueFormatter(value_format=".0f", unit="%")
+    value = "self.sensor.values['integrated']['memory_percent']"
+
+
 class SendTimeItemConfig(BaseItemConfig):
     name = "Send Time"
     label = "Send Time"
