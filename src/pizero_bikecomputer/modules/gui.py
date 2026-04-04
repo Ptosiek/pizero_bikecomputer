@@ -593,12 +593,14 @@ class GUI(QtCore.QObject):
         self.stack_widget.setCurrentIndex(index)
         # default focus, set only when has_touch is false
         focus_widget = getattr(self.stack_widget.widget(index), "focus_widget", None)
+
         if focus_widget:
             if focus_reset:
                 focus_widget.setFocus()
         elif self.config.display.has_touch:
             # reset automatic focus there might not be one
             focus_widget = QtWidgets.QApplication.focusWidget()
+
             if focus_widget:
                 focus_widget.clearFocus()
 
