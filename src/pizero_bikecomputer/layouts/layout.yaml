@@ -26,20 +26,22 @@ GPS:
     I2C Heading: [3, 1]
     GPS Course Distance: [3,2]
 
+MONITORING:
+  STATUS: true
+
 I2C:
   STATUS: true
   LAYOUT:
     I2C Pressure: [0, 0]
     I2C Altitude: [0, 1]
-    Grade (speddd): [0, 2]
+    Grade (speed): [0, 2]
     I2C Ascent: [1, 0]
     I2C Descent: [1, 1]
     Grade: [1, 2]
     I2C Battery: [2, 0]
     I2C Elapsed Time: [2, 1]
     I2C Pitch: [2, 2]
-    Cpu Mem: [3, 0, 4, 2]
-    I2C Gross Diff Time: [3, 2]
+    I2C Gross Diff Time: [3, 0, 1, 3]
 
 ALTITUDE_GRAPH:
   STATUS: true

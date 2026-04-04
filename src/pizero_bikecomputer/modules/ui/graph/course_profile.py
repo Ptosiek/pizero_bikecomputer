@@ -3,6 +3,7 @@ from importlib import resources
 import numpy as np
 
 from pizero_bikecomputer.modules._pyqt import QtGui, pg, qasync
+from pizero_bikecomputer.modules.settings import settings
 from pizero_bikecomputer.modules.utils.timer import Timer
 
 from ..graph.pyqtgraph.CourseProfileGraphItem import CourseProfileGraphItem
@@ -29,6 +30,14 @@ class CourseProfileGraphWidget(BaseMapWidget):
 
     # current point
     location = []
+
+    @property
+    def visible(self):
+        return (
+            self.config.logger.course.is_set
+            and len(self.config.logger.course.altitude)
+            and settings.COURSE_INDEXING
+        )
 
     # remove button(up, down)
     def setup_ui_extra(self):

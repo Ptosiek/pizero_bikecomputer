@@ -149,6 +149,12 @@ class CueSheetWidget(ScreenWidget):
     display_num = None
     layout_class = QtWidgets.QVBoxLayout
 
+    @property
+    def visible(self):
+        return (
+            self.config.logger.course.course_points.is_set and settings.COURSE_INDEXING
+        )
+
     def set_font_size(self, length):
         self.font_size = int(length / 7)
 

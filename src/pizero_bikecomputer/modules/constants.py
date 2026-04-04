@@ -27,6 +27,7 @@ class MenuLabel(StrEnum):
     LOGS = "Logs"
     MAP = "Map"
     MENU = "Menu"
+    MONITORING = "Monitoring"
     POWER_OFF = "Power off"
     PROFILE = "Profile"
     RAIN_MAP = "Rain map"

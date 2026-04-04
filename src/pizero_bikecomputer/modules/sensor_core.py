@@ -3,14 +3,7 @@ import math
 from datetime import datetime
 
 import numpy as np
-
-_IMPORT_PSUTIL = False
-try:
-    import psutil
-
-    _IMPORT_PSUTIL = True
-except ImportError:
-    pass
+import psutil
 
 from pizero_bikecomputer.logger import app_logger
 
@@ -61,8 +54,11 @@ class SensorCore:
         "grade_spd",
         "glide_ratio",
         "temperature",
-        "cpu_percent",
         "send_time",
+        # perf
+        "cpu_percent",
+        "cpu_threads",
+        "memory_percent",
     ]
     average_secs = [3, 30, 60]
     average_values = {"heart_rate": {}, "power": {}}
@@ -95,19 +91,20 @@ class SensorCore:
         # reset
         for key in self.integrated_value_keys:
             self.values["integrated"][key] = np.nan
+
         self.reset_internal()
 
         for d in self.diff_keys:
             self.values["integrated"][d] = np.full(self.grade_range, np.nan)
+
         self.brakelight_spd = [0] * self.brakelight_spd_range
-        self.values["integrated"]["CPU_MEM"] = ""
 
         for s in self.average_secs:
             for v in self.average_values:
                 self.average_values[v][s] = []
                 self.values["integrated"][f"ave_{v}_{s}s"] = np.nan
-        if _IMPORT_PSUTIL:
-            self.process = psutil.Process()
+
+        self.process = psutil.Process()
 
         if SensorGPS:
             self.sensor_gps = SensorGPS(config, self.values["GPS"])
@@ -649,19 +646,15 @@ class SensorCore:
                     )
 
                 # cpu and memory
-                if _IMPORT_PSUTIL:
+                if settings.SYSTEM_MONITORING:
                     self.values["integrated"]["cpu_percent"] = int(
                         self.process.cpu_percent(interval=None)
                     )
-                    self.values["integrated"]["CPU_MEM"] = (
-                        "{0:^2.0f}% ({1}) / ALL {2:^2.0f}%,  {3:^2.0f}%".format(
-                            self.values["integrated"][
-                                "cpu_percent"
-                            ],  # self.process.cpu_percent(interval=None),
-                            self.process.num_threads(),
-                            psutil.cpu_percent(interval=None),
-                            self.process.memory_percent(),
-                        )
+                    self.values["integrated"]["cpu_threads"] = (
+                        self.process.num_threads()
+                    )
+                    self.values["integrated"]["memory_percent"] = (
+                        self.process.memory_percent()
                     )
 
                 # adjust loop time

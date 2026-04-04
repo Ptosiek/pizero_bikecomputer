@@ -98,6 +98,7 @@ class GUI(QtCore.QObject):
     main_page = None
     main_page_index = None
     map_widget = None
+    monitoring_widget = None
     performance_graph_widget = None
     stack_widget = None
     status_bar = None
@@ -232,8 +233,9 @@ class GUI(QtCore.QObject):
                 AltitudeGraphWidget,
                 PerformanceGraphWidget,
             )
-            from pizero_bikecomputer.modules.ui.widgets.cuesheet import (
-                CueSheetWidget,
+            from pizero_bikecomputer.modules.ui.widgets.cuesheet import CueSheetWidget
+            from pizero_bikecomputer.modules.ui.widgets.monitoring import (
+                MonitoringWidget,
             )
             from pizero_bikecomputer.modules.ui.widgets.values import ValuesWidget
 
@@ -304,6 +306,7 @@ class GUI(QtCore.QObject):
             for k, v in self.layout.items():
                 if not v["STATUS"]:
                     continue
+
                 if "LAYOUT" in v:
                     self.main_page.addWidget(
                         ValuesWidget(
@@ -343,11 +346,12 @@ class GUI(QtCore.QObject):
                     elif k == "SIMPLE_MAP":
                         self.map_widget = MapWidget(self.main_page, self.config)
                         self.main_page.addWidget(self.map_widget)
-                    elif (
-                        k == "CUESHEET"
-                        and self.config.logger.course.course_points.is_set
-                        and settings.COURSE_INDEXING
-                    ):
+                    elif k == "MONITORING":
+                        self.monitoring_widget = MonitoringWidget(
+                            self.main_page, self.config
+                        )
+                        self.main_page.addWidget(self.monitoring_widget)
+                    elif k == "CUESHEET":
                         self.cuesheet_widget = CueSheetWidget(
                             self.main_page, self.config
                         )
@@ -562,9 +566,19 @@ class GUI(QtCore.QObject):
             self.course_profile_graph_widget.init_course()
 
     def scroll(self, delta):
-        mod_index = (
-            self.main_page.currentIndex() + delta + self.main_page.count()
-        ) % self.main_page.count()
+        n = self.main_page.count()
+        d = delta
+        mod_index = self.main_page.currentIndex()
+
+        while d != 0:
+            mod_index = (mod_index + d + n) % n
+            w = self.main_page.widget(mod_index)
+
+            if not w.visible:
+                d = delta
+            else:
+                d = 0
+
         self.on_change_main_page(mod_index)
         self.main_page.setCurrentIndex(mod_index)
 
@@ -592,12 +606,14 @@ class GUI(QtCore.QObject):
         self.stack_widget.setCurrentIndex(index)
         # default focus, set only when has_touch is false
         focus_widget = getattr(self.stack_widget.widget(index), "focus_widget", None)
+
         if focus_widget:
             if focus_reset:
                 focus_widget.setFocus()
         elif self.config.display.has_touch:
             # reset automatic focus there might not be one
             focus_widget = QtWidgets.QApplication.focusWidget()
+
             if focus_widget:
                 focus_widget.clearFocus()
 
@@ -846,8 +862,10 @@ class GUI(QtCore.QObject):
             button_widget = QtWidgets.QWidget(container)
             button_layout = QtWidgets.QHBoxLayout(button_widget)
             button_layout.setContentsMargins(0, 5, 0, 5)
+
             if not button_label:
                 button_label = ["OK", "Cancel"]
+
             buttons = []
 
             for i in range(button_num):
@@ -859,8 +877,10 @@ class GUI(QtCore.QObject):
             for i in range(button_num):
                 next_index = i + 1
                 prev_index = i - 1
+
                 if next_index == button_num:
                     next_index = 0
+
                 buttons[i].next_button = buttons[next_index]
                 buttons[i].prev_button = buttons[prev_index]
                 buttons[i].clicked.connect(
@@ -884,6 +904,7 @@ class GUI(QtCore.QObject):
                 .currentWidget()
                 .findChild(QtWidgets.QLabel, "title_label")
             )
+
             if title_label:
                 title_label.setText(title)
         if button_label:
@@ -892,6 +913,7 @@ class GUI(QtCore.QObject):
                 .currentWidget()
                 .findChild(QtWidgets.QPushButton)
             )
+
             if button:
                 button.setText(button_label)
 

@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 from configparser import ConfigParser
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,6 +23,9 @@ from .maps import (
 _IS_RASPI = False
 UNIT_ID = 0x1A2B3C4D
 SETTINGS_FILE = Path("setting.conf")
+
+# Disable frozen during tests to allow patching
+_FROZEN = bool(os.environ.get("PIZERO_TESTING", False))
 
 
 try:
@@ -53,7 +57,7 @@ except ImportError:
     pass
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=_FROZEN)
 class SettingsNamespace:
     config_parser = ConfigParser(
         default_section="GENERAL",
@@ -77,6 +81,9 @@ class SettingsNamespace:
     HEADLESS = False
     LAYOUT_FILE = "layout.yaml"
     VERTICAL = False
+
+    # System monitoring (psutil stats collection)
+    SYSTEM_MONITORING = False
 
     #######################
     # configurable values #
@@ -376,7 +383,8 @@ class SettingsNamespace:
         parser.add_argument("--version", action="version", version="%(prog)s 0.1")
         parser.add_argument("--vertical", action="store_true", default=False)
 
-        args = parser.parse_args()
+        # Use parse_known_args to avoid failing when pytest adds its own arguments
+        args, _ = parser.parse_known_args()
 
         if args.debug:
             app_logger.setLevel(logging.DEBUG)
@@ -580,6 +588,7 @@ class SettingsNamespace:
     def set_ant_device(self, name, value):
         if not isinstance(value, (type(None), tuple)):
             raise ValueError(f"Incorrect value for ant device: {value}")
+
         self.update_setting(f"ANT_{name}_DEVICE", value)
 
     def set_ant_device_status(self, name, status):

@@ -133,6 +133,11 @@ class MenuToggleIcon(BaseMenuIcon):
     size = 36
     margin = 5
 
+    def __init__(self, *args):
+        super().__init__(*args)
+        # Set fixed size to ensure consistent alignment
+        self.setFixedSize(self.size)
+
     def toggle(self, status, has_focus):
         if status:
             icon = ToggleOnIcon

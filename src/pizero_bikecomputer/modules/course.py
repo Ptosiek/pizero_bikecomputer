@@ -1,5 +1,6 @@
 import re
 import shutil
+from pathlib import Path
 
 import numpy as np
 import oyaml
@@ -150,7 +151,7 @@ class Course:
         if delete_course_file and settings.COURSE_FILE_PATH.exists():
             settings.COURSE_FILE_PATH.unlink()
 
-    def load(self, file=None):
+    def load(self, file: Path = None):
         # if file is given, copy it to settings.COURSE_FILE_PATH firsthand, we are loading a new course
         if file:
             shutil.copy(file, settings.COURSE_FILE_PATH)
@@ -229,6 +230,7 @@ class Course:
                     return_mask=True,
                 )
             )
+
             if len_alt and len_dist:
                 cond = cond | np.array(
                     rdp(
@@ -239,10 +241,12 @@ class Course:
                 )
             self.latitude = self.latitude[cond]
             self.longitude = self.longitude[cond]
+
             if len_alt:
                 self.altitude = self.altitude[cond]  # [m]
             if len_dist:
                 self.distance = self.distance[cond] / 1000  # [km]
+
         except Exception as e:  # noqa
             app_logger.warning(f"Error during downsampling: {e}")
             self.distance = self.distance / 1000  # [km]
@@ -259,18 +263,21 @@ class Course:
             )
             self.distance = np.insert(self.distance, 0, 0)
             self.distance = np.cumsum(self.distance)
+
         dist_diff = 1000 * np.diff(self.distance)  # [m]
 
         if len_alt:
             modified_altitude = savitzky_golay(self.altitude, 53, 3)
             # do not apply if length is different (occurs when too short course)
+
             if len(self.altitude) == len(modified_altitude):
                 self.altitude = modified_altitude
 
         diff_dist_max = int(np.max(dist_diff)) * 2 / 1000  # [m->km]
+
         if diff_dist_max > settings.GPS_SEARCH_RANGE:  # [km]
             app_logger.debug(
-                f"G_GPS_SEARCH_RANGE[km]: {settings.GPS_SEARCH_RANGE} -> {diff_dist_max}"
+                f"GPS_SEARCH_RANGE[km]: {settings.GPS_SEARCH_RANGE} -> {diff_dist_max}"
             )
             self.search_range = diff_dist_max
 

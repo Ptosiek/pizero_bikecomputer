@@ -51,6 +51,11 @@ class ScreenWidget(QtWidgets.QWidget):
     def gps_values(self):
         return self.sensor.values["GPS"]
 
+    @property
+    def visible(self):
+        """allow implementing logic to hide/show the screen when navigating"""
+        return True
+
     def resizeEvent(self, event):
         self.set_font_size(min(self.size().height(), self.size().width()))
 

@@ -1,11 +1,14 @@
+import os
+
 def make_ext(modname, pyxfilename):
     from distutils.extension import Extension
     import numpy
+    cython_dir = os.path.dirname(pyxfilename)
     ext = Extension(name = modname,
-        sources=[pyxfilename, 'mip_display.cpp'],
+        sources=[pyxfilename, os.path.join(cython_dir, 'mip_display.cpp')],
         extra_compile_args=['-std=c++17'],
         language='c++',
-        include_dirs = ['modules/display/cython', numpy.get_include()],
+        include_dirs = [cython_dir, numpy.get_include()],
         extra_link_args = ['-lpigpiod_if2'],
     )
     return ext
