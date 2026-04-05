@@ -551,6 +551,7 @@ class LoggerFit:
 
         # write data
         struct_def = self.get_struct_def(l_num)
+
         try:
             self.write(struct.pack(struct_def, *lap_data))
         except Exception:  # noqa
