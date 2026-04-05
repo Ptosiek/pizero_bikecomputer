@@ -19,8 +19,8 @@ from .base import BaseItemConfig
 # General
 class ElapsedTimeItemConfig(BaseItemConfig):
     name = "Elapsed Time"
-    label = "ElapsedTime"
-    formatter = Time
+    label = "Elapsed"
+    formatter = Timer
     value = "self.logger.values['elapsed_time']"
 
 
@@ -33,7 +33,7 @@ class GrossAverageSpeedItemConfig(BaseItemConfig):
 
 class GrossDiffTimeItemConfig(BaseItemConfig):
     name = "Gross Diff Time"
-    label = "GrossDiffTime"
+    label = "Diff ⏱"
     formatter = ValueFormatter
     value = "self.logger.values['gross_diff_time']"
 
@@ -46,7 +46,7 @@ class LapItemConfig(BaseItemConfig):
 
 class LapTimeItemConfig(BaseItemConfig):
     name = "Lap Time"
-    label = "Lap Time"
+    label = "Lap time"
     formatter = Timer
     value = "self.logger.values['count_lap']"
 

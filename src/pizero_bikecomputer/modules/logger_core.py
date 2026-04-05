@@ -712,6 +712,7 @@ class LoggerCore:
         # elapsed_time
         if self.values["start_time"] is None:
             return
+
         # [s]
         self.values["elapsed_time"] = int(
             datetime.now(UTC).timestamp() - self.values["start_time"]
@@ -752,8 +753,6 @@ class LoggerCore:
         self.values["gross_diff_time"] = "{:}{:02.0f}:{:02.0f}".format(
             diff_time_sign, diff_h, diff_m
         )
-
-        # print(self.values['elapsed_time'], self.values['gross_avg_spd'], self.values['gross_diff_time'], round(diff_time,1))
 
     def resume(self):
         self.cur.execute("SELECT count(*) FROM BIKECOMPUTER_LOG")
@@ -814,7 +813,6 @@ class LoggerCore:
                 for k3 in ["count", "sum"]:
                     self.average[k1][k2][k3] = value[index]
                     index += 1
-        # print(self.average)
 
         # get lap
         self.cur.execute("SELECT MAX(LAP) FROM BIKECOMPUTER_LOG")
@@ -870,8 +868,6 @@ class LoggerCore:
             max_value = list(self.cur.fetchone())
             for i, k in enumerate(main_item):
                 self.record_stats["pre_lap_max"][k] = max_value[i]
-        # print(self.record_stats)
-        # print(self.average)
 
         # start_time
         self.cur.execute("SELECT MIN(timestamp) FROM BIKECOMPUTER_LOG")
@@ -915,7 +911,6 @@ class LoggerCore:
         self.short_log_timestamp.append(timestamp)
         self.short_log_lock = False
         self.short_log_available = True
-        # print("append", len(self.short_log_dist), len(self.short_log_lat), len(self.short_log_lon))
 
     def clear_short_log(self):
         while self.short_log_lock:
@@ -993,7 +988,6 @@ class LoggerCore:
             db_file.unlink()
             self.short_log_available = True
 
-        # print("lat_raw", len(lat_raw))
         if len(lat_raw) and (len(lat_raw) == len(lon_raw) == len(dist_raw)):
             # downsampling
             try:
