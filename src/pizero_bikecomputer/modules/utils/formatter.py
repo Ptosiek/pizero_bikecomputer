@@ -14,18 +14,22 @@ class ValueFormatter:
         # isnan does not support string input so make sure we don't have a string already
         if isinstance(value, str):
             return value
+
         if value is None or np.isnan(value):
             return None
+
         return value
 
     @classmethod
     def format_text(cls, value):
         value = cls.get_value(value)
+
         if value is None:
             return "-"
         else:
             if cls.value_format:
                 return f"{value:{cls.value_format}}"
+
             return str(value)
 
 
@@ -46,6 +50,7 @@ class Distance(ValueFormatter):
     @classmethod
     def get_value(cls, value):
         value = super().get_value(value)
+
         if value is not None:
             return value / 1000
         return value
@@ -70,7 +75,7 @@ class HeartRate(ValueFormatter):
 
 
 class Percent(ValueFormatter):
-    value_format = ".0f"
+    value_format = ".2f"
     unit = "%"
 
 
@@ -95,6 +100,7 @@ class Speed(ValueFormatter):
     @classmethod
     def get_value(cls, value):
         value = super().get_value(value)
+
         if value is not None:
             return value * 3.6
         return value
@@ -109,6 +115,7 @@ class Time(ValueFormatter):
     @classmethod
     def format_text(cls, value):
         value = cls.get_value(value)
+
         if value is None:
             return "-"
         else:
@@ -119,11 +126,17 @@ class Timer(ValueFormatter):
     @classmethod
     def format_text(cls, value):
         value = cls.get_value(value)
+
         if value is None:
             return "-"
         else:
             fmt = "%M:%S" if value < 3600 else "%H:%M"
             return time.strftime(fmt, time.gmtime(value))
+
+
+class VerticalSpeed(ValueFormatter):
+    value_format = "3.1f"
+    unit = "m/s"
 
 
 class Work(ValueFormatter):
@@ -133,6 +146,8 @@ class Work(ValueFormatter):
     @classmethod
     def get_value(cls, value):
         value = super().get_value(value)
+
         if value is not None:
             return value / 1000
+
         return value
