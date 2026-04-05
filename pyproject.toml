@@ -11,7 +11,7 @@ requires-python = ">= 3.12, <=3.13"
 dependencies = [
   "aiohttp==3.10.10",
   "aiofiles==24.1.0",
-  "crdp",
+  "crdp @ git+https://github.com/hishizuka/crdp.git",
   "numpy==1.26.4",
   "oyaml==1.0",
   "pillow==11.0.0",
@@ -37,10 +37,3 @@ polyline = [
 dev = [
   "pre-commit >= 4.0.1"
 ]
-
-[tool.uv.extra-build-dependencies]
-crdp = ["Cython"]
-
-[[tool.uv.index]]
-name = "crdp"
-url = "https://github.com/hishizuka/crdp.git"
