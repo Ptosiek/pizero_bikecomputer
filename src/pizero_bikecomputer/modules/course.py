@@ -262,18 +262,21 @@ class Course:
             )
             self.distance = np.insert(self.distance, 0, 0)
             self.distance = np.cumsum(self.distance)
+
         dist_diff = 1000 * np.diff(self.distance)  # [m]
 
         if len_alt:
             modified_altitude = savitzky_golay(self.altitude, 53, 3)
             # do not apply if length is different (occurs when too short course)
+
             if len(self.altitude) == len(modified_altitude):
                 self.altitude = modified_altitude
 
         diff_dist_max = int(np.max(dist_diff)) * 2 / 1000  # [m->km]
+
         if diff_dist_max > settings.GPS_SEARCH_RANGE:  # [km]
             app_logger.debug(
-                f"G_GPS_SEARCH_RANGE[km]: {settings.GPS_SEARCH_RANGE} -> {diff_dist_max}"
+                f"GPS_SEARCH_RANGE[km]: {settings.GPS_SEARCH_RANGE} -> {diff_dist_max}"
             )
             self.search_range = diff_dist_max
 
