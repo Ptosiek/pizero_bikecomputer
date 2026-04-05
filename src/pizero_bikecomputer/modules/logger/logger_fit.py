@@ -491,6 +491,7 @@ class LoggerFit:
         lap_fields = []
         lap_data = []
         lap_sql = self.sql[message_num]
+
         for k in lap_sql.keys():
             if message_num == 19:  # lap
                 if (
