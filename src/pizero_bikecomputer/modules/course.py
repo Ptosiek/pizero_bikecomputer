@@ -229,6 +229,7 @@ class Course:
                     return_mask=True,
                 )
             )
+
             if len_alt and len_dist:
                 cond = cond | np.array(
                     rdp(
@@ -239,10 +240,12 @@ class Course:
                 )
             self.latitude = self.latitude[cond]
             self.longitude = self.longitude[cond]
+
             if len_alt:
                 self.altitude = self.altitude[cond]  # [m]
             if len_dist:
                 self.distance = self.distance[cond] / 1000  # [km]
+
         except Exception as e:  # noqa
             app_logger.warning(f"Error during downsampling: {e}")
             self.distance = self.distance / 1000  # [km]
