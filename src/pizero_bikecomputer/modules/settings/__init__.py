@@ -383,7 +383,8 @@ class SettingsNamespace:
         parser.add_argument("--version", action="version", version="%(prog)s 0.1")
         parser.add_argument("--vertical", action="store_true", default=False)
 
-        args = parser.parse_args()
+        # Use parse_known_args to avoid failing when pytest adds its own arguments
+        args, _ = parser.parse_known_args()
 
         if args.debug:
             app_logger.setLevel(logging.DEBUG)

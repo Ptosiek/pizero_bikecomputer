@@ -37,3 +37,7 @@ polyline = [
 dev = [
   "pre-commit >= 4.0.1"
 ]
+test = [
+  "pytest >= 8.0.0",
+  "pytest-env >= 1.0.0",
+]
