@@ -30,7 +30,7 @@ class TestCourse(unittest.TestCase):
     #     self.assertEqual(len(course.colored_altitude), 31)
 
     @patch(
-        "modules.settings.settings.COURSE_FILE_PATH",
+        "pizero_bikecomputer.modules.settings.settings.COURSE_FILE_PATH",
         NamedTemporaryFile().name,
     )
     def test_load_with_tcx_indexing(self):
@@ -44,7 +44,7 @@ class TestCourse(unittest.TestCase):
         self.assertEqual(len(course.course_points.distance), 18)
 
     @patch(
-        "modules.settings.settings.COURSE_FILE_PATH",
+        "pizero_bikecomputer.modules.settings.settings.COURSE_FILE_PATH",
         NamedTemporaryFile().name,
     )
     def test_load_insert_course_point(self):

@@ -10,7 +10,7 @@ from pizero_bikecomputer.modules.logger.logger_fit import LoggerFit
 
 class TestLoggerCsv(unittest.TestCase):
     @patch(
-        "modules.settings.settings.LOG_DB",
+        "pizero_bikecomputer.modules.settings.settings.LOG_DB",
         "tests/data/log.db-Heart_of_St._Johns_Peninsula_Ride",
     )
     def test_write_log(self):
@@ -27,7 +27,7 @@ class TestLoggerCsv(unittest.TestCase):
 
 class TestLoggerFit(unittest.TestCase):
     @patch(
-        "modules.settings.settings.LOG_DB",
+        "pizero_bikecomputer.modules.settings.settings.LOG_DB",
         "tests/data/log.db-Heart_of_St._Johns_Peninsula_Ride",
     )
     def test_write_logs(self):
