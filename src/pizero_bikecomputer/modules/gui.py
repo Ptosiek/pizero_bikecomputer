@@ -862,8 +862,10 @@ class GUI(QtCore.QObject):
             button_widget = QtWidgets.QWidget(container)
             button_layout = QtWidgets.QHBoxLayout(button_widget)
             button_layout.setContentsMargins(0, 5, 0, 5)
+
             if not button_label:
                 button_label = ["OK", "Cancel"]
+
             buttons = []
 
             for i in range(button_num):
@@ -875,8 +877,10 @@ class GUI(QtCore.QObject):
             for i in range(button_num):
                 next_index = i + 1
                 prev_index = i - 1
+
                 if next_index == button_num:
                     next_index = 0
+
                 buttons[i].next_button = buttons[next_index]
                 buttons[i].prev_button = buttons[prev_index]
                 buttons[i].clicked.connect(
@@ -900,6 +904,7 @@ class GUI(QtCore.QObject):
                 .currentWidget()
                 .findChild(QtWidgets.QLabel, "title_label")
             )
+
             if title_label:
                 title_label.setText(title)
         if button_label:
@@ -908,6 +913,7 @@ class GUI(QtCore.QObject):
                 .currentWidget()
                 .findChild(QtWidgets.QPushButton)
             )
+
             if button:
                 button.setText(button_label)
 
