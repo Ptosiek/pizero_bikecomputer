@@ -1,12 +1,15 @@
+import os
+
 def make_ext(modname, pyxfilename):
     from distutils.extension import Extension
     #import numpy
+    cython_dir = os.path.dirname(pyxfilename)
     ext = Extension(name = modname,
-        sources=[pyxfilename,'logger_fit_c.cpp'],
+        sources=[pyxfilename, os.path.join(cython_dir, 'logger_fit_c.cpp')],
         extra_compile_args=['-std=c++17'],
         language='c++',
         #include_dirs = ['modules/logger/cython', numpy.get_include()],
-        include_dirs = ['modules/logger/cython'],
+        include_dirs = [cython_dir],
         extra_link_args = ['-lsqlite3'],
     )
     return ext
