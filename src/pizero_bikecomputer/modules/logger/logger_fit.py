@@ -219,7 +219,7 @@ class LoggerFit:
 
     def write_log_cython(self, filename, start_date, end_date):
         res = write_log_cython(
-            settings.LOG_DB,
+            str(settings.LOG_DB),
             filename,
             start_date.strftime("%Y-%m-%d_%H-%M-%S"),
             end_date.strftime("%Y-%m-%d_%H-%M-%S"),
