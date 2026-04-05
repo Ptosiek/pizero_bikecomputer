@@ -15,14 +15,14 @@ class LoggerCsv:
             "gps_pdop,gps_hdop,gps_vdop,total_ascent,total_descent,pressure,temperature,heading,gps_track,"
             "motion,acc_x,acc_y,acc_z,gyro_x,gyro_y,gyro_z,cpu_percent,light"
         )
-
         # voltage_battery,current_battery,voltage_out,current_out,battery_percentage\
         # "
+
         # if sqlite3 command exists, use this command (much faster)
         if shutil.which("sh") is not None and shutil.which("sqlite3"):
             sql_cmd = (
                 "sqlite3 -header -csv "
-                + settings.LOG_DB
+                + str(settings.LOG_DB)
                 + " 'SELECT "
                 + r
                 + " FROM BIKECOMPUTER_LOG;' > "

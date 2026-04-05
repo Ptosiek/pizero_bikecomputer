@@ -214,6 +214,7 @@ class LoggerFit:
         # try Cython if available/resolve to pure python if writing fails
         if MODE == "Cython" and self.write_log_cython(filename, start_date, end_date):
             return True
+
         return self.write_log_python(filename, start_date, end_date)
 
     def write_log_cython(self, filename, start_date, end_date):
@@ -275,6 +276,7 @@ class LoggerFit:
         for k, v in self.profile[message_num]["field"].items():
             record_row.append(v[0])
             record_index.append(k)
+
         record_row = ",".join(record_row)
 
         for lap_num in range(max_lap + 1):
@@ -318,6 +320,7 @@ class LoggerFit:
 
                 l_num = self.get_local_message_num(message_num, available_fields)
                 l_num_used = True
+
                 if l_num == -1:
                     l_num_used = False
                     # write header if needed
@@ -422,6 +425,7 @@ class LoggerFit:
         self.write((local_message_num + 0x40).to_bytes(1, "little"))
         self.write(struct.pack("<BBHB", 0, 0, m_num, len(l_field)))
         # write field definition
+
         for f_id in l_field:
             f_type = self.profile[m_num]["field"][f_id][1]
             base_type_id = self.base_type_id_from_string(f_type)
@@ -439,20 +443,24 @@ class LoggerFit:
                 base_type_id = self.base_type_id_from_string(f_type)
                 struct_def += "1" + self.base_type_format_from_id(base_type_id)
             self.struct_def_cache[local_message_num] = struct_def
+
         # write data header(0x00)
         self.write((local_message_num + 0x00).to_bytes(1, "little"))
         return struct_def
 
     def get_local_message_num(self, message_num, field):
         index = -1
+
         for i, v in self.local_num.items():
             if v["message_num"] == message_num and v["field"] == field:
                 index = i
+
         return index
 
     def convertValue(self, v, message_num, defnum):
         field = self.profile[message_num]["field"][defnum]
         value = v[0]
+
         if field[0] in ["position_lat", "position_long"]:
             try:
                 value = v[0] / 180 * (2**31)
@@ -475,6 +483,7 @@ class LoggerFit:
             value = field[2] * (v[0] + field[3])
         elif len(field) == 3:  # with scale
             value = field[2] * v[0]
+
         return int(value)
 
     def get_summary(self, message_num, local_message_num, lap_num, cur):
@@ -513,14 +522,18 @@ class LoggerFit:
                 else:
                     cur.execute("SELECT %s FROM BIKECOMPUTER_LOG" % (lap_sql[k]))
             v = list((cur.fetchone()))
+
             if not len(v) or v[0] is None:
                 continue
+
             lap_fields.append(k)
             lap_data.append(self.convertValue(v, message_num, k))
+
         # add sport = 2(cycling)
         if message_num == 18:
             lap_fields.append(5)
             lap_data.append(2)
+
         app_logger.debug(lap_fields)
         app_logger.debug(lap_data)
         l_num = self.get_local_message_num(message_num, lap_fields)
