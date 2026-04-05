@@ -351,11 +351,7 @@ class GUI(QtCore.QObject):
                             self.main_page, self.config
                         )
                         self.main_page.addWidget(self.monitoring_widget)
-                    elif (
-                        k == "CUESHEET"
-                        and self.config.logger.course.course_points.is_set
-                        and settings.COURSE_INDEXING
-                    ):
+                    elif k == "CUESHEET":
                         self.cuesheet_widget = CueSheetWidget(
                             self.main_page, self.config
                         )
@@ -578,25 +574,7 @@ class GUI(QtCore.QObject):
             mod_index = (mod_index + d + n) % n
             w = self.main_page.widget(mod_index)
 
-            if (
-                (
-                    w == self.course_profile_graph_widget
-                    and (
-                        not self.config.logger.course.is_set
-                        or not self.config.logger.course.has_altitude
-                        or not self.config.G_COURSE_INDEXING
-                    )
-                )
-                or (
-                    w == self.cuesheet_widget
-                    and (
-                        not self.config.logger.course.course_points.is_set
-                        or not self.config.G_COURSE_INDEXING
-                        or not self.config.G_CUESHEET_DISPLAY_NUM
-                    )
-                )
-                or (w == self.monitoring_widget and not settings.SYSTEM_MONITORING)
-            ):
+            if not w.visible:
                 d = delta
             else:
                 d = 0

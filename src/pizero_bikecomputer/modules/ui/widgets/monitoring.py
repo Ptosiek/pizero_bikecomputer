@@ -1,3 +1,5 @@
+from pizero_bikecomputer.modules.settings import settings
+
 from .values import ValuesWidget
 
 
@@ -7,3 +9,7 @@ class MonitoringWidget(ValuesWidget):
         "Threads": [0, 1],
         "Memory": [1, 0],
     }
+
+    @property
+    def visible(self):
+        return settings.SYSTEM_MONITORING
