@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 from configparser import ConfigParser
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,6 +23,9 @@ from .maps import (
 _IS_RASPI = False
 UNIT_ID = 0x1A2B3C4D
 SETTINGS_FILE = Path("setting.conf")
+
+# Disable frozen during tests to allow patching
+_FROZEN = bool(os.environ.get("PIZERO_TESTING", False))
 
 
 try:
@@ -53,7 +57,7 @@ except ImportError:
     pass
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=_FROZEN)
 class SettingsNamespace:
     config_parser = ConfigParser(
         default_section="GENERAL",
@@ -583,6 +587,7 @@ class SettingsNamespace:
     def set_ant_device(self, name, value):
         if not isinstance(value, (type(None), tuple)):
             raise ValueError(f"Incorrect value for ant device: {value}")
+
         self.update_setting(f"ANT_{name}_DEVICE", value)
 
     def set_ant_device_status(self, name, status):

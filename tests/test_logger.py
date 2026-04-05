@@ -9,11 +9,11 @@ from pizero_bikecomputer.modules.logger.logger_fit import LoggerFit
 
 
 class TestLoggerCsv(unittest.TestCase):
-    @patch("pizero_bikecomputer.modules.settings.settings")
-    def test_write_log(self, settings_mock):
-        settings_mock.update_setting(
-            "LOG_DB", "tests/data/log.db-Heart_of_St._Johns_Peninsula_Ride"
-        )
+    @patch(
+        "pizero_bikecomputer.modules.settings.settings.LOG_DB",
+        "tests/data/log.db-Heart_of_St._Johns_Peninsula_Ride",
+    )
+    def test_write_log(self):
         logger = LoggerCsv()
         _, path = tempfile.mkstemp()
 
@@ -26,11 +26,11 @@ class TestLoggerCsv(unittest.TestCase):
 
 
 class TestLoggerFit(unittest.TestCase):
-    @patch("pizero_bikecomputer.modules.settings.settings")
-    def test_write_logs(self, settings_mock):
-        settings_mock.update_setting(
-            "LOG_DB", "tests/data/log.db-Heart_of_St._Johns_Peninsula_Ride"
-        )
+    @patch(
+        "pizero_bikecomputer.modules.settings.settings.LOG_DB",
+        "tests/data/log.db-Heart_of_St._Johns_Peninsula_Ride",
+    )
+    def test_write_logs(self):
         logger = LoggerFit()
 
         start = datetime(2023, 9, 28, 20, 39, 13, tzinfo=UTC)

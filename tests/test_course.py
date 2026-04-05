@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
@@ -29,10 +30,11 @@ class TestCourse(unittest.TestCase):
     #
     #     self.assertEqual(len(course.colored_altitude), 31)
 
-    @patch("pizero_bikecomputer.modules.settings.settings")
-    def test_load_with_tcx_indexing(self, settings_mock):
-        settings_mock.update_settings("COURSE_FILE_PATH", NamedTemporaryFile().name)
-
+    @patch(
+        "pizero_bikecomputer.modules.settings.settings.COURSE_FILE_PATH",
+        Path(NamedTemporaryFile().name),
+    )
+    def test_load_with_tcx_indexing(self):
         config = Config()
         course = Course(config)
         course.load(file="tests/data/tcx/Heart_of_St._Johns_Peninsula_Ride.tcx")
@@ -42,10 +44,11 @@ class TestCourse(unittest.TestCase):
         self.assertEqual(len(course.course_points.latitude), 18)
         self.assertEqual(len(course.course_points.distance), 18)
 
-    @patch("pizero_bikecomputer.modules.settings.settings")
-    def test_load_insert_course_point(self, settings_mock):
-        settings_mock.update_settings("COURSE_FILE_PATH", NamedTemporaryFile().name)
-
+    @patch(
+        "pizero_bikecomputer.modules.settings.settings.COURSE_FILE_PATH",
+        Path(NamedTemporaryFile().name),
+    )
+    def test_load_insert_course_point(self):
         config = Config()
         course = Course(config)
         course.load(

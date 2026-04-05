@@ -1,5 +1,6 @@
 import re
 import shutil
+from pathlib import Path
 
 import numpy as np
 import oyaml
@@ -150,7 +151,7 @@ class Course:
         if delete_course_file and settings.COURSE_FILE_PATH.exists():
             settings.COURSE_FILE_PATH.unlink()
 
-    def load(self, file=None):
+    def load(self, file: Path = None):
         # if file is given, copy it to settings.COURSE_FILE_PATH firsthand, we are loading a new course
         if file:
             shutil.copy(file, settings.COURSE_FILE_PATH)
