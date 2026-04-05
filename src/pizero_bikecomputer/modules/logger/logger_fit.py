@@ -537,6 +537,7 @@ class LoggerFit:
         app_logger.debug(lap_fields)
         app_logger.debug(lap_data)
         l_num = self.get_local_message_num(message_num, lap_fields)
+
         if l_num == -1:
             # write header if needed
             local_message_num = (local_message_num + 1) % 16
